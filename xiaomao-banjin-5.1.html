@@ -138,7 +138,7 @@ section.card{scroll-margin-top:14px}
 <textarea class="tarea" id="fbText" maxlength="300"></textarea>
 <div class="fbBar"><input class="fbName" id="fbName" maxlength="12"><button class="fbMain" id="fbGo">发布</button></div>
 <div id="fbList"><div class="fbTip">正在加载留言…</div></div>
-<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AC%E6%90%AC%E9%91%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
+<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%91%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
 </section>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="sec-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
@@ -313,7 +313,8 @@ tabs.forEach(function(b){
     if(el&&el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
   });
 });
-var SECS=['sec-home','sec-setup','sec-stat','sec-ledger','sec-backup'];\nif('IntersectionObserver' in window){
+var SECS=['sec-home','sec-setup','sec-stat','sec-ledger','sec-backup'];
+if('IntersectionObserver' in window){
   var pick=function(){
     var y=window.innerHeight*0.42, best=null, bestD=1e9;
     SECS.forEach(function(id){
