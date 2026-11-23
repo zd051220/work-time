@@ -132,7 +132,7 @@ section.card{scroll-margin-top:14px}
 <textarea class="tarea" id="fbText" maxlength="300" placeholder="比如：希望账本能按周统计；带薪摸鱼想改成扣钱；手机上想加个桌面图标……"></textarea>
 <div class="fbBar"><input class="fbName" id="fbName" maxlength="12" placeholder="昵称（不填就是匿名）"><button class="fbMain" id="fbGo">发布</button></div>
 <div id="fbList"><div class="fbTip">正在加载留言…</div></div>
-<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%87%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
+<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%87%8D%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
 </section>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="sec-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
@@ -314,7 +314,9 @@ function accRow(r,uid){return {user_id:uid,id:r.id,date:r.date,start_time:r.star
 function accRec(x){return {id:x.id,date:x.date,start:x.start_time,end:x.end_time,work:x.work,paid:x.paid,unpaid:x.unpaid,duration:x.duration,wage:Number(x.wage)||0,hours:Number(x.hours)||8,pay:Number(x.pay)||0,started:Number(x.started)||0}}
 function accPushOne(rec){
   var s=accSess();if(!s||!rec||!rec.id)return Promise.resolve(0);
-  return fetch(SB+'/rest/v1/records',{method:'POST',headers:accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([accRow(rec,s.uid)])})
+  var body=JSON.stringify([accRow(rec,s.uid)]);
+  var hdr=accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'});
+  return fetch(SB+'/rest/v1/records',{method:'POST',headers:hdr,body:body})
     .then(function(r){return r.ok?1:0}).catch(function(){return 0});
 }
 function accPull(){
@@ -332,7 +334,9 @@ function syncAll(first){
   var s=accSess();if(!s)return;
   $('accSub').textContent='同步中…';
   accPull().then(function(added){
-    return fetch(SB+'/rest/v1/records',{method:'POST',headers:accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)}))})
+    var body=JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)}));
+    var hdr=accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'});
+    return fetch(SB+'/rest/v1/records',{method:'POST',headers:hdr,body:body})
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return added});
   }).then(function(added){
     $('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'+(added?'（云端拉回 '+added+' 条）':'');
