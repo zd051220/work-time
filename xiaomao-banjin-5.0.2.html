@@ -56,6 +56,16 @@ section.card{scroll-margin-top:14px}
 .sheet .addr{background:#fff7e8;border-radius:12px;padding:11px 12px;font-size:11px;line-height:1.9;color:#8a6c42;margin-top:14px;word-break:break-all}
 .sheet .close{width:100%;margin-top:14px;border:0;border-radius:14px;padding:13px;font-size:12px;font-weight:900;
   background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
+/* ===== 意见反馈 ===== */
+.tarea{width:100%;min-height:92px;resize:vertical;box-sizing:border-box;padding:12px 12px;border:1px solid var(--line);
+  border-radius:13px;background:#fffaf2;color:var(--ink);font-size:13px;line-height:1.7;font-family:inherit;outline:none}
+.tarea:focus{border-color:#e6b751;box-shadow:0 0 0 3px #fae9bf}
+.fbRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.fbMain{border:0;border-radius:14px;padding:13px 8px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;
+  background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35}
+.fbMain:active{transform:translateY(1px);box-shadow:0 2px 0 #d49b35}
+.fbAlt{border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:14px;padding:13px 8px;font-size:12px;font-weight:850;font-family:inherit;cursor:pointer}
+.fbList{display:block;text-align:center;margin-top:12px;font-size:11px;font-weight:800;color:#a37f47;text-decoration:none}
 </style></head>
 <body><main class="app">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">5.0.2</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
@@ -79,6 +89,12 @@ section.card{scroll-margin-top:14px}
 <section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</span><b id="breakTotal">00:00:00</b></div></div></section>
 <section class="card" id="sec-ledger"><div class="head"><h2>📅 每月搬金账本</h2><div class="monthbar"><button id="prev">‹</button><strong id="month">----</strong><button id="next">›</button></div></div><div class="sum"><span>本月累计收入</span><b id="monthTotal">¥0.00</b></div><div id="records"><div class="empty">这个月还没有搬金记录～</div></div><div style="margin-top:13px"><a href="ledger.html" style="display:inline-block;font-size:11px;font-weight:800;color:#8e7047;text-decoration:none;border:1px solid #efe2cf;background:#fff9ef;border-radius:11px;padding:9px 13px">打开完整账本 ›</a></div></section>
 <section class="card" id="sec-backup"><div class="head"><h2>🧰 数据备份</h2><span class="tag" id="saveTag">本地保存</span></div><div class="tools"><button class="tool" id="export">导出备份</button><button class="tool" id="import">导入备份</button><input id="file" type="file" accept="application/json" hidden></div><div class="note">记录保存在当前浏览器。更换手机或清理浏览器数据前，请先导出备份。导入按记录编号合并，不会把备份里的“进行中打卡”接上继续计时。</div></section>
+<section class="card" id="sec-feedback"><div class="head"><h2>💬 意见反馈</h2><span class="tag">站长会看到</span></div>
+<div class="note" style="margin:0 0 10px">用着哪里别扭、想要什么新功能，写在这儿提交就行。提交会打开 GitHub 的新建反馈页（需要登录一下 GitHub 账号），站长在仓库里能看到每一条并回复。</div>
+<textarea class="tarea" id="fbText" placeholder="比如：想把带薪摸鱼改成扣钱；账本能按周看；手机上加个桌面图标……"></textarea>
+<div class="fbRow"><button class="fbMain" id="fbGo">提交反馈</button><button class="fbAlt" id="fbMail">直接发邮件</button></div>
+<a class="fbList" id="fbSee" href="https://github.com/zd051220/work-time/issues" target="_blank" rel="noopener">查看大家提过的反馈 ›</a>
+</section>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="sec-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
 <button data-t="sec-stat"><svg viewBox="0 0 24 24"><path d="M5 19V12M10 19V7.5M15 19v-5M20 19V10"/><path d="M4 19h16"/></svg><span>账单</span></button>
@@ -214,6 +230,22 @@ $('noticeBtn').addEventListener('click',openNotice);
 $('noticeBtn').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' ')openNotice()});
 $('closeNotice').addEventListener('click',closeNotice);
 maskEl.addEventListener('click',function(e){if(e.target===maskEl)closeNotice()});
+
+/* ===== 意见反馈 ===== */
+function fbDraft(){return ($('fbText').value||'').trim()}
+$('fbGo').onclick=function(){
+  var msg=fbDraft();
+  if(msg.length<4){toast('写两句再提交吧～');$('fbText').focus();return}
+  var title='反馈：'+msg.slice(0,24).replace(/\s+/g,' ');
+  var body='**反馈内容**\n\n'+msg+'\n\n---\n来自小猫搬金条网页反馈 · '+new Date().toLocaleString('zh-CN')+' · 页面 '+location.href;
+  var u='https://github.com/zd051220/work-time/issues/new?title='+encodeURIComponent(title)+'&body='+encodeURIComponent(body);
+  window.open(u,'_blank');toast('已打开 GitHub 反馈页，登录后点提交即可');
+};
+$('fbMail').onclick=function(){
+  var msg=fbDraft()||'（想反馈的内容）';
+  var u='mailto:zd051220@163.com?subject='+encodeURIComponent('小猫搬金条反馈')+'&body='+encodeURIComponent(msg+'\n\n—— 来自小猫搬金条网页');
+  location.href=u;
+};
 
 })();
 
