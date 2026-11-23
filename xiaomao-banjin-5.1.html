@@ -115,7 +115,7 @@ section.card{scroll-margin-top:14px}
 <div class="actions"><button class="btn paid" id="paidBtn" disabled>☕ 开始带薪摸鱼</button><button class="btn unpaid" id="unpaidBtn" disabled>🌿 开始不带薪摸鱼</button></div>
 <div class="actions"><button class="btn stop" id="resumeBtn" disabled style="grid-column:1/-1">↩️ 摸够了，继续工作</button></div>
 <div class="breakstatus" id="breakStatus"></div><div class="now" id="now">现在时间 --:--:--</div></section>
-<section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</span><b id="breakTotal">00:00:00</b></div></div></section>
+<section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</b><b id="breakTotal">00:00:00</b></div></div></section>
 <section class="card" id="sec-ledger"><div class="head"><h2>📅 每月搬金账本</h2><div class="monthbar"><button id="prev">‹</button><strong id="month">----</strong><button id="next">›</button></div></div><div class="sum"><span>本月累计收入</span><b id="monthTotal">¥0.00</b></div><div id="records"><div class="empty">这个月还没有搬金记录～</div></div><div style="margin-top:13px"><a href="ledger.html" style="display:inline-block;font-size:11px;font-weight:800;color:#8e7047;text-decoration:none;border:1px solid #efe2cf;background:#fff9ef;border-radius:11px;padding:9px 13px">打开完整账本 ›</a></div></section>
 <section class="card" id="sec-backup"><div class="head"><h2>🧰 数据备份</h2><span class="tag" id="saveTag">本地保存</span></div><div class="tools"><button class="tool" id="export">导出备份</button><button class="tool" id="import">导入备份</button><input id="file" type="file" accept="application/json" hidden></div><div class="note">记录保存在当前浏览器。更换手机或清理浏览器数据前，请先导出备份。导入会先自动备份现有数据，再显示要新增多少条、跳过多少条，确认后才写入；不会把备份里的“进行中打卡”接上继续计时。</div></section>
 <section class="card" id="sec-account"><div class="head"><h2>👤 账号 · 云同步</h2><span class="tag" id="accTag">未登录</span></div>
@@ -313,8 +313,7 @@ tabs.forEach(function(b){
     if(el&&el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
   });
 });
-var SECS=['sec-home','sec-setup','sec-stat','sec-ledger','sec-backup'];
-if('IntersectionObserver' in window){
+var SECS=['sec-home','sec-setup','sec-stat','sec-ledger','sec-backup'];if('IntersectionObserver' in window){
   var pick=function(){
     var y=window.innerHeight*0.42, best=null, bestD=1e9;
     SECS.forEach(function(id){
