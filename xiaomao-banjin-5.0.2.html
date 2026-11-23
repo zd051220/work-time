@@ -94,7 +94,7 @@ section.card{scroll-margin-top:14px}
 <body><main class="app">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">5.0.2</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
-<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>5.0.2 更新公告</b>：独立账本页、记录可删、底部导航</span><span class="arrow">›</span></div>
+<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>5.0.2 更新公告</b>：账号云同步、独立账本、记录可删、底部导航</span><span class="arrow">›</span></div>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
 <div class="progress"><div class="fill" id="fill"></div></div><div class="progressmeta"><span>计薪时长进度</span><span id="pct">0%</span></div>
@@ -144,15 +144,16 @@ section.card{scroll-margin-top:14px}
 <div class="mask" id="mask">
  <div class="sheet" role="dialog" aria-modal="true" aria-label="更新公告">
   <h3>小猫搬金条 5.0.2 更新公告</h3>
-  <div class="ver">2026-11-24 更新 · 共 5 项</div>
+  <div class="ver">2026-11-24 更新 · 共 6 项</div>
   <ul>
+   <li><b>账号 · 云同步（最新）</b>：填个用户名和密码就能注册，登录后账本自动存到云端；换手机用同一个用户名登录，云端记录会自动拉回本地。不登录照旧能用，数据只在本机。</li>
    <li><b>入口统一</b>：根地址打开自动进新版，不会再掉回旧的 3.0 页面。</li>
    <li><b>新增独立账本页</b>：按月切换、本月累计、计薪时长、日均、近六个月柱状图，明细逐条可删。</li>
    <li><b>记录可以删了</b>：账本每条后面有「删」，二次确认后删掉，当月合计立即重算，主页同步消失。</li>
    <li><b>底部四格导航</b>：首页 / 账单 / 账本 / 备份常驻底部，滑动页面自动高亮当前区块，点一下平滑滑过去。</li>
    <li><b>首页重排版</b>：去掉 hero 下面那排金条，头像和文案重新排版并垂直居中，整块更紧凑。</li>
   </ul>
-  <div class="addr">账本页：ledger.html（同域名共用一份数据）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步。<br>数据只存在本浏览器，换设备前请先「导出备份」。</div>
+  <div class="addr">账本页：ledger.html（同域名共用一份数据）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步。<br>数据本地也留一份，换设备前建议先「导出备份」，再登录账号。</div>
   <button class="close" id="closeNotice">知道啦</button>
  </div>
 </div>
@@ -212,7 +213,7 @@ function drawRecords(){var arr=data.records.filter(function(r){return r.date.ind
 function changeMode(mode){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}s.mode=mode;s.lastAt=Date.now();lastWall=s.lastAt;lastMono=performance.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&h>0&&Number.isFinite(w)&&Number.isFinite(h))){toast('请填写有效的大于 0 的日薪和工作时长');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);data.session={date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5};lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
-$('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}var t=currentTotals(),now=Date.now(),end=hhmm(now),payMs=t.work+t.paid,pay=payMs/1000*(s.wage/s.hours/3600),base=s.date+'_'+String(s.start).replace(':',''),id=base,n=2;while(data.records.some(function(r){return r.id===id}))id=base+'_'+(n++);data.records.push({id:id,date:s.date,start:s.start,end:end,work:duration(t.work),paid:duration(t.paid),unpaid:duration(t.unpaid),duration:duration(payMs+t.unpaid),wage:s.wage,hours:s.hours,pay:pay,started:s.started});data.session=null;jumpWarn='';$('endTime').value=end;monthView=ym(new Date());save();draw();toast('下班啦！这一段已记账～');var __r=data.records[data.records.length-1];if(accSess&&accSess()){accPushOne(__r).then(function(ok){if(ok&&$('accSub')&&$('accOn').style.display!=='none')$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'})};};
+$('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}var t=currentTotals(),now=Date.now(),end=hhmm(now),payMs=t.work+t.paid,pay=payMs/1000*(s.wage/s.hours/3600),base=s.date+'_'+String(s.start).replace(':',''),id=base,n=2;while(data.records.some(function(r){return r.id===id}))id=base+'_'+(n++);data.records.push({id:id,date:s.date,start:s.start,end:end,work:duration(t.work),paid:duration(t.paid),unpaid:duration(t.unpaid),duration:duration(payMs+t.unpaid),wage:s.wage,hours:s.hours,pay:pay,started:s.started});data.session=null;jumpWarn='';$('endTime').value=end;monthView=ym(new Date());save();draw();toast('下班啦！这一段已记账～');var __r=data.records[data.records.length-1];if(accSess&&accSess()){accPushOne(__r).then(function(ok){if(ok&&$('accSub')&&$('accOn').style.display!=='none')$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'})}};
 $('prev').onclick=function(){var p=monthView.split('-'),y=Number(p[0]),m=Number(p[1])-1;if(m<1){m=12;y--}monthView=y+'-'+pad2(m);recSig='';drawRecords()};$('next').onclick=function(){var p=monthView.split('-'),y=Number(p[0]),m=Number(p[1])+1;if(m>12){m=1;y++}monthView=y+'-'+pad2(m);recSig='';drawRecords()};
 $('export').onclick=function(){var blob=new Blob([JSON.stringify({version:5,exportedAt:new Date().toISOString(),records:data.records,session:data.session},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='小猫搬金条5.0备份_'+day()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url)},1000);toast('备份文件已导出')};$('import').onclick=function(){$('file').click()};$('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){try{var o=JSON.parse(reader.result);if(!o||!Array.isArray(o.records))throw new Error('bad');var incoming=normalizeAll(o.records),byId={};data.records.forEach(function(r){byId[r.id]=1});var added=0;incoming.forEach(function(r){if(!byId[r.id]){data.records.push(r);byId[r.id]=1;added++}});save();recSig='';draw();toast('导入完成，新增 '+added+' 条；未自动接续备份中的进行中打卡')}catch(err){toast('备份文件格式不正确')} };reader.readAsText(f);e.target.value=''};
 function onHide(){visible=false;if(data.session&&!data.session.pendingReview){accrue(Date.now(),'hide');save()}lastWall=Date.now();lastMono=performance.now()}
@@ -331,7 +332,7 @@ function syncAll(first){
   var s=accSess();if(!s)return;
   $('accSub').textContent='同步中…';
   accPull().then(function(added){
-    return fetch(SB+'/rest/v1/records',{method:'POST',headers:accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)}))})
+    return fetch(SB+'/rest/v1/records',{method:'POST',headers:accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)})})
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return added});
   }).then(function(added){
     $('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'+(added?'（云端拉回 '+added+' 条）':'');
