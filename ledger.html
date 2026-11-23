@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff4e7">
+<title>搬金账本 · 小猫搬金条</title>
+<style>
+*{box-sizing:border-box}
+:root{--ink:#49382c;--muted:#9b8877;--gold:#e7a936;--line:#efe2cf;--shadow:0 12px 30px #8b64200f}
+body{margin:0;background:linear-gradient(160deg,#fff1d2,#fffaf2 45%,#f8f1e8);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom))}
+.app{max-width:490px;margin:auto}
+.top{display:flex;align-items:center;justify-content:space-between;padding:10px 2px 14px}
+.top a{font-size:11px;color:#a37f47;text-decoration:none;background:#fffaf0d9;border:1px solid #f3e2c4;
+  padding:7px 11px;border-radius:20px}
+.brand{font-size:19px;font-weight:950;letter-spacing:.3px}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+.card{background:#fffdf9ef;border:1px solid #fff;border-radius:22px;padding:16px;margin-top:12px;box-shadow:var(--shadow)}
+.monthbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.monthbar button{border:0;background:#fff4db;color:#9c7535;border-radius:11px;width:36px;height:32px;font-size:17px;font-weight:800}
+.monthbar strong{font-size:15px;font-weight:900}
+.monthbar .todaybtn{border:1px solid #f0dcc0;background:#fffaf1;color:#a08456;font-size:10px;font-weight:800;width:auto;height:30px;padding:0 10px}
+
+.total{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px}
+.sum{font-size:40px;font-weight:950;letter-spacing:-1.4px;color:#bd7b18;font-variant-numeric:tabular-nums;line-height:1.1}
+.sumlabel{font-size:10px;color:var(--muted);margin-bottom:4px}
+.miniGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.mini{background:#fff7e8;border-radius:13px;padding:10px 8px}
+.mini span{display:block;font-size:10px;color:var(--muted)}
+.mini b{display:block;font-size:14px;margin-top:5px;font-variant-numeric:tabular-nums}
+
+.chart{margin-top:6px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:96px;padding:0 2px;margin-top:10px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.bar .col{width:100%;border-radius:9px 9px 4px 4px;background:linear-gradient(180deg,#fbd98a,#e3a83c);min-height:3px}
+.bar .cap{font-size:9px;color:#a58e70}
+.bar .val{font-size:9px;color:#b58c4a;font-weight:800}
+
+.rec{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 1px;border-bottom:1px dashed var(--line)}
+.rec:last-child{border:0}
+.rinfo{min-width:0}
+.rdate{font-size:12.5px;font-weight:850}
+.rmeta{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
+.rside{display:flex;align-items:center;gap:9px;flex:none}
+.rpay{font-size:14px;font-weight:900;color:#b8791a;white-space:nowrap;font-variant-numeric:tabular-nums}
+.del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit}
+.del:active{background:#ffe8df}
+.empty{text-align:center;padding:26px 8px;color:#b4a38e;font-size:12px;line-height:1.9}
+.empty a{color:#b5781f}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.tool{border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:11px;padding:10px 13px;font-size:11px;font-weight:800}
+.foot{text-align:center;color:#b5a38d;font-size:10px;padding:18px 0 4px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,14px);opacity:0;transition:.2s;
+  background:#594632;color:#fff;padding:10px 16px;border-radius:22px;font-size:11px;pointer-events:none;max-width:88vw;text-align:center;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.sec-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+h2{font-size:14px;margin:0;font-weight:900}
+.tag{font-size:10px;color:#98733a;background:#fff5dc;border:1px solid #f2e4c4;padding:6px 10px;border-radius:20px}
+</style></head>
+<body>
+<main class="app">
+  <div class="top">
+    <div><div class="brand">📒 搬金账本</div><div class="sub">每一段工时都在这儿</div></div>
+    <a id="backLink" href="xiaomao-banjin-5.0.2.html">‹ 回首页记账</a>
+  </div>
+
+  <section class="card">
+    <div class="monthbar">
+      <button id="prev" aria-label="上个月">‹</button>
+      <strong id="month">----</strong>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="todaybtn" id="back">回到本月</button>
+        <button id="next" aria-label="下个月">›</button>
+      </div>
+    </div>
+    <div class="total">
+      <div><div class="sumlabel">本月累计</div><div class="sum" id="monthTotal">¥0.00</div></div>
+    </div>
+    <div class="miniGrid">
+      <div class="mini"><span>记录条数</span><b id="cnt">0</b></div>
+      <div class="mini"><span>计薪时长</span><b id="hours">0h</b></div>
+      <div class="mini"><span>日均</span><b id="avg">¥0</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title"><h2>📊 近六个月</h2><span class="tag" id="peakTag">—</span></div>
+    <div class="chart"><div class="bars" id="bars"></div></div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title"><h2>🧾 本月明细</h2><span class="tag" id="dayTag">—</span></div>
+    <div id="records"><div class="empty">这个月还没有记录<br><a href="xiaomao-banjin-5.0.2.html">去首页开工 ›</a></div></div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title"><h2>🧰 数据</h2><span class="tag" id="saveTag">本地存储</span></div>
+    <div class="tools"><button class="tool" id="export">导出备份</button><button class="tool" id="import">导入备份</button><input id="file" type="file" accept="application/json" hidden></div>
+    <div class="sub" style="margin-top:10px;line-height:1.7">账本和首页共用同一份本地数据，这里删掉的记录首页也会消失。删之前建议先导出备份。</div>
+  </section>
+
+  <div class="foot">记录不会自己消失，除非你删了它 ♡</div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY='catGold_v5', $=function(id){return document.getElementById(id)};
+  var data={records:[],session:null};
+  function load(){
+    try{var o=JSON.parse(localStorage.getItem(KEY)||'null');if(o&&Array.isArray(o.records))return o}catch(e){}
+    return {records:[],session:null};
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){toast('存储失败，请先导出备份')}}
+  function pad(n){return String(n).padStart(2,'0')}
+  function ym(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)}
+  function money(n,d){return '¥'+(Number(n)||0).toFixed(d==null?2:d)}
+  var monthView=ym(new Date());
+  function toast(t){var el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show')},2200)}
+
+  function monthRecords(m){
+    return (data.records||[]).filter(function(r){return String(r.date||'').indexOf(m)===0})
+      .sort(function(a,b){return a.date===b.date?(a.start<b.start?-1:1):(a.date<b.date?1:-1)});
+  }
+  function payOf(r){return Number(r.pay)||0}
+  function durSec(s){
+    if(typeof s!=='string')return 0;
+    var p=s.split(':');if(p.length!==3)return 0;
+    return (+p[0])*3600+(+p[1])*60+(+p[2]);
+  }
+
+  function render(){
+    data=load();
+    var arr=monthRecords(monthView);
+    $('month').textContent=monthView.replace('-','年')+'月';
+    var total=arr.reduce(function(v,r){return v+payOf(r)},0);
+    $('monthTotal').textContent=money(total);
+    $('cnt').textContent=arr.length+' 条';
+    var paidSec=arr.reduce(function(v,r){return v+durSec(r.work)+durSec(r.paid)},0);
+    $('hours').textContent=(paidSec/3600).toFixed(1)+' h';
+    var days=arr.length?new Set(arr.map(function(r){return r.date})).size:0;
+    $('avg').textContent=days?money(total/days,0):'¥0';
+    $('dayTag').textContent=days?days+' 天':'本月';
+
+    var box=$('records');
+    if(!arr.length){
+      box.innerHTML='<div class="empty">这个月还没有记录<br><a href="xiaomao-banjin-5.0.2.html">去首页开工 ›</a></div>';
+    }else{
+      var html='';
+      arr.forEach(function(r){
+        html+='<div class="rec"><div class="rinfo"><div class="rdate">'+esc(r.date)+' · '+esc(r.start)+'—'+esc(r.end)+'</div>'+
+          '<div class="rmeta">工作 '+esc(r.work)+' · 带薪 '+esc(r.paid)+' · 不带薪 '+esc(r.unpaid)+'</div></div>'+
+          '<div class="rside"><div class="rpay">'+money(r.pay)+'</div>'+
+          '<button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
+      });
+      box.innerHTML=html;
+    }
+    renderBars();
+  }
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+  function renderBars(){
+    var list=[],base=new Date();
+    for(var i=5;i>=0;i--){
+      var d=new Date(base.getFullYear(),base.getMonth()-i,1);
+      var m=ym(d);
+      var sum=monthRecords(m).reduce(function(v,r){return v+payOf(r)},0);
+      list.push({m:m,label:(d.getMonth()+1)+'月',sum:sum,cur:m===monthView});
+    }
+    var max=Math.max.apply(null,list.map(function(x){return x.sum}))||1;
+    var html='';
+    list.forEach(function(x){
+      var h=Math.max(3,Math.round(x.sum/max*78));
+      html+='<div class="bar"><div class="val">'+(x.sum?'¥'+Math.round(x.sum):'')+'</div>'+
+        '<div class="col" style="height:'+h+'px;'+(x.cur?'background:linear-gradient(180deg,#ffe4a3,#e7ab3a)':'')+'"></div>'+
+        '<div class="cap" style="'+(x.cur?'color:#b5781f;font-weight:800':'')+'">'+x.label+'</div></div>';
+    });
+    $('bars').innerHTML=html;
+    var best=list.reduce(function(a,b){return a.sum>=b.sum?a:b},list[0]);
+    $('peakTag').textContent=best&&best.sum?('最高 '+best.label+' '+money(best.sum,0)):'暂无数据';
+  }
+
+  $('prev').onclick=function(){shift(-1)};
+  $('next').onclick=function(){shift(1)};
+  $('back').onclick=function(){monthView=ym(new Date());render()};
+  function shift(n){
+    var p=monthView.split('-'),y=+p[0],m=+p[1]+n;
+    if(m<1){m=12;y--}if(m>12){m=1;y++}
+    monthView=y+'-'+pad(m);render();
+  }
+
+  $('records').addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('.del'):null;
+    if(!b)return;
+    var id=b.getAttribute('data-id');
+    var rec=(data.records||[]).filter(function(r){return r.id===id})[0];
+    if(!rec)return;
+    if(!confirm('删除 '+rec.date+' '+rec.start+'—'+rec.end+' 这条记录？\n金额 '+money(rec.pay)+'，首页也会同步消失。'))return;
+    data.records=data.records.filter(function(r){return r.id!==id});
+    save();render();toast('已删除该条记录');
+  });
+
+  $('export').onclick=function(){
+    var blob=new Blob([JSON.stringify({version:5,exportedAt:new Date().toISOString(),records:data.records,session:data.session},null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='搬金账本备份_'+ym(new Date())+'-'+pad(new Date().getDate())+'.json';a.click();
+    setTimeout(function(){URL.revokeObjectURL(url)},1000);toast('备份已导出');
+  };
+  $('import').onclick=function(){$('file').click()};
+  $('file').onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        var o=JSON.parse(rd.result);
+        if(!o||!Array.isArray(o.records))throw 0;
+        data=load();
+        var byId={};data.records.forEach(function(r){byId[r.id]=1});
+        var added=0;
+        o.records.forEach(function(r){
+          if(r&&r.date&&!byId[r.id||r.date]){r.id=r.id||r.date;data.records.push(r);byId[r.id]=1;added++}
+        });
+        save();render();toast('导入完成，新增 '+added+' 条');
+      }catch(err){toast('备份文件格式不正确')}
+    };
+    rd.readAsText(f);e.target.value='';
+  };
+
+  render();
+})();
+</script></body></html>
