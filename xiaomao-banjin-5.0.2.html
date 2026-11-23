@@ -332,7 +332,7 @@ function syncAll(first){
   var s=accSess();if(!s)return;
   $('accSub').textContent='同步中…';
   accPull().then(function(added){
-    return fetch(SB+'/rest/v1/records',{method:'POST',headers:accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)})})
+    return fetch(SB+'/rest/v1/records',{method:'POST',headers:accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)}))})
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return added});
   }).then(function(added){
     $('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'+(added?'（云端拉回 '+added+' 条）':'');
