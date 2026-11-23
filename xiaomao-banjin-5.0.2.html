@@ -123,20 +123,20 @@ section.card{scroll-margin-top:14px}
 <div class="field"><label>密码（至少 6 位）</label><input id="accPass" type="password" autocomplete="current-password" placeholder="自己设一个"></div>
 </div>
 <div class="fbRow"><button class="fbMain" id="accLogin">登录</button><button class="fbAlt" id="accReg">注册新账号</button></div>
-<div class="accMsg" id="accMsg"></div>
 <div class="note">登录后账本自动存到云端，换手机用同一个用户名登录就能拉回来。不登录也能正常用，只是数据只在这台手机上。</div>
 </div>
 <div id="accOn" style="display:none">
 <div class="accRow"><div><div class="accName" id="accName">—</div><div class="accSub" id="accSub">已登录</div></div><button class="accOut" id="accOut">退出</button></div>
 <div class="fbRow"><button class="fbMain" id="accSync">立即同步</button><button class="fbAlt" id="accPull">从云端拉取</button></div>
 </div>
+<div class="accMsg" id="accMsg"></div>
 </section>
 <section class="card" id="sec-feedback"><div class="head"><h2>💬 留言板</h2><span class="tag" id="fbCount">连接中</span></div>
 <div class="note" style="margin:0 0 10px">想加功能、发现哪儿别扭、随手夸一句都行，不用登录，写完直接发。</div>
 <textarea class="tarea" id="fbText" maxlength="300" placeholder="比如：希望账本能按周统计；带薪摸鱼想改成扣钱；手机上想加个桌面图标……"></textarea>
 <div class="fbBar"><input class="fbName" id="fbName" maxlength="12" placeholder="昵称（不填就是匿名）"><button class="fbMain" id="fbGo">发布</button></div>
 <div id="fbList"><div class="fbTip">正在加载留言…</div></div>
-<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%87%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
+<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%91%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
 </section>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="sec-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
@@ -153,11 +153,11 @@ section.card{scroll-margin-top:14px}
    <li><b>账号 · 云同步（最新）</b>：填个用户名和密码就能注册，登录后账本自动存到云端；换手机用同一个用户名登录，云端记录会自动拉回本地。不登录照旧能用，数据只在本机。</li>
    <li><b>入口统一</b>：根地址打开自动进新版，不会再掉回旧的 3.0 页面。</li>
    <li><b>新增独立账本页</b>：按月切换、本月累计、计薪时长、日均、近六个月柱状图，明细逐条可删。</li>
-   <li><b>记录可以删了</b>：账本每条后面有「删」，二次确认后删掉，当月合计立即重算，主页同步消失。</li>
+   <li><b>记录可以删了</b>：账本每条后面有「删」，二次确认后删掉，当月合计立即重算，主页同步消失；登录状态下云端也会一起删。</li>
    <li><b>底部四格导航</b>：首页 / 账单 / 账本 / 备份常驻底部，滑动页面自动高亮当前区块，点一下平滑滑过去。</li>
    <li><b>首页重排版</b>：去掉 hero 下面那排金条，头像和文案重新排版并垂直居中，整块更紧凑。</li>
   </ul>
-  <div class="addr">账本页：ledger.html（同域名共用一份数据）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步。<br>数据本地也留一份，换设备前建议先「导出备份」，再登录账号。</div>
+  <div class="addr">账本页：ledger.html（同域名共用一份数据与登录态）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步（登录后云端也同步）。<br>数据本地也留一份，换设备前建议先「导出备份」，再登录账号。</div>
   <button class="close" id="closeNotice">知道啦</button>
  </div>
 </div>
@@ -217,9 +217,9 @@ function drawRecords(){var arr=data.records.filter(function(r){return r.date.ind
 function changeMode(mode){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}s.mode=mode;s.lastAt=Date.now();lastWall=s.lastAt;lastMono=performance.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&h>0&&Number.isFinite(w)&&Number.isFinite(h))){toast('请填写有效的大于 0 的日薪和工作时长');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);data.session={date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5};lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
-$('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}var t=currentTotals(),now=Date.now(),end=hhmm(now),payMs=t.work+t.paid,pay=payMs/1000*(s.wage/s.hours/3600),base=s.date+'_'+String(s.start).replace(':',''),id=base,n=2;while(data.records.some(function(r){return r.id===id}))id=base+'_'+(n++);data.records.push({id:id,date:s.date,start:s.start,end:end,work:duration(t.work),paid:duration(t.paid),unpaid:duration(t.unpaid),duration:duration(payMs+t.unpaid),wage:s.wage,hours:s.hours,pay:pay,started:s.started});data.session=null;jumpWarn='';$('endTime').value=end;monthView=ym(new Date());save();draw();toast('下班啦！这一段已记账～');var __r=data.records[data.records.length-1];if(accSess&&accSess()){accPushOne(__r).then(function(ok){if(ok&&$('accSub')&&$('accOn').style.display!=='none')$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'})}};
+$('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}var t=currentTotals(),now=Date.now(),end=hhmm(now),payMs=t.work+t.paid,pay=payMs/1000*(s.wage/s.hours/3600),base=s.date+'_'+String(s.start).replace(':',''),id=base;while(data.records.some(function(r){return r.id===id}))id=base+'_'+Math.random().toString(36).slice(2,6);data.records.push({id:id,date:s.date,start:s.start,end:end,work:duration(t.work),paid:duration(t.paid),unpaid:duration(t.unpaid),duration:duration(payMs+t.unpaid),wage:s.wage,hours:s.hours,pay:pay,started:s.started});data.session=null;jumpWarn='';$('endTime').value=end;monthView=ym(new Date());save();draw();toast('下班啦！这一段已记账～');var __r=data.records[data.records.length-1];if(accSess&&accSess()){accPushOne(__r).then(function(res){if(res.ok){if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'}else{toast('这条没同步到云端，点「立即同步」重试')}})}};
 $('prev').onclick=function(){var p=monthView.split('-'),y=Number(p[0]),m=Number(p[1])-1;if(m<1){m=12;y--}monthView=y+'-'+pad2(m);recSig='';drawRecords()};$('next').onclick=function(){var p=monthView.split('-'),y=Number(p[0]),m=Number(p[1])+1;if(m>12){m=1;y++}monthView=y+'-'+pad2(m);recSig='';drawRecords()};
-$('export').onclick=function(){var blob=new Blob([JSON.stringify({version:5,exportedAt:new Date().toISOString(),records:data.records,session:data.session},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='小猫搬金条5.0备份_'+day()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url)},1000);toast('备份文件已导出')};$('import').onclick=function(){$('file').click()};$('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){try{var o=JSON.parse(reader.result);if(!o||!Array.isArray(o.records))throw new Error('bad');var incoming=normalizeAll(o.records),byId={};data.records.forEach(function(r){byId[r.id]=1});var added=0;incoming.forEach(function(r){if(!byId[r.id]){data.records.push(r);byId[r.id]=1;added++}});save();recSig='';draw();toast('导入完成，新增 '+added+' 条；未自动接续备份中的进行中打卡')}catch(err){toast('备份文件格式不正确')} };reader.readAsText(f);e.target.value=''};
+$('export').onclick=function(){var blob=new Blob([JSON.stringify({version:5,exportedAt:new Date().toISOString(),records:data.records,session:data.session},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='小猫搬金条5.0备份_'+day()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url)},1000);toast('备份文件已导出')};$('import').onclick=function(){$('file').click()};$('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){try{var o=JSON.parse(reader.result);if(!o||!Array.isArray(o.records))throw new Error('bad');var incoming=normalizeAll(o.records),byId={};data.records.forEach(function(r){byId[r.id]=1});var added=0;incoming.forEach(function(r){if(!byId[r.id]){data.records.push(r);byId[r.id]=1;added++}});save();recSig='';draw();toast('导入完成，新增 '+added+' 条；未自动接续备份中的进行中打卡');if(accSess&&accSess()){syncAll(false)}}catch(err){toast('备份文件格式不正确')} };reader.readAsText(f);e.target.value=''};
 function onHide(){visible=false;if(data.session&&!data.session.pendingReview){accrue(Date.now(),'hide');save()}lastWall=Date.now();lastMono=performance.now()}
 function onShow(){visible=true;if(data.session&&!data.session.pendingReview){accrue(Date.now(),'resume');save()}lastWall=Date.now();lastMono=performance.now();draw()}
 document.addEventListener('visibilitychange',function(){document.hidden?onHide():onShow()});window.addEventListener('pagehide',onHide);window.addEventListener('beforeunload',onHide);
@@ -237,7 +237,7 @@ $('records').addEventListener('click', function(e){
   if(!rec) return;
   if(!confirm('删除 '+rec.date+' '+rec.start+'—'+rec.end+' 这条记录？\n金额 '+money(rec.pay)+'，删除后不能恢复（建议先导出备份）。')) return;
   data.records=data.records.filter(function(r){return r.id!==id});
-  if(accSess&&accSess()){fetch(SB+'/rest/v1/records?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:accHdr()}).catch(function(){})}
+  if(accSess&&accSess()){accDelRec(id).then(function(res){if(!res.ok)toast('云端没删掉（'+(res.status||'网络')+'），稍后刷新可能又出现')})}
   recSig='';save();draw();toast('已删除该条记录');
 });
 
@@ -278,9 +278,9 @@ maskEl.addEventListener('click',function(e){if(e.target===maskEl)closeNotice()})
 
 /* ===== 账号 · 云同步 ===== */
 var ACC_KEY='mw_acct_v1';
-function accSess(){try{var s=JSON.parse(localStorage.getItem(ACC_KEY)||'null');return s&&s.token?s:null}catch(e){return null}}
-function accUUID(){var s=accSess();return s?s.uid:null}
-function accHdr(extra){var s=accSess();var h={'apikey':SBK,'Content-Type':'application/json','Authorization':'Bearer '+(s?s.token:SBK)};if(extra){for(var k in extra)h[k]=extra[k]}return h}
+function accRaw(){try{return JSON.parse(localStorage.getItem(ACC_KEY)||'null')}catch(e){return null}}
+function accSess(){var s=accRaw();return s&&s.token?s:null}
+function accUID(){var s=accSess();return s?s.uid:null}
 function accUI(){
   var s=accSess();
   $('accLogout').style.display=s?'none':'';
@@ -288,25 +288,59 @@ function accUI(){
   $('accTag').textContent=s?'已登录':'未登录';
   if(s){$('accName').textContent=s.nick||(s.email||'').split('@')[0]}
 }
-function accMsg(t,ok){var el=$('accMsg');if(!el)return;el.textContent=t;el.className='accMsg show'+(ok?' ok':'')}
+function accMsg(t,ok){var el=$('accMsg');if(!el)return;el.textContent=t||'';el.className='accMsg'+(t?' show':'')+(ok?' ok':'')}
+function accHdr(tk,extra){var h={'apikey':SBK,'Content-Type':'application/json','Authorization':'Bearer '+tk};if(extra){for(var k in extra)h[k]=extra[k]}return h}
 function authPost(path,body){
   return fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{'apikey':SBK,'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok)throw j;return j})})
 }
 function accEmail(u){return u.toLowerCase()+'@xiaomao.local'}
+function accStore(j,nick){
+  var email=(j.user&&j.user.email)||accEmail(nick||'');
+  localStorage.setItem(ACC_KEY,JSON.stringify({token:j.access_token,refresh:j.refresh_token||'',uid:(j.user&&j.user.id)||'',email:email,nick:nick||(email||'').split('@')[0],exp:Math.floor(Date.now()/1000)+(Number(j.expires_in)||3600)}));
+}
+function accRefresh(){
+  var s=accRaw();
+  if(!s||!s.refresh)return Promise.resolve(null);
+  return fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SBK,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})})
+    .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||!j.access_token)throw j;return j})})
+    .then(function(j){accStore(j,s.nick);return accRaw()})
+    .catch(function(){return null});
+}
+function accToken(){
+  var s=accRaw();
+  if(!s||!s.token)return Promise.resolve(null);
+  if(!s.exp||s.exp-Date.now()/1000>120)return Promise.resolve(s.token);
+  return accRefresh().then(function(n){return n&&n.token});
+}
+function accReq(path,opt){
+  opt=opt||{};
+  return accToken().then(function(tk){
+    if(!tk)throw {noauth:1};
+    return fetch(SB+path,{method:opt.method||'GET',headers:accHdr(tk,opt.headers),body:opt.body});
+  });
+}
+function accCall(path,opt){
+  return accReq(path,opt).then(function(r){
+    if(r.status!==401)return r;
+    return accRefresh().then(function(n){
+      if(!n)return r;
+      return accReq(path,opt);
+    });
+  });
+}
+function logoutSoft(){localStorage.removeItem(ACC_KEY);accUI()}
 function accLogin(reg){
   var u=($('accUser').value||'').trim().toLowerCase(), p=($('accPass').value||'');
   if(!/^[a-z0-9_-]{2,20}$/.test(u)){accMsg('用户名只能用小写字母、数字、下划线，2-20 位');return}
   if(p.length<6){accMsg('密码至少 6 位');return}
-  accMsg('');
+  accMsg('正在验证…');
   var btn=reg?$('accReg'):$('accLogin');btn.disabled=true;var old=btn.textContent;btn.textContent='处理中';
   var req=reg?authPost('signup',{email:accEmail(u),password:p}):authPost('token?grant_type=password',{email:accEmail(u),password:p});
   req.then(function(j){
     if(!j.access_token)throw {msg:'注册成功但需要邮箱确认'};
-    var email=(j.user&&j.user.email)||accEmail(u);
-    localStorage.setItem(ACC_KEY,JSON.stringify({token:j.access_token,refresh:j.refresh_token||'',uid:(j.user&&j.user.id)||'',email:email,nick:u}));
-    accUI();$('accSub').textContent='正在同步云端账本…';
-    accMsg(reg?'注册成功！正在同步云端账本…':'登录成功，正在同步云端账本…',true);
+    accStore(j,u);accUI();
+    accMsg(reg?'注册成功，正在同步云端账本…':'登录成功，正在同步云端账本…',true);
     syncAll(true);
   }).catch(function(e){
     var m=(e&&(e.msg||e.error_description||e.message||e.error))||'';
@@ -319,42 +353,77 @@ function accLogin(reg){
 function accRow(r,uid){return {user_id:uid,id:r.id,date:r.date,start_time:r.start,end_time:r.end,work:r.work,paid:r.paid,unpaid:r.unpaid,duration:r.duration,wage:r.wage,hours:r.hours,pay:r.pay,started:r.started||0}}
 function accRec(x){return {id:x.id,date:x.date,start:x.start_time,end:x.end_time,work:x.work,paid:x.paid,unpaid:x.unpaid,duration:x.duration,wage:Number(x.wage)||0,hours:Number(x.hours)||8,pay:Number(x.pay)||0,started:Number(x.started)||0}}
 function accPushOne(rec){
-  var s=accSess();if(!s||!rec||!rec.id)return Promise.resolve(0);
+  var s=accSess();
+  if(!s||!rec||!rec.id)return Promise.resolve({ok:true,off:true});
   var body=JSON.stringify([accRow(rec,s.uid)]);
-  var hdr=accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'});
-  return fetch(SB+'/rest/v1/records',{method:'POST',headers:hdr,body:body})
-    .then(function(r){return r.ok?1:0}).catch(function(){return 0});
+  return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
+    .then(function(r){return {ok:r.ok,status:r.status}})
+    .catch(function(){return {ok:false,status:0}});
+}
+function accDelRec(id){
+  if(!accSess())return Promise.resolve({ok:true,off:true});
+  return accCall('/rest/v1/records?id=eq.'+encodeURIComponent(id),{method:'DELETE'})
+    .then(function(r){return {ok:r.ok,status:r.status}})
+    .catch(function(){return {ok:false,status:0}});
 }
 function accPull(){
-  var s=accSess();if(!s)return Promise.resolve(0);
-  return fetch(SB+'/rest/v1/records?select=*&order=date.asc',{headers:accHdr()})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+  if(!accSess())return Promise.resolve({added:0,off:true});
+  return accCall('/rest/v1/records?select=*&order=date.asc')
+    .then(function(r){
+      if(r.status===401)throw {needlogin:1};
+      if(!r.ok)throw {status:r.status};
+      return r.json();
+    })
     .then(function(rows){
       var map={};data.records.forEach(function(r){map[r.id]=r});
       var added=0;
       rows.forEach(function(x){if(!map[x.id]){var rr=accRec(x);data.records.push(rr);map[rr.id]=rr;added++}});
-      recSig='';save();draw();return added;
+      recSig='';save();draw();
+      return {added:added};
     });
 }
 function syncAll(first){
-  var s=accSess();if(!s)return;
-  $('accSub').textContent='同步中…';
-  accPull().then(function(added){
-    var body=JSON.stringify(data.records.map(function(r){return accRow(r,s.uid)}));
-    var hdr=accHdr({'Prefer':'resolution=merge-duplicates,return=minimal'});
-    return fetch(SB+'/rest/v1/records',{method:'POST',headers:hdr,body:body})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return added});
-  }).then(function(added){
-    $('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'+(added?'（云端拉回 '+added+' 条）':'');
-    accMsg(first?'云端已连接，账本已同步':'同步完成',true);
-  }).catch(function(){ $('accSub').textContent='同步失败，检查网络后再点一次';accMsg('同步失败，检查网络后再点一次') });
+  var s=accSess();
+  if(!s){accMsg('还没登录，先填用户名和密码');return Promise.resolve(false)}
+  if($('accSub'))$('accSub').textContent='同步中…';
+  accMsg('同步中…');
+  return accPull().then(function(res){
+    var uid=accSess().uid;
+    var body=JSON.stringify(data.records.map(function(r){return accRow(r,uid)}));
+    return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
+      .then(function(r){
+        if(r.status===401)throw {needlogin:1};
+        if(!r.ok)throw {status:r.status};
+        if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'+(res.added?'（云端拉回 '+res.added+' 条）':'');
+        accMsg(first?'云端已连接，账本已同步':'同步完成，本地共 '+data.records.length+' 条',true);
+        return true;
+      });
+  }).catch(function(e){
+    if(e&&e.needlogin){
+      logoutSoft();
+      accMsg('登录已过期，请重新输入密码登录');
+    }else{
+      if($('accSub'))$('accSub').textContent='同步失败';
+      accMsg('同步失败'+(e&&e.status?('（HTTP '+e.status+'）'):'')+'，检查网络后再点一次');
+    }
+    return false;
+  });
 }
 if($('accLogin')){
   $('accLogin').onclick=function(){accLogin(false)};
   $('accReg').onclick=function(){accLogin(true)};
   $('accSync').onclick=function(){syncAll(false)};
-  $('accPull').onclick=function(){accPull().then(function(n){toast(n?('拉回 '+n+' 条记录'):'云端没有新记录')}).catch(function(){toast('拉取失败，检查网络')})};
-  $('accOut').onclick=function(){ localStorage.removeItem(ACC_KEY); accUI(); toast('已退出登录，本地账本还在') };
+  $('accPull').onclick=function(){
+    accPull().then(function(res){
+      if(res.off){accMsg('还没登录');return}
+      accMsg(res.added?('从云端拉回 '+res.added+' 条记录'):'云端没有新记录',true);
+      if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条';
+    }).catch(function(e){
+      if(e&&e.needlogin){logoutSoft();accMsg('登录已过期，请重新输入密码登录')}
+      else accMsg('拉取失败，检查网络');
+    });
+  };
+  $('accOut').onclick=function(){logoutSoft();accMsg('已退出登录，本地账本还在');toast('已退出登录')};
   $('accPass').addEventListener('keydown',function(e){if(e.key==='Enter')accLogin(false)});
   accUI();
 }
