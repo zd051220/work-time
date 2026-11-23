@@ -35,10 +35,32 @@ section.card{scroll-margin-top:14px}
 .tabbar button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button span{font-size:10px;font-weight:800}
 .tabbar button.on{background:linear-gradient(#fff4d9,#ffe6b5);color:#8a5f1c;box-shadow:inset 0 0 0 1px #f2dfb5}
+/* ===== 更新公告 ===== */
+.notice{margin-top:12px;display:flex;align-items:center;gap:9px;border:1px solid #f2dfb5;
+  background:linear-gradient(105deg,#fff6e0,#ffeec4);border-radius:16px;padding:11px 13px;
+  color:#7d5a20;font-size:11.5px;font-weight:750;line-height:1.5;cursor:pointer;box-shadow:0 6px 16px #9a6d2010}
+.notice .ico{width:26px;height:26px;flex:none;border-radius:9px;background:#fff;display:grid;place-items:center;font-size:14px;box-shadow:0 2px 5px #b58b4a30}
+.notice .txt{flex:1;min-width:0}
+.notice .txt b{font-weight:900}
+.notice .arrow{flex:none;color:#b98d45;font-weight:900;font-size:13px}
+.notice:active{transform:scale(.99)}
+.mask{position:fixed;inset:0;z-index:60;background:#3b2a1a55;backdrop-filter:blur(3px);display:none;
+  align-items:flex-end;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
+.mask.show{display:flex}
+.sheet{width:100%;max-width:470px;max-height:82vh;overflow:auto;background:#fffdf8;border-radius:24px;padding:20px 18px;box-shadow:0 -10px 40px #3b2a1a30}
+.sheet h3{font-size:16px;margin:0 0 5px;font-weight:950}
+.sheet .ver{font-size:10px;color:#a58e70;margin-bottom:14px}
+.sheet ul{margin:0;padding-left:16px;font-size:12px;line-height:1.85;color:#5b4938}
+.sheet li{margin-bottom:9px}
+.sheet li b{color:#8a5f1c}
+.sheet .addr{background:#fff7e8;border-radius:12px;padding:11px 12px;font-size:11px;line-height:1.9;color:#8a6c42;margin-top:14px;word-break:break-all}
+.sheet .close{width:100%;margin-top:14px;border:0;border-radius:14px;padding:13px;font-size:12px;font-weight:900;
+  background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
 </style></head>
 <body><main class="app">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">5.0.2</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
+<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>5.0.2 更新公告</b>：独立账本页、记录可删、底部导航</span><span class="arrow">›</span></div>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
 <div class="progress"><div class="fill" id="fill"></div></div><div class="progressmeta"><span>计薪时长进度</span><span id="pct">0%</span></div>
@@ -63,7 +85,23 @@ section.card{scroll-margin-top:14px}
 <button data-t="sec-ledger"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 4v3M15.5 4v3"/><path d="M8 14h3M8 17h6"/></svg><span>账本</span></button>
 <button data-t="sec-backup"><svg viewBox="0 0 24 24"><path d="M4.5 9h15v9.5a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"/><path d="M3.5 5.5h17v3.5h-17z"/><path d="M10 12.5h4"/></svg><span>备份</span></button>
 </nav>
-<div class="foot">今天也辛苦啦，小猫把你的每一秒都认真记下来了 ♡</div></main><div class="toast" id="toast"></div>
+<div class="foot">今天也辛苦啦，小猫把你的每一秒都认真记下来了 ♡</div></main>
+<div class="mask" id="mask">
+ <div class="sheet" role="dialog" aria-modal="true" aria-label="更新公告">
+  <h3>小猫搬金条 5.0.2 更新公告</h3>
+  <div class="ver">2026-11-24 更新 · 共 5 项</div>
+  <ul>
+   <li><b>入口统一</b>：根地址打开自动进新版，不会再掉回旧的 3.0 页面。</li>
+   <li><b>新增独立账本页</b>：按月切换、本月累计、计薪时长、日均、近六个月柱状图，明细逐条可删。</li>
+   <li><b>记录可以删了</b>：账本每条后面有「删」，二次确认后删掉，当月合计立即重算，主页同步消失。</li>
+   <li><b>底部四格导航</b>：首页 / 账单 / 账本 / 备份常驻底部，滑动页面自动高亮当前区块，点一下平滑滑过去。</li>
+   <li><b>首页重排版</b>：去掉 hero 下面那排金条，头像和文案重新排版并垂直居中，整块更紧凑。</li>
+  </ul>
+  <div class="addr">账本页：ledger.html（同域名共用一份数据）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步。<br>数据只存在本浏览器，换设备前请先「导出备份」。</div>
+  <button class="close" id="closeNotice">知道啦</button>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
 <script>
 (function(){
 'use strict';
@@ -167,6 +205,15 @@ if('IntersectionObserver' in window){
   SECS.forEach(function(id){var el=$(id); if(el) io.observe(el)});
   window.addEventListener('scroll', function(){ if(!io) pick() }, {passive:true});
 }
+
+/* ===== 更新公告 ===== */
+var maskEl=$('mask');
+function openNotice(){maskEl.classList.add('show')}
+function closeNotice(){maskEl.classList.remove('show')}
+$('noticeBtn').addEventListener('click',openNotice);
+$('noticeBtn').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' ')openNotice()});
+$('closeNotice').addEventListener('click',closeNotice);
+maskEl.addEventListener('click',function(e){if(e.target===maskEl)closeNotice()});
 
 })();
 
