@@ -317,7 +317,7 @@ $('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return
     var rec={id:id,date:d,start:st,end:en,work:duration(b.work),paid:duration(b.paid),unpaid:duration(b.unpaid),duration:duration(payMs+b.unpaid),wage:s.wage,hours:s.hours,pay:payMs/1000*r,started:idx===0?s.started:0};
     data.records.push(rec);made.push(rec);
   });
-  data.session=null;jumpWarn='';$('endTime').value=hhmm(now);monthView=ym(new Date());recSig='';save();draw();
+  data.session=null;jumpWarn='';$('endTime').value=hhmm(now);monthView=ym(new Date());recSig='';save();if(accSess&&accSess())sesPush(true);draw();
   if(mwBc){try{mwBc.postMessage({type:'snap',session:null})}catch(e){}}
   toast(made.length>1?('下班啦！跨了 '+made.length+' 天，已按天拆成 '+made.length+' 条'):'下班啦！这一段已记账～');
   if(accSess&&accSess()){var i=0;var pushNext=function(){if(i>=made.length){if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条';return}accPushOne(made[i++]).then(function(res){if(!res.ok){toast('有记录没同步到云端，点「立即同步」重试');return}pushNext()})};pushNext()}
@@ -614,25 +614,38 @@ function accCall(path,opt){
 }
 function logoutSoft(){localStorage.removeItem(ACC_KEY);accUI();try{if(mwCh)mwCh.postMessage({uid:''})}catch(e){}}
 /* 进行中打卡上云：写进当前用户的 user_metadata.session，换设备登录即可取回 */
-function sesPush(){
+function sesPush(forceEnd){
   if(window.mwDeleting)return;
-  if(!isWriter||!accSess()||!data.session)return;
-  if(data.session.dev&&data.session.dev!==DEV)return;
+  if(!isWriter||!accSess())return;
+  if(data.session&&data.session.dev&&data.session.dev!==DEV)return;
+  if(!data.session&&!forceEnd)return;
   clearTimeout(sesPushTimer);
   sesPushTimer=setTimeout(function(){
-    var payload=JSON.stringify({data:{session:data.session,mwSavedAt:Date.now()}});
+    if(!accSess())return;
+    if(data.session&&data.session.dev&&data.session.dev!==DEV)return;
+    var payload=JSON.stringify({data:{session:data.session?data.session:null,mwSavedAt:Date.now()}});
     accCall('/auth/v1/user',{method:'PUT',body:payload,headers:{'Content-Type':'application/json'}})
       .then(function(r){if(!r.ok&&$('accSub'))$('accSub').textContent='计时状态没上云（'+r.status+'）'})
       .catch(function(){});
-  },6000);
+  },forceEnd?0:6000);
 }
 function sesRestore(){
   if(!accSess())return Promise.resolve(false);
   return accReq('/auth/v1/user').then(function(r){if(!r.ok)throw 0;return r.json()})
     .then(function(u){
       var rs=u&&u.user_metadata&&u.user_metadata.session;
-      if(!rs||!validSession(rs))return false;
-      if(data.session)return false;
+      /* 云端明确为 null 时，收起另一台设备留下的旧计时；本机拥有的计时不被空状态误清 */
+      if(!rs){
+        if(data.session&&data.session.dev&&data.session.dev!==DEV){
+          data.session=null;save();draw();
+          toast('另一台设备已下班，本机计时状态已同步');
+          return true;
+        }
+        return false;
+      }
+      if(!validSession(rs))return false;
+      /* 只让本机计时拥有者保留自己的实时内存；非拥有设备以云端状态为准 */
+      if(data.session&&data.session.dev===DEV)return false;
       if(!rs.dev)rs.dev=DEV;
       var g=Date.now()-(Number(rs.lastAt)||Date.now());
       if(g>MAX_AUTO_GAP||g<0){
@@ -773,7 +786,7 @@ function syncAll(first){
   if(!s){accMsg('还没登录，先填用户名和密码');return Promise.resolve(false)}
   if($('accSub'))$('accSub').textContent='同步中…';
   accMsg('同步中…');
-  return accPull().then(function(res){
+  return sesRestore().then(function(){return accPull()}).then(function(res){
     var current=accSess();
     if(!current||current.uid!==s.uid)throw {status:0};
     var uid=current.uid;
