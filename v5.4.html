@@ -94,6 +94,16 @@ section.card{scroll-margin-top:14px}
 .accMsg.show{display:block}
 .accMsg.ok{background:#eef7e9;color:#4c7343;border-color:#d7e8ce}
 .accOut{flex:none;width:74px;height:36px;border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:11px;font-size:11px;font-weight:850;font-family:inherit;cursor:pointer}
+
+/* 新版本提示条（只在发现新版本时出现，点了才刷新，不打断打卡） */
+#verBar{position:fixed;left:10px;right:10px;bottom:74px;z-index:40;display:none;align-items:center;gap:10px;
+ background:#fffdf5;border:1px solid #f0dcae;border-radius:14px;padding:10px 12px;box-shadow:0 6px 20px #a8874a33}
+#verBar.show{display:flex}
+#verBar div{flex:1;font-size:11px;line-height:1.5;color:#6b563f;font-weight:800}
+#verBar span{display:block;font-weight:500;color:#a6917a;font-size:10px;margin-top:2px}
+#verGo{flex:none;border:0;border-radius:10px;background:linear-gradient(#f9d780,#e9ae3f);color:#5b3f12;
+ font-size:11px;font-weight:900;font-family:inherit;padding:8px 12px;box-shadow:0 2px 0 #d49b35}
+#verNo{flex:none;border:0;background:transparent;color:#b09a80;font-size:10px;font-family:inherit;padding:6px}
 </style></head>
 <body><main class="app">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">5.4</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
@@ -872,4 +882,39 @@ loadFeed(false);loadStats();
 
 })();
 
-</script></body></html>
+</script><div id="verBar"><div>发现新版本 <b id="verName">—</b><span>点右边刷新就能用上，正在计时也不会丢</span></div><button id="verGo">刷新</button><button id="verNo">以后</button></div>
+<script>
+/* mwFix54e：打开时检查 version.json，发现新版本只提示、不自动跳，用户点「刷新」才换版本。
+   没有 Service Worker，所以不存在“旧缓存永远刷不掉”的问题；这个提示只是让用户第一时间知道有新版本。 */
+(function(){
+  var MY='5.4';
+  var bar=document.getElementById('verBar'), nameEl=document.getElementById('verName');
+  var shown=false;
+  var target='';
+  function check(){
+    if(shown)return;
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.ok?r.text():''})
+      .then(function(t){
+        var j={};try{j=JSON.parse(t||'{}')}catch(e){return}
+        var v=String(j.version||'').trim();
+        if(!v||v===MY||shown)return;
+        try{if(sessionStorage.getItem('mw_ver_skip')===v)return}catch(e){}
+        shown=true;target=String(j.url||'');nameEl.textContent=v;bar.classList.add('show');
+        window.__mwNewVer=v;
+      }).catch(function(){});
+  }
+  document.getElementById('verGo').onclick=function(){
+    try{sessionStorage.setItem('mw_ver_skip',window.__mwNewVer||'')}catch(e){}
+    var u=target||location.href.split('#')[0].split('?')[0];
+    location.replace(u+(u.indexOf('?')>-1?'&':'?')+'v='+Date.now());
+  };
+  document.getElementById('verNo').onclick=function(){
+    bar.classList.remove('show');shown=false;
+    try{sessionStorage.setItem('mw_ver_skip',window.__mwNewVer||'')}catch(e){}
+  };
+  setTimeout(check,2500);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)check()});
+})();
+</script>
+</body></html>
