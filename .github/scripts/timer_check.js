@@ -8,6 +8,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// 测试场景使用 +08:00 的固定时间，CI 也必须按产品目标时区运行。
+process.env.TZ = 'Asia/Shanghai';
+
 const file = process.argv[2] || path.join(__dirname, '..', '..', 'v5.2.html');
 const srcText = fs.readFileSync(file, 'utf8');
 const src = srcText.split('\n');

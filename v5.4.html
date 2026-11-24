@@ -674,33 +674,43 @@ function deleteCloudTombstones(ids){
 }
 function tombPush(){
   var s=accSess();
-  if(!s||!DEL_TABLE_OK)return Promise.resolve({ok:true,skip:true});
+  if(!s)return Promise.resolve({ok:true,off:true});
+  if(!DEL_TABLE_OK)return Promise.reject({status:404,tombstone:true});
   var rows=(data.del||[]).map(function(x){return {user_id:s.uid,id:String(x.id),deleted_at:Number(x.at)||Date.now()}});
   if(!rows.length)return Promise.resolve({ok:true,skip:true});
   return accCall('/rest/v1/record_dels',{method:'POST',body:JSON.stringify(rows),headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
-    .then(function(r){if(r.status===404){DEL_TABLE_OK=false;return {ok:true,skip:true}}return {ok:r.ok,status:r.status}})
-    .catch(function(){return {ok:false,status:0}});
+    .then(function(r){
+      if(r.status===404){DEL_TABLE_OK=false;throw {status:404,tombstone:true}}
+      if(!r.ok)throw {status:r.status||0,tombstone:true};
+      return {ok:true,count:rows.length};
+    })
+    .catch(function(e){if(e&&e.tombstone)throw e;throw {status:e&&e.status||0,tombstone:true}});
 }
 function tombPull(){
   var s=accSess();
-  if(!s||!DEL_TABLE_OK)return Promise.resolve(0);
-  return accCall('/rest/v1/record_dels?select=id,deleted_at')
-    .then(function(r){if(r.status===404){DEL_TABLE_OK=false;return []}if(!r.ok)return [];return r.json()})
+  if(!s)return Promise.resolve(0);
+  if(!DEL_TABLE_OK)return Promise.reject({status:404,tombstone:true});
+  return accCall('/rest/v1/record_dels?select=id,deleted_at&user_id=eq.'+encodeURIComponent(s.uid))
+    .then(function(r){
+      if(r.status===404){DEL_TABLE_OK=false;throw {status:404,tombstone:true}}
+      if(!r.ok)throw {status:r.status||0,tombstone:true};
+      return r.json();
+    })
     .then(function(rows){
-      if(!Array.isArray(rows)||!rows.length)return 0;
-      var n=0;
+      if(!Array.isArray(rows))throw {status:0,tombstone:true};
+      var n=0,changed=false;
       rows.forEach(function(x){
         if(!x||!x.id)return;
         var id=String(x.id);
-        if(!tombHas(id))tombAdd(id);
+        if(!tombHas(id)){tombAdd(id);changed=true}
         var before=data.records.length;
         data.records=data.records.filter(function(r){return r.id!==id});
-        if(before!==data.records.length)n++;
+        if(before!==data.records.length){n++;changed=true}
       });
-      if(n){recSig='';save();draw()}
+      if(changed){recSig='';save();draw()}
       return n;
     })
-    .catch(function(){return 0});
+    .catch(function(e){if(e&&e.tombstone)throw e;throw {status:e&&e.status||0,tombstone:true}});
 }
 function accRow(r,uid){return {user_id:uid,id:r.id,date:r.date,start_time:r.start,end_time:r.end,work:r.work,paid:r.paid,unpaid:r.unpaid,duration:r.duration,wage:r.wage,hours:r.hours,pay:r.pay,started:r.started||0}}
 function accRec(x){return {id:x.id,date:x.date,start:x.start_time,end:x.end_time,work:x.work,paid:x.paid,unpaid:x.unpaid,duration:x.duration,wage:Number(x.wage)||0,hours:Number(x.hours)||8,pay:Number(x.pay)||0,started:Number(x.started)||0}}
@@ -716,25 +726,34 @@ function accPushOne(rec){
 function accDelRec(id){
   if(!accSess())return Promise.resolve({ok:true,off:true});
   return accCall('/rest/v1/records?id=eq.'+encodeURIComponent(id),{method:'DELETE'})
-    .then(function(r){tombPush();return {ok:r.ok,status:r.status}})
-    .catch(function(){tombPush();return {ok:false,status:0}});
+    .then(function(r){
+      return tombPush().then(function(t){
+        return {ok:r.ok&&!!t.ok,status:r.status,tombstone:!!t.ok};
+      });
+    })
+    .catch(function(e){return {ok:false,status:e&&e.status||0,tombstone:false}});
 }
 function accPull(){
-  if(!accSess())return Promise.resolve({added:0,off:true});
+  var s=accSess();
+  if(!s)return Promise.resolve({added:0,off:true});
   return tombPull().then(function(delsRemoved){
-  return accCall('/rest/v1/records?select=*&order=date.asc')
-    .then(function(r){
-      if(r.status===401)throw {needlogin:1};
-      if(!r.ok)throw {status:r.status};
-      return r.json();
-    })
-    .then(function(rows){
-      var map={};data.records.forEach(function(r){map[r.id]=r});
-      var added=0;
-      rows.forEach(function(x){if(!x||tombHas(x.id)||map[x.id])return;var rr=accRec(x);data.records.push(rr);map[rr.id]=rr;added++});
-      recSig='';save();draw();
-      return {added:added,delsRemoved:delsRemoved||0};
-    });
+    var current=accSess();
+    if(!current||current.uid!==s.uid)throw {status:0};
+    return accCall('/rest/v1/records?select=*&user_id=eq.'+encodeURIComponent(s.uid)+'&order=date.asc')
+      .then(function(r){
+        if(r.status===401)throw {needlogin:1};
+        if(!r.ok)throw {status:r.status};
+        return r.json();
+      })
+      .then(function(rows){
+        var latest=accSess();
+        if(!latest||latest.uid!==s.uid)throw {status:0};
+        var map={};data.records.forEach(function(r){map[r.id]=r});
+        var added=0;
+        rows.forEach(function(x){if(!x||tombHas(x.id)||map[x.id])return;var rr=accRec(x);data.records.push(rr);map[rr.id]=rr;added++});
+        recSig='';save();draw();
+        return {added:added,delsRemoved:delsRemoved||0};
+      });
   });
 }
 function syncAll(first){
@@ -744,12 +763,14 @@ function syncAll(first){
   if($('accSub'))$('accSub').textContent='同步中…';
   accMsg('同步中…');
   return accPull().then(function(res){
-    var uid=accSess().uid;
-    tombPush();
-    var live=data.records.filter(function(r){return !tombHas(r.id)});
-    var body=JSON.stringify(live.map(function(r){return accRow(r,uid)}));
-    return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
-      .then(function(r){
+    var current=accSess();
+    if(!current||current.uid!==s.uid)throw {status:0};
+    var uid=current.uid;
+    return tombPush().then(function(){
+      var live=data.records.filter(function(r){return !tombHas(r.id)});
+      var body=JSON.stringify(live.map(function(r){return accRow(r,uid)}));
+      return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}});
+    }).then(function(r){
         if(r.status===401)throw {needlogin:1};
         if(!r.ok)throw {status:r.status};
         if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条'+(res.added?'（云端拉回 '+res.added+' 条）':'');
