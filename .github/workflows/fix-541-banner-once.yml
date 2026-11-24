@@ -1,21 +1,8 @@
-name: fix-541-banner-once
-on:
-  push:
-    branches: [main]
-permissions:
-  contents: write
+# 已停用：5.4.1 公告文案已修正完成，保留作操作记录。
+name: fix-541-banner-once (disabled)
+on: workflow_dispatch
 jobs:
-  fix:
+  noop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: 改公告文案（删号不再假装成功）
-        run: |
-          set -euo pipefail
-          python3 -c "import io;p='v5.4.1.html';s=io.open(p,encoding='utf-8').read();a='账号身份锁 + 真实的删号流程（测试版，未切正式入口）';b='账号身份锁 + 删号不再假装成功（未部署服务端时只清账本）';assert s.count(a)==1;io.open(p,'w',encoding='utf-8').write(s.replace(a,b,1))"
-          sha256sum v5.4.1.html
-          git config user.name 'release-bot'
-          git config user.email 'release-bot@users.noreply.github.com'
-          git add v5.4.1.html
-          git commit -m 'fix: 5.4.1 公告文案改为“删号不再假装成功”，避免误导'
-          git push origin HEAD:main
+      - run: echo '已停用'
