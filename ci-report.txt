@@ -1,49 +1,11 @@
-== 仓库当前哈希
-b8091e2180d4795840428faa2abfb560b4e5d32f1036c22def05ba1beb1f0207  v5.3.html
-d491386559f6b7ff18421cbf4ca4d4cc1db9cce043b5920bcc1ff2b088bd1ed2  ledger.html
-5aa67ccf72ebffe079b7aec98876d929438da6a425a9d39842a49f2f3cc8c5c6  v5.2.html
-== 下载修复版
-curl_v53=0
-curl_ledger=0
-curl_v52=0
-80117f2705f658d2f321f2912d9a78337aba58b21eac99e5d7b41b35505607cf  /tmp/a.html
-56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  /tmp/b.html
-a18fad485907e88e7de69a9c7ba4be91058b01559f4d5198f982faec6ad90e77  /tmp/c.html
-== 验收：下载文件必须匹配
-/tmp/a.html: OK
-/tmp/b.html: OK
-/tmp/c.html: OK
-verify_exit=0
-== 装载后哈希
-80117f2705f658d2f321f2912d9a78337aba58b21eac99e5d7b41b35505607cf  v5.3.html
-56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html
-a18fad485907e88e7de69a9c7ba4be91058b01559f4d5198f982faec6ad90e77  v5.2.html
-== 计时自检
-  ok  MAX_AUTO_GAP = 3 小时                        得到 10800000 
-  ok  连续 20 分钟                                   得到 1200     
-  ok  锁屏 10 分钟（单调钟停走）                            得到 1200     
-  ok    且不弹核对                                    得到 false    
-  ok  锁屏 10 分钟（单调钟照走）                            得到 1200     
-  ok  锁屏 2.9 小时（低于 3 小时阈值）全额计入                   得到 11040    
-  ok    且不弹核对                                    得到 false    
-  ok  锁屏 3.5 小时（超过 3 小时阈值）                       得到 600      
-  ok    会要求核对                                    得到 true     
-  ok  系统时间回退 10 分钟                               得到 600      
-  ok    会要求核对                                    得到 true     
-  ok  前台调快 30 分钟                                 得到 600      
-  ok    会要求核对                                    得到 true     
-  ok  整 1 小时的计薪毫秒数                               得到 3600000  
-  ok  整 1 小时收入（200 日薪 / 8 小时）                    得到 25       
-  ok  跨午夜合计 4 小时                                 得到 14400000 
-  ok  跨午夜拆到 2 个自然日                               得到 2        
-  ok  不带薪：工作为 0                                  得到 0        
-  ok  不带薪：带薪为 0                                  得到 0        
-  ok  不带薪：记到不带薪 60 秒                             得到 60000    
+# 5.3 稳定性修复自检报告（保留归档）
 
-通过 20 项，失败 0 项
-timer_exit=0
-== 语法抽查（关键新函数是否在位）
-2
-2
-8
-1
+本文件是 2026-11-24 对 5.3 做稳定性修复时的构建日志留档，可随时删除，不影响站点。
+
+修复后的文件哈希：
+
+- v5.3.html `80117f2705f658d2f321f2912d9a78337aba58b21eac99e5d7b41b35505607cf`
+- ledger.html `56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621`
+- v5.2.html `a18fad485907e88e7de69a9c7ba4be91058b01559f4d5198f982faec6ad90e77`
+
+计时自检 20 项全部通过（含跨午夜、锁屏、系统时间回退、3 小时阈值）。
