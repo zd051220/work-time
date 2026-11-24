@@ -211,7 +211,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify({version:5,records:d
 function todayTotals(){var s=data.session;if(!s)return {work:0,paid:0,unpaid:0};var b=s.days&&s.days[day()];return b?{work:b.work,paid:b.paid,unpaid:b.unpaid}:{work:0,paid:0,unpaid:0}}
 function accrue(now,reason){var s=data.session;if(!s||s.pendingReview)return;now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
   if(delta<0){s.pendingReview={from:from,to:now,delta:0,mode:s.mode,reason:'系统时间发生回退',kind:'clock'};jumpWarn='检测到系统时间回退，计时已暂停核对。';s.lastAt=now;return}
-  var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall;var drift=Math.abs(wallDelta-monoDelta);var suspicious=delta>MAX_AUTO_GAP||(reason==='resume'&&drift>CLOCK_DRIFT_LIMIT)||(reason==='tick'&&drift>CLOCK_DRIFT_LIMIT);
+  var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall;var drift=Math.abs(wallDelta-monoDelta);var suspicious=delta>MAX_AUTO_GAP||(reason==='tick'&&drift>CLOCK_DRIFT_LIMIT);
   if(suspicious){s.pendingReview={from:from,to:now,delta:delta,mode:s.mode,reason:delta>MAX_AUTO_GAP?'长时间未运行，需确认这段时间是否计薪':'设备时钟与运行时钟差异较大',kind:'gap'};s.lastAt=now;jumpWarn='发现一段需要核对的时间，已暂停自动计薪，确认后继续。';lastMono=mono;lastWall=now;return}
   var t=from;
   while(t<now){
@@ -285,7 +285,7 @@ $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=n
 function onHide(){visible=false;if(data.session&&!data.session.pendingReview){accrue(Date.now(),'hide');save()}lastWall=Date.now();lastMono=performance.now()}
 function onShow(){visible=true;if(data.session&&!data.session.pendingReview){accrue(Date.now(),'resume');save()}lastWall=Date.now();lastMono=performance.now();draw()}
 document.addEventListener('visibilitychange',function(){document.hidden?onHide():onShow()});window.addEventListener('pagehide',onHide);window.addEventListener('beforeunload',onHide);
-setInterval(function(){if(!visible)return;if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');draw()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
+setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');draw()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 if(data.session){data.session=upgradeSession(data.session);var gap=Date.now()-(data.session.lastAt||Date.now());if(gap>MAX_AUTO_GAP&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:gap,mode:data.session.mode,reason:'重新打开时发现长时间未运行，请核对是否一直在工作',kind:'recovery'};data.session.lastAt=Date.now();jumpWarn='发现未结束的打卡，请先核对离线期间的时间。';}else if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now()}save()}
 if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
 draw();
