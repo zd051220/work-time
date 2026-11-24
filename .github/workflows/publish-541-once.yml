@@ -22,14 +22,14 @@ jobs:
       - name: 断言旧文件没被改动
         run: |
           set -euo pipefail
-          sha256sum -c <<'EOF'
-d2b96294e27774b1a48b8eec1cfcbe648fc2894b94e177aaad6480e74d6bc614  v5.4.html
-418d21c6f865da1ac483ef10f5230b7a7fb27c6a8d88af82ede155b126c00ed1  ledger54.html
-ae5bd54d6a7105b29f4c7a42539100a0283103aecbbd489a2e3db20d39eda14d  index.html
-3fe0f942296c303603dfbb181c52ff314117dbffd6d37089020b2a783f3c0e8e  v5.3.html
-56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html
-b251e32349677b89773a230cce5ae4eab86fa23f4e0b45e3334fe89e9de863c2  version.json
-EOF
+          printf '%s\n' \
+            'd2b96294e27774b1a48b8eec1cfcbe648fc2894b94e177aaad6480e74d6bc614  v5.4.html' \
+            '418d21c6f865da1ac483ef10f5230b7a7fb27c6a8d88af82ede155b126c00ed1  ledger54.html' \
+            'ae5bd54d6a7105b29f4c7a42539100a0283103aecbbd489a2e3db20d39eda14d  index.html' \
+            '3fe0f942296c303603dfbb181c52ff314117dbffd6d37089020b2a783f3c0e8e  v5.3.html' \
+            '56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html' \
+            'b251e32349677b89773a230cce5ae4eab86fa23f4e0b45e3334fe89e9de863c2  version.json' \
+            | sha256sum -c -
       - name: 落盘并提交
         run: |
           set -euo pipefail
