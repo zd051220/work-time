@@ -37,6 +37,10 @@ jobs:
           TZ: Asia/Shanghai
         run: node .github/scripts/timer_check.js v5.2.html
 
+      - name: 移除紧急计时公告（已到期）
+        if: steps.check.outputs.skip == 'false'
+        run: python3 .github/scripts/strip_notice.py v5.2.html
+
       - name: Game easter egg and link rewrite
         if: steps.check.outputs.skip == 'false'
         run: |
