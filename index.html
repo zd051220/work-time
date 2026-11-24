@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小猫搬金条 5.4 · 已上线</title>
+<title>小猫搬金条 5.3 · 已上线</title>
 <meta name="theme-color" content="#fff3d6">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -24,19 +24,19 @@ li{font-size:12px;line-height:1.75;color:#5a4835;margin:0 0 8px} li:last-child{m
 </style></head>
 <body>
 <main class="box">
-  <div class="tag">5.4 已上线</div>
+  <div class="tag">5.3 已上线</div>
   <div class="cat">🐈</div>
-  <h1>小猫搬金条 5.4</h1>
-  <div class="h1sub">换账号不串数据，能改密码，也能注销账号了</div>
+  <h1>小猫搬金条 5.3</h1>
+  <div class="h1sub">手机开着不费电了，两个页面也不再抢着计时</div>
   <ul>
-    <li><b>账号账本分开存</b>：换账号登录会切到那个账号自己的账本，不会把上一个账号的记录混进来，也不会把本机记录同步进别人账号；退出登录回到本机账本。</li>
-    <li><b>能改密码、能注销</b>：登录后可自己改密码；注销账号会删掉云端记录、把本机这个账号的账本归档，然后退出。</li>
-    <li><b>一个页面计时</b>：同一台手机上只留一个页面真计时，其余只读并可「接管计时」；关掉或刷新后另一页自动接手，不会工时翻倍。</li>
-    <li><b>5.3 的都保留</b>：账本合并、删掉不复活、跨午夜拆账、锁屏与离线 3 小时内自动补记。</li>
+    <li><b>只让一个页面计时</b>：同一台手机上开了两个页面（比如主页和账本页），只有一个在真计时，另一个只跟着显示；想换就点「接管计时」，不会再把时间互相覆盖。</li>
+    <li><b>挂着更省电</b>：页面闲着不再每秒重写一屏数字，空闲时的刷新从每秒 24 次降到每秒 1 次，挂机更省电、也不容易卡。</li>
+    <li><b>账本页不再捣乱</b>：在账本页删记录，不会再把旧的计时状态写回去，不会再莫名弹「时间早于上次记录」。</li>
+    <li><b>5.2 的都保留</b>：删掉的记录不会复活、计时只认发起的那台设备、跨午夜照旧按天拆账。</li>
   </ul>
-  <a class="go" href="v5.4.html">进入小猫搬金条 5.4 ›</a>
-  <div class="auto" id="auto">5 秒后自动进入 5.4</div>
-  <div class="tip">完整账本 <a href="ledger54.html">ledger54.html</a> · 上一版 <a href="v5.3.html">5.3</a> · 更早 <a href="v5.2.html">5.2</a> · <a href="v5.1.html">5.1</a></div>
+  <a class="go" href="v5.3.html">进入小猫搬金条 5.3 ›</a>
+  <div class="auto" id="auto">5 秒后自动进入 5.3</div>
+  <div class="tip">完整账本 <a href="ledger.html">ledger.html</a> · 上一版 <a href="v5.2.html">5.2</a> · 旧版 <a href="v5.1.html">5.1</a></div>
   <div class="pwa">想把小猫放到手机桌面？iPhone：Safari 分享 →「添加到主屏幕」；Android：Chrome 右上菜单 →「安装应用」/「添加到主屏幕」。</div>
 </main>
 <script>
@@ -44,7 +44,7 @@ li{font-size:12px;line-height:1.75;color:#5a4835;margin:0 0 8px} li:last-child{m
   var left=5, au=document.getElementById('auto');
   var t=setInterval(function(){
     left--; au.textContent=left+' 秒后自动进入 5.3';
-    if(left<=0){ clearInterval(t); location.replace('v5.4.html'); }
+    if(left<=0){ clearInterval(t); location.replace('v5.3.html'); }
   },1000);
   if(location.search.indexOf('stay=1')>-1){ clearInterval(t); au.textContent='已停止自动跳转'; }
 })();
