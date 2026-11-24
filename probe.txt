@@ -1,0 +1,28 @@
+name: probe-actions
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 探针
+        run: |
+          date -u > probe.txt
+          echo "runner ok" >> probe.txt
+          curl -sSL -o cdn.html "https://aka.doubaocdn.com/s/VbXN7btyep" || echo "cdn fail" >> probe.txt
+          ls -l cdn.html >> probe.txt 2>&1 || true
+          sha256sum cdn.html >> probe.txt 2>&1 || true
+      - name: 提交探针结果
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add probe.txt
+          git commit -m "chore: actions probe"
+          git push
