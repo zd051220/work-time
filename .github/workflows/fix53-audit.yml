@@ -1,0 +1,14 @@
+name: fix53-audit-retired
+
+# 一次性修复已在 2026-11-24 执行完毕，此文件已停用（仅保留手动触发入口，不再随 push 运行）。
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 已停用
+        run: echo "5.3 稳定性修复已上线，无需再跑"
