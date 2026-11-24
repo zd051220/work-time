@@ -43,8 +43,9 @@ for (const file of targets) {
     catch (error) { fail(file, 'inline script ' + (i + 1) + ' syntax: ' + error.message); }
   });
 
-  if (/\.html$/i.test(file) && /service_role|sb_secret_/i.test(source)) {
-    fail(file, 'possible server secret in browser HTML');
+  // "service_role" can legitimately appear in explanatory comments; only flag a secret-key value prefix.
+  if (/\.html$/i.test(file) && /sb_secret_[A-Za-z0-9_-]{20,}/i.test(source)) {
+    fail(file, 'possible Supabase secret key in browser HTML');
   }
 }
 
