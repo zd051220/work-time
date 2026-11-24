@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff4e7">
+<title>搬金账本 · 小猫搬金条 5.4.1</title>
+<style>
+*{box-sizing:border-box}
+:root{--ink:#49382c;--muted:#9b8877;--gold:#e7a936;--line:#efe2cf;--shadow:0 12px 30px #8b64200f}
+body{margin:0;background:linear-gradient(160deg,#fff1d2,#fffaf2 45%,#f8f1e8);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom))}
+.app{max-width:490px;margin:auto}
+.top{display:flex;align-items:center;justify-content:space-between;padding:10px 2px 14px}
+.top a{font-size:11px;color:#a37f47;text-decoration:none;background:#fffaf0d9;border:1px solid #f3e2c4;
+  padding:7px 11px;border-radius:20px}
+.brand{font-size:19px;font-weight:950;letter-spacing:.3px}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+.card{background:#fffdf9ef;border:1px solid #fff;border-radius:22px;padding:16px;margin-top:12px;box-shadow:var(--shadow)}
+.monthbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.monthbar button{border:0;background:#fff4db;color:#9c7535;border-radius:11px;width:36px;height:32px;font-size:17px;font-weight:800}
+.monthbar strong{font-size:15px;font-weight:900}
+.monthbar .todaybtn{border:1px solid #f0dcc0;background:#fffaf1;color:#a08456;font-size:10px;font-weight:800;width:auto;height:30px;padding:0 10px}
+
+.total{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px}
+.sum{font-size:40px;font-weight:950;letter-spacing:-1.4px;color:#bd7b18;font-variant-numeric:tabular-nums;line-height:1.1}
+.sumlabel{font-size:10px;color:var(--muted);margin-bottom:4px}
+.miniGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.mini{background:#fff7e8;border-radius:13px;padding:10px 8px}
+.mini span{display:block;font-size:10px;color:var(--muted)}
+.mini b{display:block;font-size:14px;margin-top:5px;font-variant-numeric:tabular-nums}
+
+.chart{margin-top:6px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:96px;padding:0 2px;margin-top:10px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.bar .col{width:100%;border-radius:9px 9px 4px 4px;background:linear-gradient(180deg,#fbd98a,#e3a83c);min-height:3px}
+.bar .cap{font-size:9px;color:#a58e70}
+.bar .val{font-size:9px;color:#b58c4a;font-weight:800}
+
+.rec{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 1px;border-bottom:1px dashed var(--line)}
+.rec:last-child{border:0}
+.rinfo{min-width:0}
+.rdate{font-size:12.5px;font-weight:850}
+.rmeta{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
+.rside{display:flex;align-items:center;gap:9px;flex:none}
+.rpay{font-size:14px;font-weight:900;color:#b8791a;white-space:nowrap;font-variant-numeric:tabular-nums}
+.del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit}
+.del:active{background:#ffe8df}
+.empty{text-align:center;padding:26px 8px;color:#b4a38e;font-size:12px;line-height:1.9}
+.empty a{color:#b5781f}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.tool{border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:11px;padding:10px 13px;font-size:11px;font-weight:800}
+.foot{text-align:center;color:#b5a38d;font-size:10px;padding:18px 0 4px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,14px);opacity:0;transition:.2s;
+  background:#594632;color:#fff;padding:10px 16px;border-radius:22px;font-size:11px;pointer-events:none;max-width:88vw;text-align:center;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.sec-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+h2{font-size:14px;margin:0;font-weight:900}
+.tag{font-size:10px;color:#98733a;background:#fff5dc;border:1px solid #f2e4c4;padding:6px 10px;border-radius:20px}
+</style></head>
+<body>
+<main class="app">
+  <div class="top">
+    <div><div class="brand">📒 搬金账本</div><div class="sub">5.4.1 测试版 · 每一段工时都在这儿</div></div>
+    <a id="backLink" href="v5.4.1.html">‹ 回首页记账</a>
+  </div>
+
+  <section class="card">
+    <div class="monthbar">
+      <button id="prev" aria-label="上个月">‹</button>
+      <strong id="month">----</strong>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="todaybtn" id="back">回到本月</button>
+        <button id="next" aria-label="下个月">›</button>
+      </div>
+    </div>
+    <div class="total">
+      <div><div class="sumlabel">本月累计</div><div class="sum" id="monthTotal">¥0.00</div></div>
+    </div>
+    <div class="miniGrid">
+      <div class="mini"><span>记录条数</span><b id="cnt">0</b></div>
+      <div class="mini"><span>计薪时长</span><b id="hours">0h</b></div>
+      <div class="mini"><span>日均</span><b id="avg">¥0</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title"><h2>📊 近六个月</h2><span class="tag" id="peakTag">—</span></div>
+    <div class="chart"><div class="bars" id="bars"></div></div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title"><h2>🧾 本月明细</h2><span class="tag" id="dayTag">—</span></div>
+    <div id="records"><div class="empty">这个月还没有记录<br><a href="v5.4.1.html">去首页开工 ›</a></div></div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title"><h2>🧰 数据</h2><span class="tag" id="saveTag">本地存储</span></div>
+    <div class="tools"><button class="tool" id="export">导出备份</button><button class="tool" id="import">导入备份</button><input id="file" type="file" accept="application/json" hidden></div>
+    <div class="sub" style="margin-top:10px;line-height:1.7">账本和首页共用同一份本地数据，这里删掉的记录首页也会消失。登录账号后，删除和导入会同步到云端；导入会先自动备份、再预览新增条数，确认后才写入。删之前建议先导出备份。</div>
+  </section>
+
+  <div class="foot">记录不会自己消失，除非你删了它 ♡</div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  /* MW-FIX53-APPLIED *//* mwFix54a：和主页同一套账号命名空间 */
+var ACC_UID=(function(){try{var s=JSON.parse(localStorage.getItem('mw_acct_v1')||'null');return s&&s.uid?String(s.uid):''}catch(e){return ''}})();
+var KEY=ACC_UID?('catGold_v5.u.'+ACC_UID):'catGold_v5', $=function(id){return document.getElementById(id)};
+/* ===== 5.4.1 账本页身份锁（与主页同一套原则）===== */
+var MW_PAGE_UID=ACC_UID?String(ACC_UID):'';
+var MW_ACCOUNT_CHANGED=false;
+function mwCurrentUid(){try{var s=JSON.parse(localStorage.getItem('mw_acct_v1')||'null');return s&&s.uid?String(s.uid):''}catch(e){return ''}}
+function mwLockPage(reason){
+  if(MW_ACCOUNT_CHANGED)return;
+  MW_ACCOUNT_CHANGED=true;
+  window.mwDeleting=1;
+  var ov=document.getElementById('mwLock');
+  if(!ov){
+    ov=document.createElement('div');ov.id='mwLock';
+    ov.style.cssText='position:fixed;inset:0;z-index:99;background:#fffaf2f2;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center';
+    ov.innerHTML='<div style="max-width:300px"><div style="font-size:34px">🔐</div><div style="font-weight:900;margin:10px 0 6px">账号已切换，账本停止同步</div><div id="mwLockMsg" style="font-size:12px;line-height:1.7;color:#7d6a55"></div><button id="mwLockBtn" style="margin-top:14px;border:0;border-radius:12px;background:linear-gradient(#f9d780,#e9ae3f);color:#5b3f12;font-weight:900;padding:11px 16px;font-family:inherit">重新加载</button></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#mwLockBtn').onclick=function(){location.reload()};
+  }
+  var m=document.getElementById('mwLockMsg');if(m)m.textContent=reason||'这个页面已停止云端读写，请重新加载。';
+  toast('账号已切换，账本已停止同步');
+  setTimeout(function(){location.reload()},1600);
+}
+function mwAssertAccountContext(){
+  if(window.mwDeleting&&!window.mwAllowDelete)throw new Error('ACCOUNT_DELETING');
+  if(mwCurrentUid()!==MW_PAGE_UID){mwLockPage('检测到登录账号变化，已停止本页所有云端读写。');throw new Error('ACCOUNT_CONTEXT_CHANGED')}
+  return MW_PAGE_UID;
+}
+try{
+  window.addEventListener('storage',function(e){
+    if(e.key==='mw_account_deleting'&&e.newValue){window.mwDeleting=1;return}
+    if(e.key!=='mw_acct_v1')return;
+    var next='';try{var n=JSON.parse(e.newValue||'null');next=n&&n.uid?String(n.uid):''}catch(_){}
+    if(next!==MW_PAGE_UID)mwLockPage('另一个页面切换了账号，账本已停止同步。');
+  });
+}catch(e){}
+var mwCh=null;
+try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(ev&&ev.data&&ev.data.uid)||'';if(u!==MW_PAGE_UID)mwLockPage('另一个页面切换了账号，账本已停止同步。')}}catch(e){}
+
+  var data={records:[],session:null};
+  function load(){
+    try{var o=JSON.parse(localStorage.getItem(KEY)||'null');if(o&&Array.isArray(o.records))return o}catch(e){}
+    return {records:[],session:null};
+  }
+  /* MW_LEDGER_MERGE */
+  /* mwFix53e：账本写盘同样只合并不覆盖 —— 主页刚记的那条不能被账本的旧内存盖掉，删掉的也不能复活 */
+  function save(){try{
+    var cur=null;try{cur=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+    if(cur&&cur.session&&(Number(cur.session.lastAt)||0)>(Number((data.session||{}).lastAt)||0))data.session=cur.session;
+    var tomb={};(data.del||[]).concat((cur&&cur.del)||[]).forEach(function(x){if(x&&x.id)tomb[String(x.id)]=Number(x.at)||0});
+    var map={};(data.records||[]).forEach(function(r){if(r&&r.id)map[r.id]=r});
+    ((cur&&Array.isArray(cur.records))?cur.records:[]).forEach(function(r){if(r&&r.id&&!map[r.id]&&!tomb[String(r.id)])map[r.id]=r});
+    var out=[];Object.keys(map).forEach(function(k){if(!tomb[k])out.push(map[k])});
+    data.records=out;data.del=Object.keys(tomb).map(function(k){return {id:k,at:tomb[k]}});
+    if(cur&&cur.rev)data.rev=(Number(cur.rev)||0)+1;
+    localStorage.setItem(KEY,JSON.stringify(data))
+  }catch(e){toast('存储失败，请先导出备份')}}
+  function pad(n){return String(n).padStart(2,'0')}
+  function ym(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)}
+  function money(n,d){return '¥'+(Number(n)||0).toFixed(d==null?2:d)}
+  var monthView=ym(new Date());
+  function toast(t){var el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show')},2200)}
+
+  function monthRecords(m){
+    return (data.records||[]).filter(function(r){return String(r.date||'').indexOf(m)===0})
+      .sort(function(a,b){return a.date===b.date?(a.start<b.start?-1:1):(a.date<b.date?1:-1)});
+  }
+  function payOf(r){return Number(r.pay)||0}
+  function durSec(s){
+    if(typeof s!=='string')return 0;
+    var p=s.split(':');if(p.length!==3)return 0;
+    return (+p[0])*3600+(+p[1])*60+(+p[2]);
+  }
+
+  function render(){
+    data=load();
+    var arr=monthRecords(monthView);
+    $('month').textContent=monthView.replace('-','年')+'月';
+    var total=arr.reduce(function(v,r){return v+payOf(r)},0);
+    $('monthTotal').textContent=money(total);
+    $('cnt').textContent=arr.length+' 条';
+    var paidSec=arr.reduce(function(v,r){return v+durSec(r.work)+durSec(r.paid)},0);
+    $('hours').textContent=(paidSec/3600).toFixed(1)+' h';
+    var days=arr.length?new Set(arr.map(function(r){return r.date})).size:0;
+    $('avg').textContent=days?money(total/days,0):'¥0';
+    $('dayTag').textContent=days?days+' 天':'本月';
+
+    var box=$('records');
+    if(!arr.length){
+      box.innerHTML='<div class="empty">这个月还没有记录<br><a href="v5.4.1.html">去首页开工 ›</a></div>';
+    }else{
+      var html='';
+      arr.forEach(function(r){
+        html+='<div class="rec"><div class="rinfo"><div class="rdate">'+esc(r.date)+' · '+esc(r.start)+'—'+esc(r.end)+'</div>'+
+          '<div class="rmeta">工作 '+esc(r.work)+' · 带薪 '+esc(r.paid)+' · 不带薪 '+esc(r.unpaid)+'</div></div>'+
+          '<div class="rside"><div class="rpay">'+money(r.pay)+'</div>'+
+          '<button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
+      });
+      box.innerHTML=html;
+    }
+    renderBars();
+  }
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function validRecord(r){return r&&typeof r==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||''))}
+  function normalizeAll(arr){var out=[],seen={};(Array.isArray(arr)?arr:[]).forEach(function(r){if(!validRecord(r))return;
+    var base=String(r.id||(r.date+'_'+String(r.start||'--:--').replace(':','')));var id=base,n=2;
+    while(seen[id])id=base+'_'+(n++);seen[id]=1;
+    out.push({id:id,date:String(r.date),start:String(r.start||'--:--'),end:String(r.end||'--:--'),
+      work:String(r.work||'00:00:00'),paid:String(r.paid||'00:00:00'),unpaid:String(r.unpaid||'00:00:00'),
+      duration:String(r.duration||'00:00:00'),wage:Math.max(0,Number(r.wage)||0),hours:Math.max(.1,Number(r.hours)||8),
+      pay:Math.max(0,Number(r.pay)||0),started:Number(r.started)||0});});return out}
+
+  function renderBars(){
+    var list=[],base=new Date();
+    for(var i=5;i>=0;i--){
+      var d=new Date(base.getFullYear(),base.getMonth()-i,1);
+      var m=ym(d);
+      var sum=monthRecords(m).reduce(function(v,r){return v+payOf(r)},0);
+      list.push({m:m,label:(d.getMonth()+1)+'月',sum:sum,cur:m===monthView});
+    }
+    var max=Math.max.apply(null,list.map(function(x){return x.sum}))||1;
+    var html='';
+    list.forEach(function(x){
+      var h=Math.max(3,Math.round(x.sum/max*78));
+      html+='<div class="bar"><div class="val">'+(x.sum?'¥'+Math.round(x.sum):'')+'</div>'+
+        '<div class="col" style="height:'+h+'px;'+(x.cur?'background:linear-gradient(180deg,#ffe4a3,#e7ab3a)':'')+'"></div>'+
+        '<div class="cap" style="'+(x.cur?'color:#b5781f;font-weight:800':'')+'">'+x.label+'</div></div>';
+    });
+    $('bars').innerHTML=html;
+    var best=list.reduce(function(a,b){return a.sum>=b.sum?a:b},list[0]);
+    $('peakTag').textContent=best&&best.sum?('最高 '+best.label+' '+money(best.sum,0)):'暂无数据';
+  }
+
+  $('prev').onclick=function(){shift(-1)};
+  $('next').onclick=function(){shift(1)};
+  $('back').onclick=function(){monthView=ym(new Date());render()};
+  function shift(n){
+    var p=monthView.split('-'),y=+p[0],m=+p[1]+n;
+    if(m<1){m=12;y--}if(m>12){m=1;y++}
+    monthView=y+'-'+pad(m);render();
+  }
+
+  $('records').addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('.del'):null;
+    if(!b)return;
+    var id=b.getAttribute('data-id');
+    var rec=(data.records||[]).filter(function(r){return r.id===id})[0];
+    if(!rec)return;
+    if(!confirm('删除 '+rec.date+' '+rec.start+'—'+rec.end+' 这条记录？\n金额 '+money(rec.pay)+'，首页也会同步消失。'))return;
+    data.records=data.records.filter(function(r){return r.id!==id});
+    tombAdd(id);
+    save();render();cloudDel(id);toast('已删除该条记录');
+  });
+
+  function exportNow(name){
+    var blob=new Blob([JSON.stringify({version:5,exportedAt:new Date().toISOString(),records:data.records,session:data.session},null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name||('搬金账本备份_'+ym(new Date())+'-'+pad(new Date().getDate())+'.json');a.click();
+    setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  }
+  $('export').onclick=function(){exportNow();toast('备份已导出')};
+  $('import').onclick=function(){$('file').click()};
+  $('file').onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        if(f.size>5*1024*1024)throw new Error('文件太大（上限 5MB）');
+        var o=JSON.parse(rd.result);
+        if(!o||!Array.isArray(o.records))throw 0;
+        if(o.records.length>20000)throw new Error('记录太多（上限 2 万条）');
+        var ver=Number(o.version||0); if(ver&&ver!==5)throw new Error('版本不支持：'+ver);
+        data=load();
+        var norm=normalizeAll(o.records);
+        if(!norm.length&&o.records.length)throw new Error('文件里没有可用记录');
+        var byId={};data.records.forEach(function(r){byId[r.id]=1});
+        var news=[],dup=0;
+        norm.forEach(function(r){if(byId[r.id]){dup++}else{byId[r.id]=1;news.push(r)}});
+        exportNow('账本导入前自动备份_'+ym(new Date())+'-'+pad(new Date().getDate())+'.json');
+        if(!confirm('备份文件版本：'+(ver||'未知')+'\n文件内记录：'+norm.length+' 条\n新增：'+news.length+' 条，重复跳过：'+dup+' 条\n账本现有：'+data.records.length+' 条\n\n已自动导出当前数据作为安全备份（在下载里）。\n确定导入吗？')){toast('已取消导入，数据没变');return}
+        news.forEach(function(r){data.records.push(r)});
+        save();render();toast('导入完成，新增 '+news.length+' 条，跳过重复 '+dup+' 条');if(accSess())cloudPushAll();
+      }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
+    };
+    rd.readAsText(f);e.target.value='';
+  };
+
+  /* ===== 云端（与主页共用同一登录态） ===== */
+  var SB='https://zemrafvmhfxqdeqauejt.supabase.co';
+  var SBK='sb_publishable_Ph9NerYom52CuK4vWK2mLA_n9qBWigC';
+  var ACC_KEY='mw_acct_v1';
+  function accRaw(){try{return JSON.parse(localStorage.getItem(ACC_KEY)||'null')}catch(e){return null}}
+  function accSess(){var s=accRaw();return s&&s.token?s:null}
+  function accRefresh(){
+    var s=accRaw();if(!s||!s.refresh)return Promise.resolve(null);
+    return fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SBK,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})})
+      .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||!j.access_token)throw j;return j})})
+      .then(function(j){localStorage.setItem(ACC_KEY,JSON.stringify({token:j.access_token,refresh:j.refresh_token||s.refresh,uid:(j.user&&j.user.id)||s.uid,email:s.email,nick:s.nick,exp:Math.floor(Date.now()/1000)+(Number(j.expires_in)||3600)}));return accRaw()})
+      .catch(function(){return null});
+  }
+  function accToken(){
+    var s=accRaw();if(!s||!s.token)return Promise.resolve(null);
+    if(!s.exp||s.exp-Date.now()/1000>120)return Promise.resolve(s.token);
+    return accRefresh().then(function(n){return n&&n.token});
+  }
+  function accReq(path,opt){
+    opt=opt||{};
+    return Promise.resolve().then(function(){mwAssertAccountContext();return accToken()})
+      .then(function(tk){
+        mwAssertAccountContext();
+        if(!tk)throw {noauth:1};
+        var hh={'apikey':SBK,'Content-Type':'application/json','Authorization':'Bearer '+tk};
+        if(opt.headers)for(var k in opt.headers)hh[k]=opt.headers[k];
+        return fetch(SB+path,{method:opt.method||'GET',headers:hh,body:opt.body})
+          .then(function(r){mwAssertAccountContext();return r});
+      });
+  }
+  function accCall(path,opt){
+    return accReq(path,opt).then(function(r){
+      if(r.status!==401)return r;
+      return accRefresh().then(function(n){if(!n)return r;return accReq(path,opt)});
+    });
+  }
+  var DEL_TABLE_OK=true;
+  function tombHas(id){var d=data.del||[];for(var i=0;i<d.length;i++){if(d[i].id===String(id))return true}return false}
+  function tombAdd(id){
+    data.del=data.del||[];
+    if(!tombHas(id))data.del.push({id:String(id),at:Date.now()});
+    /* mwFix53c：墓碑不过期，避免老记录被云端拉回 */
+  }
+  function tombPush(){
+    var s=accSess();if(!s||!DEL_TABLE_OK)return Promise.resolve(0);
+    var rows=(data.del||[]).map(function(x){return {user_id:s.uid,id:String(x.id),deleted_at:Number(x.at)||Date.now()}});
+    if(!rows.length)return Promise.resolve(0);
+    return accCall('/rest/v1/record_dels',{method:'POST',body:JSON.stringify(rows),headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
+      .then(function(r){if(r.status===404){DEL_TABLE_OK=false;return 0}return rows.length})
+      .catch(function(){return 0});
+  }
+  function tombPull(){
+    var s=accSess();if(!s||!DEL_TABLE_OK)return Promise.resolve(0);
+    return accCall('/rest/v1/record_dels?select=id,deleted_at')
+      .then(function(r){if(r.status===404){DEL_TABLE_OK=false;return []}if(!r.ok)return [];return r.json()})
+      .then(function(rows){
+        if(!Array.isArray(rows)||!rows.length)return 0;
+        var n=0;
+        rows.forEach(function(x){
+          if(!x||!x.id)return;
+          var id=String(x.id);
+          tombAdd(id);
+          var before=(data.records||[]).length;
+          data.records=(data.records||[]).filter(function(r){return r.id!==id});
+          if(before!==data.records.length)n++;
+        });
+        if(n){save();render()}
+        return n;
+      })
+      .catch(function(){return 0});
+  }
+  function cloudRow(r,uid){return {user_id:uid,id:r.id,date:r.date,start_time:r.start,end_time:r.end,work:r.work,paid:r.paid,unpaid:r.unpaid,duration:r.duration,wage:r.wage,hours:r.hours,pay:r.pay,started:r.started||0}}
+  function cloudRec(x){return {id:x.id,date:x.date,start:x.start_time,end:x.end_time,work:x.work,paid:x.paid,unpaid:x.unpaid,duration:x.duration,wage:Number(x.wage)||0,hours:Number(x.hours)||8,pay:Number(x.pay)||0,started:Number(x.started)||0}}
+  function cloudDel(id){
+    if(!accSess())return;
+    accCall('/rest/v1/records?id=eq.'+encodeURIComponent(id),{method:'DELETE'})
+      .then(function(r){tombPush();if(!r.ok)toast('云端没删掉（'+r.status+'），下次同步会重试')})
+      .catch(function(){tombPush();toast('云端没删掉，检查网络')});
+  }
+  function cloudPushAll(){
+    var s=accSess();if(!s)return Promise.resolve(0);
+    tombPush();
+    var body=JSON.stringify((data.records||[]).filter(function(r){return !tombHas(r.id)}).map(function(r){return cloudRow(r,s.uid)}));
+    return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
+      .then(function(r){if(!r.ok)toast('上传云端失败（'+r.status+'）')})
+      .catch(function(){toast('上传云端失败，检查网络')});
+  }
+  function cloudPull(){
+    if(!accSess())return Promise.resolve(0);
+    return tombPull().then(function(){return accCall('/rest/v1/records?select=*&order=date.asc')
+      .then(function(r){if(!r.ok)throw 0;return r.json()})
+      .then(function(rows){
+        data=load();
+        var byId={};data.records.forEach(function(r){byId[r.id]=1});
+        var added=0;
+        rows.forEach(function(x){if(!x||tombHas(x.id)||byId[x.id])return;data.records.push(cloudRec(x));byId[x.id]=1;added++});
+        if(added)save();
+        return added;
+      })
+      .catch(function(){return 0});
+    });
+  }
+  function cloudTag(){
+    var s=accSess();
+    if($('saveTag'))$('saveTag').textContent=s?('云端同步 · '+((s.nick||''))):'本地存储';
+  }
+  function boot(){
+    cloudTag();
+    if(!accSess()){render();return}
+    cloudPull().then(function(n){
+      cloudTag();render();
+      if(n)toast('从云端拉回 '+n+' 条记录');
+    });
+  }
+  boot();
+})();
+</script></body></html>
