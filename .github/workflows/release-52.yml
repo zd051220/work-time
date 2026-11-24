@@ -31,15 +31,28 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: python3 .github/scripts/release_52.py
 
-      - name: Add game beta page and entry link
+      - name: Add game beta page and easter egg
         if: steps.check.outputs.skip == 'false'
         env:
-          GAME_WRAPPER_B64: "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCxpbml0aWFsLXNjYWxlPTEsdmlld3BvcnQtZml0PWNvdmVyIj4KPG1ldGEgbmFtZT0idGhlbWUtY29sb3IiIGNvbnRlbnQ9IiNmZmYzZDkiPgo8dGl0bGU+54yr54yr5ri45oiPIMK3IOa1i+ivleeJiDwvdGl0bGU+CjxzdHlsZT4KKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Cmh0bWwsYm9keXtoZWlnaHQ6MTAwJX0KYm9keXttYXJnaW46MDtiYWNrZ3JvdW5kOiNmZmY4ZWY7Y29sb3I6IzQ5MzgyYztmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRm9udCwiUGluZ0ZhbmcgU0MiLCJIZWx2ZXRpY2EgTmV1ZSIsc2Fucy1zZXJpZjtkaXNwbGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1ufQouYmFye2ZsZXg6MCAwIGF1dG87ZGlzcGxheTpmbGV4O2FsaWduLWl0ZW1zOmNlbnRlcjtnYXA6OHB4O3BhZGRpbmc6MTBweCAxMnB4O2JhY2tncm91bmQ6I2ZmZjRkYztib3JkZXItYm90dG9tOjFweCBzb2xpZCAjZjBkY2FlfQouYmFyIGF7Zm9udC1zaXplOjEycHg7Zm9udC13ZWlnaHQ6OTAwO2NvbG9yOiM3YTU3MjM7dGV4dC1kZWNvcmF0aW9uOm5vbmU7YmFja2dyb3VuZDojZmZmZGY2O2JvcmRlcjoxcHggc29saWQgI2VmZDlhYztib3JkZXItcmFkaXVzOjEwcHg7cGFkZGluZzo2cHggMTBweH0KLmJhciBie2ZvbnQtc2l6ZToxM3B4fQouYmFkZ2V7Zm9udC1zaXplOjEwcHg7Zm9udC13ZWlnaHQ6OTAwO2NvbG9yOiM4YTZhMmM7YmFja2dyb3VuZDojZmZmMWM5O2JvcmRlcjoxcHggc29saWQgI2VjY2Y5Mjtib3JkZXItcmFkaXVzOjk5OXB4O3BhZGRpbmc6M3B4IDhweH0KLnRpcHtmbGV4OjAgMCBhdXRvO2ZvbnQtc2l6ZToxMHB4O2NvbG9yOiNhNjhhNzg7cGFkZGluZzo2cHggMTJweDtiYWNrZ3JvdW5kOiNmZmZhZjI7Ym9yZGVyLWJvdHRvbToxcHggc29saWQgI2Y0ZTZjZn0KLmZyYW1le2ZsZXg6MSAxIGF1dG87d2lkdGg6MTAwJTtib3JkZXI6MDtiYWNrZ3JvdW5kOiNmZmY4ZWZ9Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+CjxkaXYgY2xhc3M9ImJhciI+CiAgPGEgaHJlZj0iaW5kZXguaHRtbCI+4oC5IOWbnummlumhtTwvYT4KICA8Yj7njKvnjKvmuLjmiI88L2I+CiAgPHNwYW4gY2xhc3M9ImJhZGdlIj7mtYvor5XniYg8L3NwYW4+CjwvZGl2Pgo8ZGl2IGNsYXNzPSJ0aXAiPuWGhea1i+S4re+8mueOqeazleOAgeWtmOaho+mDveWPr+iDvemaj+aXtuaUue+8jOWHuumXrumimOS4jeW9seWTjeaJk+WNoeWSjOi0puacrOOAgjwvZGl2Pgo8aWZyYW1lIGNsYXNzPSJmcmFtZSIgc3JjPSJ4aWFvbWFvLWNhdC1nYW1lLXByZXZpZXctMS4wLmh0bWwiIHRpdGxlPSLnjKvnjKvmuLjmiI/mtYvor5XniYgiPjwvaWZyYW1lPgo8L2JvZHk+CjwvaHRtbD4K"
+          GAME_WRAPPER_B64: "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCxpbml0aWFsLXNjYWxlPTEsdmlld3BvcnQtZml0PWNvdmVyIj4KPG1ldGEgbmFtZT0idGhlbWUtY29sb3IiIGNvbnRlbnQ9IiNmZmYzZDkiPgo8dGl0bGU+54yr54yr5ri45oiPIMK3IOa1i+ivleeJiDwvdGl0bGU+CjxzdHlsZT4KKntib3gtc2l6aWngOmJvcmRlci1ib3h9Cmh0bWwsYm9keXtoZWlnaHQ6MTAwJX0KYm9keXttYXJnaW46MDtiYWNrZ3JvdW5kOiNmZmY4ZWY7Y29sb3I6IzQ5MzgyYztmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRmFucywiUGluZ0ZhbmcgU0MiLCJIZWx2ZXRGlY2EgTmV1ZSIsc2Fucy1zZXJpZjtkaXNwbGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1ufQouYmFye2ZsZXg6MCAwIGF1dG87ZGlzcGxheTpmbGV4O2FsaWduLWl0ZW1zOmNlbnRlcjtnYXA6OHB4O3BhZGRpbm6nMTBweCAxMnB4O2JhY2tncm91bmQ6I2ZmZjRkYztib3JkZXItYm90dG9tOjFweCBzb2lide1pZCAjZjBkY2FlfQouYmFyIGF7Zm9udC1zaXplOjEycHg7Zm9udC13ZWdlObhtOjkwMDtjb2xvcjojN2E1NzIzO3RleHQtZGVjb3JhdGlvbjpub25lOmJhY2tIcm9pbmQ6I2ZmZmRmNjtib3JkZXI6MXB4IHNvbGlkICNlZmQ5YWM7Ym9yZGVyLXJhZGl1czoxMHB4O3BhZGRpbm6nNnB4IDEwcHf9Ci5iYXIgYntmb250LXNpem86MTNweH0KLmJhZGdlez..."
         run: |
           echo "$GAME_WRAPPER_B64" | base64 -d > game-beta.html
-          if ! grep -q "game-beta.html" index.html; then
-            sed -i 's|</main>|<div style="margin-top:14px"><a href="game-beta.html" style="display:inline-block;font-size:12px;font-weight:900;color:#7a5723;text-decoration:none;background:#fff6e2;border:1px solid #f0dcae;border-radius:12px;padding:10px 16px">猫猫游戏 · 测试版 ›</a></div></main>|' index.html
-          fi
+          python3 - <<'PYEGG'
+          import io
+          p = 'xiaomao-banjin-5.2.html'
+          s = io.open(p, encoding='utf-8').read()
+          if 'game-beta.html' not in s:
+              egg = ('<div style="text-align:center;margin:2px 0 16px">'
+                     '<a href="game-beta.html" style="font-size:10px;color:#ddd0bb;text-decoration:none">'
+                     '🐾 听说这儿藏了只猫…</a></div>')
+              anchor = '<section class="card" id="sec-account">'
+              assert s.count(anchor) == 1, 'anchor not unique'
+              s = s.replace(anchor, egg + '\n' + anchor)
+              io.open(p, 'w', encoding='utf-8').write(s)
+              print('easter egg inserted')
+          else:
+              print('easter egg already present')
+          PYEGG
 
       - name: Commit and push
         if: steps.check.outputs.skip == 'false'
@@ -48,5 +61,5 @@ jobs:
           git config user.email "zd051220@163.com"
           git add -A
           if git diff --cached --quiet; then echo "no changes"; exit 0; fi
-          git commit -m "release 5.2: 删除墓碑 + 计时归属 + PWA + 猫猫游戏测试版"
+          git commit -m "release 5.2: 删除墓碑 + 计时归属 + PWA + 猫猫游戏彩蛋"
           git push
