@@ -31,6 +31,12 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: python3 .github/scripts/release_52.py
 
+      - name: 计时自检（失败则阻断发布）
+        if: steps.check.outputs.skip == 'false'
+        env:
+          TZ: Asia/Shanghai
+        run: node .github/scripts/timer_check.js v5.2.html
+
       - name: Game easter egg and link rewrite
         if: steps.check.outputs.skip == 'false'
         run: |
