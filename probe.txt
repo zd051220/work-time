@@ -1,4 +1,0 @@
-Tue Nov 24 11:37:02 UTC 2026
-runner ok
--rw-r--r-- 1 runner runner 68698 Nov 24 11:37 cdn.html
-80117f2705f658d2f321f2912d9a78337aba58b21eac99e5d7b41b35505607cf  cdn.html
