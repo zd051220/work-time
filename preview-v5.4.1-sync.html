@@ -399,12 +399,15 @@ $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=n
     exportNow('导入前自动备份_'+day()+'_'+String(Date.now()).slice(-6)+'.json');
     var ok=confirm('备份文件版本：'+(ver||'未知')+'\n文件内记录：'+incoming.length+' 条\n新增：'+news.length+' 条，重复跳过：'+dup+' 条\n本地现有：'+data.records.length+' 条\n\n已自动导出当前数据作为安全备份（在下载里）。\n确定导入吗？');
     if(!ok){toast('已取消导入，当前数据没变');return}
-    /* mwFix53g：用户主动导入的这几条，明确恢复它们（清掉同名墓碑），否则会被当“已删除”过滤 */
-    var inIds={};news.forEach(function(r){inIds[r.id]=1});
-    data.del=(data.del||[]).filter(function(x){return !inIds[String(x.id)]});
+    /* 用户主动导入备份：清除内存、本地磁盘及云端对应删除标记，再恢复备份记录 */
+    var restoreIds=incoming.map(function(r){return String(r.id)});
+    clearLocalTombstonesForRestore(restoreIds);
     news.forEach(function(r){data.records.push(r)});
     save();recSig='';draw();toast('导入完成，新增 '+news.length+' 条，跳过重复 '+dup+' 条');
-    if(accSess&&accSess()){syncAll(false)}
+    if(accSess&&accSess()){
+      deleteCloudTombstones(restoreIds).then(function(){syncAll(false)})
+        .catch(function(){toast('本地已导入，但云端删除标记未清除；请稍后重试同步')});
+    }
   }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
 };reader.readAsText(f);e.target.value=''};
 function onHide(){visible=false;if(isWriter&&data.session&&!data.session.pendingReview){accrue(Date.now(),'hide');save()}lastWall=Date.now();lastMono=performance.now()}
@@ -501,9 +504,9 @@ document.addEventListener('visibilitychange',function(){document.hidden?onHide()
 var mwPullTick=0;
 setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 /* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
-setInterval(function(){if(isWriter&&data.session)sesPush(true)},2000);
+setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},5000);
 /* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
-setInterval(function(){if(accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},2000);
+setInterval(function(){if(!document.hidden&&accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},5000);
 if(data.session){data.session=upgradeSession(data.session);var gap=Date.now()-(data.session.lastAt||Date.now());if(gap>MAX_AUTO_GAP&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:gap,mode:data.session.mode,reason:'重新打开时发现长时间未运行，请核对是否一直在工作',kind:'recovery'};data.session.lastAt=Date.now();jumpWarn='发现未结束的打卡，请先核对离线期间的时间。';}else if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now()}save()}
 if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
 draw();
@@ -785,6 +788,28 @@ function tombAdd(id){
   if(!tombHas(id))data.del.push({id:String(id),at:Date.now()});
   /* mwFix53c：墓碑不再按 180 天裁剪 —— 裁剪后老记录会被云端拉回来。本地只存 id+时间，体量可忽略。 */
 }
+function clearLocalTombstonesForRestore(ids){
+  var wanted={};(ids||[]).forEach(function(id){wanted[String(id)]=1});
+  data.del=(data.del||[]).filter(function(x){return !wanted[String(x.id)]});
+  var cur=null;
+  try{cur=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  if(cur&&Array.isArray(cur.del)){
+    cur.del=cur.del.filter(function(x){return !wanted[String(x.id)]});
+    localStorage.setItem(KEY,JSON.stringify(cur));
+  }
+}
+function deleteCloudTombstones(ids){
+  var account=accSess(),list=(ids||[]).map(String);
+  if(!account||!DEL_TABLE_OK||!list.length)return Promise.resolve(true);
+  var chunks=[];for(var i=0;i<list.length;i+=80)chunks.push(list.slice(i,i+80));
+  return chunks.reduce(function(chain,chunk){
+    return chain.then(function(){
+      var values=chunk.map(function(id){return '"'+id.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"'}).join(',');
+      return accCall('/rest/v1/record_dels?id='+encodeURIComponent('in.('+values+')'),{method:'DELETE'})
+        .then(function(r){if(!r.ok)throw {status:r.status};return true});
+    });
+  },Promise.resolve(true));
+}
 function tombPush(){
   var s=accSess();
   if(!s)return Promise.resolve({ok:true,off:true});
@@ -970,8 +995,21 @@ var MW_DEL_ENDPOINT=''; /* 部署 delete-account Edge Function 后，把完整 U
         accMsg('删号失败：'+((e&&e.msg)||'服务端没有返回成功')+'；本机归档已保留');
       });
     }
+    function endCloudSession(){
+      return accCall('/rest/v1/work_sessions?select=session_id,started_at,status')
+        .then(function(r){if(!r.ok)throw {status:r.status};return r.json()})
+        .then(function(rows){
+          var row=rows&&rows[0];
+          if(!row||row.status!=='active')return true;
+          return accCall('/rest/v1/rpc/sync_work_session',{method:'POST',body:JSON.stringify({
+            p_session_id:row.session_id,p_started_at:Number(row.started_at),p_status:'ended',p_payload:null
+          }),headers:{'Content-Type':'application/json'}})
+            .then(function(r){if(!r.ok)throw {status:r.status};return true});
+        });
+    }
     /* 没有服务端：只清账本数据，绝不提示“账号已删除” */
     new Promise(function(res){setTimeout(res,1200)})
+      .then(endCloudSession)
       .then(wipe)
       .then(finish('云端账本已清空，已退出登录（账号本身没有删除）'))
       .catch(function(e){
