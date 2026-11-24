@@ -306,7 +306,12 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
     var s=accRaw();if(!s||!s.refresh)return Promise.resolve(null);
     return fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SBK,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})})
       .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||!j.access_token)throw j;return j})})
-      .then(function(j){localStorage.setItem(ACC_KEY,JSON.stringify({token:j.access_token,refresh:j.refresh_token||s.refresh,uid:(j.user&&j.user.id)||s.uid,email:s.email,nick:s.nick,exp:Math.floor(Date.now()/1000)+(Number(j.expires_in)||3600)}));return accRaw()})
+      .then(function(j){
+        /* 5.4.1 安全补丁：刷新令牌期间若账号已切换，丢弃旧账号响应，绝不覆盖新登录态 */
+        var expectedUid=String(s.uid||'');
+        if(mwCurrentUid()!==expectedUid||(j.user&&String(j.user.id)!==expectedUid))return null;
+        localStorage.setItem(ACC_KEY,JSON.stringify({token:j.access_token,refresh:j.refresh_token||s.refresh,uid:expectedUid,email:s.email,nick:s.nick,exp:Math.floor(Date.now()/1000)+(Number(j.expires_in)||3600)}));return accRaw()
+      })
       .catch(function(){return null});
   }
   function accToken(){
