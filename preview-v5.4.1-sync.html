@@ -441,8 +441,8 @@ function drawSoft(){
 document.addEventListener('visibilitychange',function(){document.hidden?onHide():onShow()});window.addEventListener('pagehide',function(){onHide();if(mwLeaseOwner()===mwTabId){mwLeaseClear();if(mwBc){try{mwBc.postMessage({type:'release'})}catch(e){}}}});window.addEventListener('beforeunload',onHide);
 var mwPullTick=0;
 setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
-/* 活跃设备每 5 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
-setInterval(function(){if(isWriter&&data.session)sesPush(true)},5000);
+/* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
+setInterval(function(){if(isWriter&&data.session)sesPush(true)},2000);
 if(data.session){data.session=upgradeSession(data.session);var gap=Date.now()-(data.session.lastAt||Date.now());if(gap>MAX_AUTO_GAP&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:gap,mode:data.session.mode,reason:'重新打开时发现长时间未运行，请核对是否一直在工作',kind:'recovery'};data.session.lastAt=Date.now();jumpWarn='发现未结束的打卡，请先核对离线期间的时间。';}else if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now()}save()}
 if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
 draw();
