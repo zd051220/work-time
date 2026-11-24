@@ -22,8 +22,7 @@
 | `v5.4.1.html` | **测试版**：账号身份锁 + 删号不再假装成功 + 导入上限；未部署删号函数时只清云端账本 |
 | `ledger54-5.4.1.html` | 5.4.1 的账本页 |
 | `test-5.4.1.html` | 5.4.1 测试入口页 |
-| `v5.3.html` / `v5.2.html` / `v5.1.html` | 历史版本，`index.html` 里有入口 |
-| `v5.0.2.html` / `v5.0.1.html` | 更早归档，仅保留回滚 |
+| `v5.3.html` / `v5.2.html` / `v5.1.html` | 历史版本，`index.html` 里有入口；5.3 可作回滚版 |
 | `ledger.html` | 5.3 及更早版本共用的旧账本页 |
 | `cat-game-beta.html` / `cat-game-1.0.html` | 小猫互动试玩入口与本体 |
 | `version.json` | 版本提示数据，5.4 启动时读取 |
@@ -65,4 +64,3 @@
 - 固定页面用通用名：`index.html`（站点入口）、`ledger.html`（5.3 及更早的账本）、`ledger54.html`（5.4 账本）。
 - 游戏：本体 `cat-game-<版本>.html`，测试版外壳 `cat-game-beta.html`。
 - PWA：`manifest.json` + `icon.svg`。
-- 旧地址 `xiaomao-banjin-5.1.html` 留了跳转页指向 `v5.1.html`，旧书签不会失效；确认没人用后可删。
