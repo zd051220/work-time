@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff1d2"/>
+      <stop offset="1" stop-color="#f7dfa6"/>
+    </linearGradient>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbc63f"/>
+      <stop offset="1" stop-color="#e8a52c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- ears -->
+  <path d="M132 168 L150 96 L214 132 Z" fill="url(#fur)"/>
+  <path d="M380 168 L362 96 L298 132 Z" fill="url(#fur)"/>
+  <!-- head -->
+  <circle cx="256" cy="268" r="126" fill="url(#fur)"/>
+  <!-- muzzle -->
+  <ellipse cx="256" cy="306" rx="66" ry="50" fill="#fff8e6"/>
+  <!-- eyes -->
+  <ellipse cx="212" cy="242" rx="15" ry="19" fill="#4a3524"/>
+  <ellipse cx="300" cy="242" rx="15" ry="19" fill="#4a3524"/>
+  <circle cx="217" cy="236" r="5" fill="#fff"/>
+  <circle cx="305" cy="236" r="5" fill="#fff"/>
+  <!-- nose + mouth -->
+  <path d="M256 288 l14 12 -14 8 -14 -8z" fill="#d9643f"/>
+  <path d="M256 308 v10 M256 318 q-18 14 -34 2 M256 318 q18 14 34 2" stroke="#a9764c" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- whiskers -->
+  <path d="M180 300 h-52 M180 322 h-46 M332 300 h52 M332 322 h46" stroke="#c99a63" stroke-width="4" stroke-linecap="round"/>
+  <!-- chin shading -->
+  <path d="M196 356 q60 44 120 0" stroke="#e09a24" stroke-width="6" fill="none" stroke-linecap="round" opacity=".35"/>
+</svg>
