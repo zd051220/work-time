@@ -1,0 +1,82 @@
+name: reorganize-files
+
+on:
+  push:
+    paths:
+      - .github/workflows/reorganize.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reorganize-files
+  cancel-in-progress: false
+
+jobs:
+  reorganize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rename files and fix links
+        run: |
+          set -e
+          if [ -f v5.1.html ]; then echo "已经整理过，跳过"; exit 0; fi
+          git mv xiaomao-banjin-5.0.1.html v5.0.1.html
+          git mv xiaomao-banjin-5.0.2.html v5.0.2.html
+          git mv xiaomao-banjin-5.1.html v5.1.html
+          git mv xiaomao-502-short-link.zip v5.0.2-short-link.zip
+          git mv xiaomao-cat-game-preview-1.0.html cat-game-1.0.html
+          git mv game-beta.html cat-game-beta.html
+
+          sed -i 's|xiaomao-banjin-5\.1\.html|v5.1.html|g' index.html
+          sed -i 's|xiaomao-banjin-5\.0\.2\.html|v5.0.2.html|g;s|xiaomao-banjin-5\.0\.1\.html|v5.0.1.html|g;s|xiaomao-banjin-5\.1\.html|v5.1.html|g;s|xiaomao-cat-game-preview-1\.0\.html|cat-game-1.0.html|g;s|xiaomao-502-short-link\.zip|v5.0.2-short-link.zip|g' README.md
+          sed -i 's|xiaomao-cat-game-preview-1\.0\.html|cat-game-1.0.html|g' cat-game-beta.html
+          sed -i "s|'xiaomao-banjin-5.1.html'|'v5.1.html'|;s|xiaomao-banjin-5\.2\.html|v5.2.html|g" .github/scripts/release_52.py
+
+          cat > xiaomao-banjin-5.1.html <<'HTML'
+          <!doctype html>
+          <html lang="zh-CN">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <meta http-equiv="refresh" content="0;url=v5.1.html">
+          <title>小猫搬金条 · 已改名</title>
+          </head>
+          <body style="margin:0;padding:28px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;color:#49382c;background:#fff8ef">
+          <p style="font-size:14px;font-weight:800">这个地址已经改成 <b>v5.1.html</b></p>
+          <p style="font-size:12px;color:#8e7047">正在自动跳转，没跳的话点 <a href="v5.1.html" style="color:#b5781f">这里</a>。</p>
+          </body>
+          </html>
+          HTML
+
+          cat >> README.md <<'MD'
+
+          ## 文件命名规范
+
+          - 主程序版本：`v主版本.次版本.修订.html`，一个版本一个文件，不覆盖旧的（`v5.0.1.html` / `v5.0.2.html` / `v5.1.html` / `v5.2.html`）
+          - 两个固定页面用通用名：`index.html`（站点入口）、`ledger.html`（完整账本）
+          - 游戏：本体 `cat-game-<版本>.html`，测试版外壳 `cat-game-beta.html`
+          - 附属文件：`<对应版本>-<用途>.<后缀>`，例如 `v5.0.2-short-link.zip`
+          - PWA：`manifest.json` + `icon.svg`，发布时自动生成
+          - 旧地址 `xiaomao-banjin-5.1.html` 留了一张跳转页指向 `v5.1.html`，桌面图标和旧书签不会失效；确认没人用之后可以删掉
+          MD
+
+          grep -q 'href="v5.1.html"' index.html
+          ! grep -q 'xiaomao-banjin-5\.1\.html' index.html
+          grep -q 'src="cat-game-1.0.html"' cat-game-beta.html
+          grep -q "'v5.1.html'" .github/scripts/release_52.py
+          sha256sum v5.1.html | grep -q '^1921a9945d9f3ff177510ebf5556f7f5782c73b6e91eb454d512d65135d254be'
+          echo "OK: 改名完成，链接已同步，v5.1 内容未变"
+
+      - name: Commit and push
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+          git commit -m "reorganize: 统一文件命名 vX.Y.html / cat-game-*"
+          git push
