@@ -26,30 +26,16 @@ section.card{scroll-margin-top:14px}
 .rside{display:flex;align-items:center;gap:9px;flex:none}
 .del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit;cursor:pointer}
 .del:active{background:#ffe8df;transform:scale(.96)}
-/* ===== 底部导航栏：四个一级页面 ===== */
-var tabs=Array.prototype.slice.call(document.querySelectorAll('.tabbar button'));
-var TAB_PAGES=['tab-home','tab-bill','tab-ledger','tab-me'];
-function setTab(id){tabs.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===id)})}
-function pickTab(){
-  var line=window.innerHeight*0.28,best='tab-home';
-  TAB_PAGES.forEach(function(id){var el=$(id);if(el&&el.getBoundingClientRect().top<=line)best=id});
-  setTab(best);
-}
-tabs.forEach(function(b){
-  b.addEventListener('click',function(){
-    var id=b.getAttribute('data-t'),el=$(id);if(!el)return;
-    setTab(id);el.scrollIntoView({behavior:'smooth',block:'start'});
-  });
-});
-var tabScrollPending=false;
-window.addEventListener('scroll',function(){
-  if(tabScrollPending)return;
-  tabScrollPending=true;
-  requestAnimationFrame(function(){tabScrollPending=false;pickTab()});
-},{passive:true});
-window.addEventListener('resize',pickTab);
-pickTab();
-
+/* ===== 底部导航栏 ===== */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:4px;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+  background:#fffdf9f2;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid #f0e2cb;box-shadow:0 -6px 18px #8b642010}
+.tabbar button{flex:1;border:0;background:transparent;color:#a08663;border-radius:13px;
+  padding:7px 4px 5px;display:grid;justify-items:center;gap:2px;font-family:inherit;cursor:pointer}
+.tabbar button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button span{font-size:10px;font-weight:800}
+.tabbar button.on{background:linear-gradient(#fff4d9,#ffe6b5);color:#8a5f1c;box-shadow:inset 0 0 0 1px #f2dfb5}
 /* ===== 更新公告 ===== */
 .notice{margin-top:12px;display:flex;align-items:center;gap:9px;border:1px solid #f2dfb5;
   background:linear-gradient(105deg,#fff6e0,#ffeec4);border-radius:16px;padding:11px 13px;
@@ -493,33 +479,29 @@ $('records').addEventListener('click', function(e){
   if(accSess&&accSess()){accDelRec(id).then(function(res){if(!res.ok)toast(res.tombstone?'删除已保存在本地，但删除标记尚未同步；请检查云端表权限后重试':'云端没删掉（'+(res.status||'网络')+'），下次同步会重试')})}
 });
 
-/* ===== 底部导航栏 ===== */
+/* ===== 底部导航栏：四个一级页面 ===== */
 var tabs=Array.prototype.slice.call(document.querySelectorAll('.tabbar button'));
-function setTab(id){tabs.forEach(function(b){b.classList.toggle('on', b.getAttribute('data-t')===id)})}
+var TAB_PAGES=['tab-home','tab-bill','tab-ledger','tab-me'];
+function setTab(id){tabs.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===id)})}
+function pickTab(){
+  var line=window.innerHeight*0.28,best='tab-home';
+  TAB_PAGES.forEach(function(id){var el=$(id);if(el&&el.getBoundingClientRect().top<=line)best=id});
+  setTab(best);
+}
 tabs.forEach(function(b){
-  b.addEventListener('click', function(){
-    var id=b.getAttribute('data-t'), el=$(id);
-    setTab(id);
-    if(el&&el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
+  b.addEventListener('click',function(){
+    var id=b.getAttribute('data-t'),el=$(id);if(!el)return;
+    setTab(id);el.scrollIntoView({behavior:'smooth',block:'start'});
   });
 });
-var SECS=['sec-home','sec-setup','sec-stat','sec-ledger','sec-backup'];if('IntersectionObserver' in window){
-  var pick=function(){
-    /* mwPick53：按“已经滚过 42% 线的最后一个小节”判定，避免短卡片把高亮抢走 */
-    var y=56, best='sec-home';
-    SECS.forEach(function(id){
-      var el=$(id); if(!el) return;
-      if(el.getBoundingClientRect().top<=y) best=id;
-    });
-    if(best==='sec-setup') best='sec-home';
-    setTab(best);
-  };
-  var io=new IntersectionObserver(pick,{rootMargin:'-40% 0px -45% 0px',threshold:[0,.2,.6]});
-  SECS.forEach(function(id){var el=$(id); if(el) io.observe(el)});
-  /* mwPick53b：滚动过程中也按几何位置实时校正高亮 */
-  var mwPend=false;
-  window.addEventListener('scroll', function(){ if(mwPend)return; mwPend=true; requestAnimationFrame(function(){ mwPend=false; pick() }); }, {passive:true});
-}
+var tabScrollPending=false;
+window.addEventListener('scroll',function(){
+  if(tabScrollPending)return;
+  tabScrollPending=true;
+  requestAnimationFrame(function(){tabScrollPending=false;pickTab()});
+},{passive:true});
+window.addEventListener('resize',pickTab);
+pickTab();
 
 /* ===== 更新公告 ===== */
 var maskEl=$('mask');
