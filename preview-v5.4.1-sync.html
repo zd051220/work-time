@@ -206,7 +206,7 @@ var lastMono=performance.now();
 var lastWall=Date.now();
 var jumpWarn='';
 var toastTimer=null;
-var sesPushTimer=null, sesPushChain=Promise.resolve();
+var sesPushTimer=null, sesPushChain=Promise.resolve(), mwEndedSession=null;
 /* 5.2 后端补丁：设备标识（计时归属）+ 删除墓碑（防止删掉的记录被别的设备拉回来） */
 var DEV=(function(){var v=null;try{v=localStorage.getItem('mw_dev')}catch(e){}if(!v){v='d'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('mw_dev',v)}catch(e){}}return v})();
 var DEL_TABLE_OK=true;
@@ -226,7 +226,7 @@ function load(){var base={version:5,records:[],session:null,del:[]};try{var cur=
   base.records=dedupe(base.records);if(base.records.length)setTimeout(function(){toast('已迁移旧版账本 '+base.records.length+' 条')},500);return base}
 function validSession(s){return !!(s&&Number(s.started)>0&&Number(s.wage)>=0&&Number(s.hours)>0&&['work','paid','unpaid'].indexOf(s.mode)>=0)}
 function upgradeSession(s){
-  var u={date:s.date||day(s.started),started:Number(s.started),lastAt:Number(s.lastAt)||Number(s.started),start:s.start||hhmm(s.started),wage:Number(s.wage)||0,hours:Number(s.hours)||8,mode:s.mode||'work',workMs:Math.max(0,Number(s.workMs)||0),paidMs:Math.max(0,Number(s.paidMs)||0),unpaidMs:Math.max(0,Number(s.unpaidMs)||0),pendingReview:s.pendingReview||null,engineVersion:5,dev:s.dev||''};
+  var u={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),date:s.date||day(s.started),started:Number(s.started),lastAt:Number(s.lastAt)||Number(s.started),start:s.start||hhmm(s.started),wage:Number(s.wage)||0,hours:Number(s.hours)||8,mode:s.mode||'work',workMs:Math.max(0,Number(s.workMs)||0),paidMs:Math.max(0,Number(s.paidMs)||0),unpaidMs:Math.max(0,Number(s.unpaidMs)||0),pendingReview:s.pendingReview||null,engineVersion:5,dev:s.dev||''};
   if(s.days&&typeof s.days==='object'){u.days={};Object.keys(s.days).forEach(function(d){var b=s.days[d]||{};u.days[d]={work:Math.max(0,Number(b.work)||0),paid:Math.max(0,Number(b.paid)||0),unpaid:Math.max(0,Number(b.unpaid)||0)}});}
   else{u.days={};u.days[u.date]={work:u.workMs,paid:u.paidMs,unpaid:u.unpaidMs};}
   return u;
@@ -297,7 +297,7 @@ function draw(){var s=data.session,t=todayTotals(),r=rate(),payMs=t.work+t.paid,
 function drawRecords(){var arr=data.records.filter(function(r){return r.date.indexOf(monthView)===0});arr.sort(function(a,b){return a.date===b.date?(a.start<b.start?-1:1):(a.date<b.date?1:-1)});var sig=monthView+'|'+arr.map(function(r){return r.id+':'+r.pay}).join(',');if(sig===recSig)return;recSig=sig;$('month').textContent=monthView.replace('-','年')+'月';$('monthTotal').textContent=money(arr.reduce(function(v,r){return v+(Number(r.pay)||0)},0));var box=$('records');if(!arr.length){box.innerHTML='<div class="empty">这个月还没有搬金记录～</div>';return}var html='';arr.forEach(function(r){html+='<div class="record"><div><div class="rdate">'+escapeHTML(r.date)+' · '+escapeHTML(r.start)+'—'+escapeHTML(r.end)+'</div><div class="rmeta">工作 '+escapeHTML(r.work)+' · 带薪 '+escapeHTML(r.paid)+' · 不带薪 '+escapeHTML(r.unpaid)+'</div></div><div class="rside"><div class="rpay">'+money(r.pay)+'</div><button class="del" data-id="'+escapeHTML(r.id)+'" aria-label="删除这条记录">删</button></div></div>' });box.innerHTML=html}
 function changeMode(mode){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}s.mode=mode;s.dev=DEV;s.lastAt=Date.now();lastWall=s.lastAt;lastMono=performance.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&h>0&&Number.isFinite(w)&&Number.isFinite(h))){toast('请填写有效的大于 0 的日薪和工作时长');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);
-  data.session={date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5,dev:DEV};
+  data.session={sid:'ws-'+String(now),date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5,dev:DEV};
   data.session.days={};data.session.days[day(now)]={work:0,paid:0,unpaid:0};
   lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
@@ -317,7 +317,7 @@ $('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return
     var rec={id:id,date:d,start:st,end:en,work:duration(b.work),paid:duration(b.paid),unpaid:duration(b.unpaid),duration:duration(payMs+b.unpaid),wage:s.wage,hours:s.hours,pay:payMs/1000*r,started:idx===0?s.started:0};
     data.records.push(rec);made.push(rec);
   });
-  data.session=null;jumpWarn='';$('endTime').value=hhmm(now);monthView=ym(new Date());recSig='';save();if(accSess&&accSess())sesPush(true);draw();
+  mwEndedSession={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),started:Number(s.started)||0};data.session=null;jumpWarn='';$('endTime').value=hhmm(now);monthView=ym(new Date());recSig='';save();if(accSess&&accSess())sesPush(true);draw();
   if(mwBc){try{mwBc.postMessage({type:'snap',session:null})}catch(e){}}
   toast(made.length>1?('下班啦！跨了 '+made.length+' 天，已按天拆成 '+made.length+' 条'):'下班啦！这一段已记账～');
   if(accSess&&accSess()){var i=0;var pushNext=function(){if(i>=made.length){if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条';return}accPushOne(made[i++]).then(function(res){if(!res.ok){toast('有记录没同步到云端，点「立即同步」重试');return}pushNext()})};pushNext()}
@@ -443,6 +443,8 @@ var mwPullTick=0;
 setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 /* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
 setInterval(function(){if(isWriter&&data.session)sesPush(true)},2000);
+/* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
+setInterval(function(){if(accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},2000);
 if(data.session){data.session=upgradeSession(data.session);var gap=Date.now()-(data.session.lastAt||Date.now());if(gap>MAX_AUTO_GAP&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:gap,mode:data.session.mode,reason:'重新打开时发现长时间未运行，请核对是否一直在工作',kind:'recovery'};data.session.lastAt=Date.now();jumpWarn='发现未结束的打卡，请先核对离线期间的时间。';}else if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now()}save()}
 if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
 draw();
@@ -615,56 +617,61 @@ function accCall(path,opt){
   });
 }
 function logoutSoft(){localStorage.removeItem(ACC_KEY);accUI();try{if(mwCh)mwCh.postMessage({uid:''})}catch(e){}}
-/* 进行中打卡上云：写进当前用户的 user_metadata.session，换设备登录即可取回 */
+/* 跨设备权威会话：Postgres 以账号行锁仲裁，已结束的 session_id 永远不能被旧心跳复活 */
 function sesPush(forceNow){
   if(window.mwDeleting)return;
   var account=accSess();
   if(!isWriter||!account)return;
-  var snapshot=data.session?JSON.parse(JSON.stringify(data.session)):null;
-  if(snapshot&&snapshot.dev&&snapshot.dev!==DEV)return;
-  if(!snapshot&&!forceNow)return;
+  var snapshot=data.session?upgradeSession(JSON.parse(JSON.stringify(data.session))):null;
+  var ended=!snapshot&&forceNow?mwEndedSession:null;
+  if(!snapshot&&!ended)return;
   clearTimeout(sesPushTimer);
   sesPushTimer=setTimeout(function(){
-    var payload=JSON.stringify({data:{session:snapshot,mwSavedAt:Date.now()}});
-    /* 串行写入：下班的 null 必须排在此前的进行中快照之后，避免旧请求最后覆盖下班状态 */
+    var active=!!snapshot;
+    var body={p_session_id:active?snapshot.sid:ended.sid,p_started_at:active?Number(snapshot.started):Number(ended.started),p_status:active?'active':'ended',p_payload:active?snapshot:null};
     sesPushChain=sesPushChain.catch(function(){}).then(function(){
       var current=accSess();
       if(!current||current.uid!==account.uid)return false;
-      return accCall('/auth/v1/user',{method:'PUT',body:payload,headers:{'Content-Type':'application/json'}}).then(function(r){
-        if(!r.ok){if($('accSub'))$('accSub').textContent='计时状态没上云（'+r.status+'）';return false}
-        return true;
-      });
-    }).catch(function(){if($('accSub'))$('accSub').textContent='计时状态同步失败，请检查网络';return false});
-  },forceNow?0:1200);
+      return accCall('/rest/v1/rpc/sync_work_session',{method:'POST',body:JSON.stringify(body),headers:{'Content-Type':'application/json'}})
+        .then(function(r){if(!r.ok)throw {status:r.status};return r.json()})
+        .then(function(row){applyCloudSession(row);if(ended&&mwEndedSession&&mwEndedSession.sid===ended.sid)mwEndedSession=null;return true});
+    }).catch(function(e){if($('accSub'))$('accSub').textContent='计时状态同步失败'+(e&&e.status?'（'+e.status+'）':'')+'，请检查网络';return false});
+  },forceNow?0:500);
+}
+function applyCloudSession(row){
+  if(!row)return false;
+  var cloudStarted=Number(row.started_at)||0;
+  var local=data.session?upgradeSession(data.session):null;
+  if(row.status==='ended'){
+    if(local&&(local.sid===row.session_id||local.started<=cloudStarted)){
+      data.session=null;save();draw();toast('云端已结束这次计时，本机已同步下班');return true;
+    }
+    return false;
+  }
+  if(row.status==='active'&&validSession(row.payload)){
+    var remote=upgradeSession(row.payload);
+    if(!local||remote.sid===local.sid||remote.started>local.started){
+      if(remote.dev!==DEV){
+        var gap=Date.now()-(Number(remote.lastAt)||Date.now());
+        if(gap>MAX_AUTO_GAP||gap<0){
+          remote.pendingReview={from:Number(remote.lastAt)||Date.now(),to:Date.now(),delta:Math.max(0,gap),mode:remote.mode,reason:'从云端恢复的打卡，'+duration(Math.max(0,gap))+' 未在本机计时，请核对',kind:'gap'};
+          remote.lastAt=Date.now();jumpWarn='已从云端恢复打卡，请先核对离线期间的时间。';
+        }
+      }
+      data.session=remote;save();draw();return true;
+    }
+  }
+  return false;
 }
 function sesRestore(forceCloud){
   if(!accSess())return Promise.resolve(false);
-  return accReq('/auth/v1/user').then(function(r){if(!r.ok)throw {status:r.status};return r.json()})
-    .then(function(u){
-      var meta=u&&u.user_metadata||{},rs=meta.session;
-      var cloudAt=Number(meta.mwSavedAt)||0;
-      var localStarted=data.session?(Number(data.session.started)||0):0;
-      /* 本机正在创建的会话优先于更早云快照；手动同步时则以另一设备的云端状态为准 */
-      if(!rs){
-        if(data.session&&cloudAt>localStarted){
-          data.session=null;save();draw();
-          toast('云端显示另一台设备已下班，本机已结束旧计时');
-          return true;
-        }
-        return false;
-      }
-      if(!validSession(rs))return false;
-      if(data.session&&rs.dev&&rs.dev===DEV)return false;
-      if(data.session&&cloudAt&&cloudAt<=localStarted)return false;
-      if(!rs.dev)rs.dev='remote';
-      var g=Date.now()-(Number(rs.lastAt)||Date.now());
-      if(g>MAX_AUTO_GAP||g<0){
-        rs.pendingReview={from:Number(rs.lastAt)||Date.now(),to:Date.now(),delta:Math.max(0,g),mode:rs.mode,reason:'从云端恢复的打卡，'+duration(Math.max(0,g))+' 未在本机计时，请核对',kind:'gap'};
-        rs.lastAt=Date.now();jumpWarn='已从云端恢复打卡，请先核对离线期间的时间。';
-      }
-      data.session=upgradeSession(rs);save();draw();
-      toast('已按云端最新状态更新计时');
-      return true;
+  return accReq('/rest/v1/work_sessions?select=session_id,started_at,status,payload,updated_at')
+    .then(function(r){if(!r.ok)throw {status:r.status};return r.json()})
+    .then(function(rows){
+      var row=rows&&rows[0];
+      if(row)return applyCloudSession(row);
+      if(data.session&&isWriter){sesPush(true);return false;}
+      return false;
     });
 }
 /* mwFix54b：登录后如果换了账号，先决定“本机未登录账本要不要并进来”，再整页重载切换命名空间 */
