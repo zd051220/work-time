@@ -64,7 +64,7 @@ h2{font-size:14px;margin:0;font-weight:900}
 <main class="app">
   <div class="top">
     <div><div class="brand">📒 搬金账本</div><div class="sub">每一段工时都在这儿</div></div>
-    <a id="backLink" href="xiaomao-banjin-5.1.html">‹ 回首页记账</a>
+    <a id="backLink" href="index.html">‹ 回首页记账</a>
   </div>
 
   <section class="card">
@@ -93,7 +93,7 @@ h2{font-size:14px;margin:0;font-weight:900}
 
   <section class="card">
     <div class="sec-title"><h2>🧾 本月明细</h2><span class="tag" id="dayTag">—</span></div>
-    <div id="records"><div class="empty">这个月还没有记录<br><a href="xiaomao-banjin-5.1.html">去首页开工 ›</a></div></div>
+    <div id="records"><div class="empty">这个月还没有记录<br><a href="index.html">去首页开工 ›</a></div></div>
   </section>
 
   <section class="card">
@@ -109,17 +109,23 @@ h2{font-size:14px;margin:0;font-weight:900}
 <script>
 (function(){
   "use strict";
-  var KEY='catGold_v5', $=function(id){return document.getElementById(id)};
+  /* MW-FIX53-APPLIED */var KEY='catGold_v5', $=function(id){return document.getElementById(id)};
   var data={records:[],session:null};
   function load(){
     try{var o=JSON.parse(localStorage.getItem(KEY)||'null');if(o&&Array.isArray(o.records))return o}catch(e){}
     return {records:[],session:null};
   }
   /* MW_LEDGER_MERGE */
+  /* mwFix53e：账本写盘同样只合并不覆盖 —— 主页刚记的那条不能被账本的旧内存盖掉，删掉的也不能复活 */
   function save(){try{
     var cur=null;try{cur=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
     if(cur&&cur.session&&(Number(cur.session.lastAt)||0)>(Number((data.session||{}).lastAt)||0))data.session=cur.session;
-    var merged=(data.del||[]).slice();(cur&&cur.del?cur.del:[]).forEach(function(x){if(!merged.some(function(y){return String(y.id)===String(x.id)}))merged.push(x)});data.del=merged;
+    var tomb={};(data.del||[]).concat((cur&&cur.del)||[]).forEach(function(x){if(x&&x.id)tomb[String(x.id)]=Number(x.at)||0});
+    var map={};(data.records||[]).forEach(function(r){if(r&&r.id)map[r.id]=r});
+    ((cur&&Array.isArray(cur.records))?cur.records:[]).forEach(function(r){if(r&&r.id&&!map[r.id]&&!tomb[String(r.id)])map[r.id]=r});
+    var out=[];Object.keys(map).forEach(function(k){if(!tomb[k])out.push(map[k])});
+    data.records=out;data.del=Object.keys(tomb).map(function(k){return {id:k,at:tomb[k]}});
+    if(cur&&cur.rev)data.rev=(Number(cur.rev)||0)+1;
     localStorage.setItem(KEY,JSON.stringify(data))
   }catch(e){toast('存储失败，请先导出备份')}}
   function pad(n){return String(n).padStart(2,'0')}
@@ -154,7 +160,7 @@ h2{font-size:14px;margin:0;font-weight:900}
 
     var box=$('records');
     if(!arr.length){
-      box.innerHTML='<div class="empty">这个月还没有记录<br><a href="xiaomao-banjin-5.1.html">去首页开工 ›</a></div>';
+      box.innerHTML='<div class="empty">这个月还没有记录<br><a href="index.html">去首页开工 ›</a></div>';
     }else{
       var html='';
       arr.forEach(function(r){
@@ -288,8 +294,7 @@ h2{font-size:14px;margin:0;font-weight:900}
   function tombAdd(id){
     data.del=data.del||[];
     if(!tombHas(id))data.del.push({id:String(id),at:Date.now()});
-    var lim=Date.now()-180*24*3600*1000;
-    data.del=data.del.filter(function(x){return (Number(x.at)||0)>lim});
+    /* mwFix53c：墓碑不过期，避免老记录被云端拉回 */
   }
   function tombPush(){
     var s=accSess();if(!s||!DEL_TABLE_OK)return Promise.resolve(0);
