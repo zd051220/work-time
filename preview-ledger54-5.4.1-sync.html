@@ -291,8 +291,15 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
         norm.forEach(function(r){if(byId[r.id]){dup++}else{byId[r.id]=1;news.push(r)}});
         exportNow('账本导入前自动备份_'+ym(new Date())+'-'+pad(new Date().getDate())+'.json');
         if(!confirm('备份文件版本：'+(ver||'未知')+'\n文件内记录：'+norm.length+' 条\n新增：'+news.length+' 条，重复跳过：'+dup+' 条\n账本现有：'+data.records.length+' 条\n\n已自动导出当前数据作为安全备份（在下载里）。\n确定导入吗？')){toast('已取消导入，数据没变');return}
+        /* 用户主动导入备份：清除内存、本地磁盘及云端对应删除标记 */
+        var restoreIds=norm.map(function(r){return String(r.id)});
+        clearLocalTombstonesForRestore(restoreIds);
         news.forEach(function(r){data.records.push(r)});
-        save();render();toast('导入完成，新增 '+news.length+' 条，跳过重复 '+dup+' 条');if(accSess())cloudPushAll();
+        save();render();toast('导入完成，新增 '+news.length+' 条，跳过重复 '+dup+' 条');
+        if(accSess()){
+          deleteCloudTombstones(restoreIds).then(function(){cloudPushAll()})
+            .catch(function(){toast('本地已导入，但云端删除标记未清除；请稍后重试同步')});
+        }
       }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
     };
     rd.readAsText(f);e.target.value='';
@@ -346,6 +353,28 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
     data.del=data.del||[];
     if(!tombHas(id))data.del.push({id:String(id),at:Date.now()});
     /* mwFix53c：墓碑不过期，避免老记录被云端拉回 */
+  }
+  function clearLocalTombstonesForRestore(ids){
+    var wanted={};(ids||[]).forEach(function(id){wanted[String(id)]=1});
+    data.del=(data.del||[]).filter(function(x){return !wanted[String(x.id)]});
+    var cur=null;
+    try{cur=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+    if(cur&&Array.isArray(cur.del)){
+      cur.del=cur.del.filter(function(x){return !wanted[String(x.id)]});
+      localStorage.setItem(KEY,JSON.stringify(cur));
+    }
+  }
+  function deleteCloudTombstones(ids){
+    var account=accSess(),list=(ids||[]).map(String);
+    if(!account||!DEL_TABLE_OK||!list.length)return Promise.resolve(true);
+    var chunks=[];for(var i=0;i<list.length;i+=80)chunks.push(list.slice(i,i+80));
+    return chunks.reduce(function(chain,chunk){
+      return chain.then(function(){
+        var values=chunk.map(function(id){return '"'+id.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"'}).join(',');
+        return accCall('/rest/v1/record_dels?id='+encodeURIComponent('in.('+values+')'),{method:'DELETE'})
+          .then(function(r){if(!r.ok)throw {status:r.status};return true});
+      });
+    },Promise.resolve(true));
   }
   function tombPush(){
     var s=accSess();if(!s)return Promise.resolve(0);
