@@ -1,0 +1,70 @@
+name: release-5.3
+
+on:
+  schedule:
+    - cron: '40 7 * * *'   # 北京 15:40，等 5.2 上线后自动接 5.3
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-5.3
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 已发布就跳过
+        id: check
+        run: |
+          if [ -f v5.3.html ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 5.2 必须先在线
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          if [ ! -f v5.2.html ]; then
+            echo "5.2 还没生成，5.3 不发布"; exit 1
+          fi
+
+      - name: 生成 5.3（单写者 + 字段级渲染 + 账本 session 保护）
+        if: steps.check.outputs.skip == 'false'
+        run: python3 .github/scripts/release_53.py v5.2.html v5.3.html
+
+      - name: 计时自检（失败则阻断发布）
+        if: steps.check.outputs.skip == 'false'
+        env:
+          TZ: Asia/Shanghai
+        run: node .github/scripts/timer_check.js v5.3.html
+
+      - name: 入口页指向 5.3
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          python3 - <<'PYIDX'
+          import io
+          p='index.html'; s=io.open(p,encoding='utf-8').read()
+          if 'v5.3.html' in s:
+              print('index: 已指向 5.3')
+          else:
+              n=s.count('v5.2.html')
+              assert n>=1, 'index 里找不到 v5.2.html 链接'
+              io.open(p,'w',encoding='utf-8').write(s.replace('v5.2.html','v5.3.html'))
+              print('index: %d 处链接改为 v5.3' % n)
+          PYIDX
+
+      - name: 提交并推送
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add -A
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "release 5.3: 单写者 + 渲染只写变化字段 + 账本不再倒灌计时状态"
+          git push
