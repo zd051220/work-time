@@ -31,12 +31,9 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: python3 .github/scripts/release_52.py
 
-      - name: Add game beta page and easter egg
+      - name: Add game easter egg to 5.2
         if: steps.check.outputs.skip == 'false'
-        env:
-          GAME_WRAPPER_B64: "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCxpbml0aWFsLXNjYWxlPTEsdmlld3BvcnQtZml0PWNvdmVyIj4KPG1ldGEgbmFtZT0idGhlbWUtY29sb3IiIGNvbnRlbnQ9IiNmZmYzZDkiPgo8dGl0bGU+54yr54yr5ri45oiPIMK3IOa1i+ivleeJiDwvdGl0bGU+CjxzdHlsZT4KKntib3gtc2l6aWngOmJvcmRlci1ib3h9Cmh0bWwsYm9keXtoZWlnaHQ6MTAwJX0KYm9keXttYXJnaW46MDtiYWNrZ3JvdW5kOiNmZmY4ZWY7Y29sb3I6IzQ5MzgyYztmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRmFucywiUGluZ0ZhbmcgU0MiLCJIZWx2ZXRGlY2EgTmV1ZSIsc2Fucy1zZXJpZjtkaXNwbGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1ufQouYmFye2ZsZXg6MCAwIGF1dG87ZGlzcGxheTpmbGV4O2FsaWduLWl0ZW1zOmNlbnRlcjtnYXA6OHB4O3BhZGRpbm6nMTBweCAxMnB4O2JhY2tncm91bmQ6I2ZmZjRkYztib3JkZXItYm90dG9tOjFweCBzb2lide1pZCAjZjBkY2FlfQouYmFyIGF7Zm9udC1zaXplOjEycHg7Zm9udC13ZWdlObhtOjkwMDtjb2xvcjojN2E1NzIzO3RleHQtZGVjb3JhdGlvbjpub25lOmJhY2tIcm9pbmQ6I2ZmZmRmNjtib3JkZXI6MXB4IHNvbGlkICNlZmQ5YWM7Ym9yZGVyLXJhZGl1czoxMHB4O3BhZGRpbm6nNnB4IDEwcHf9Ci5iYXIgYntmb250LXNpem86MTNweH0KLmJhZGdlez..."
         run: |
-          echo "$GAME_WRAPPER_B64" | base64 -d > game-beta.html
           python3 - <<'PYEGG'
           import io
           p = 'xiaomao-banjin-5.2.html'
