@@ -1,0 +1,38 @@
+name: release-54b
+on:
+  push:
+permissions:
+  contents: write
+concurrency:
+  group: release-54b
+  cancel-in-progress: false
+jobs:
+  pub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: download
+        run: |
+          set -euo pipefail
+          curl -sSL "https://aka.doubaocdn.com/s/nOQ1uHfFuO" -o v5.4.html
+          curl -sSL "https://aka.doubaocdn.com/s/hW4F2oxsMt" -o version.json
+      - name: verify
+        run: |
+          set -euo pipefail
+          echo "d2b96294e27774b1a48b8eec1cfcbe648fc2894b94e177aaad6480e74d6bc614  v5.4.html" | sha256sum -c -
+          echo "b251e32349677b89773a230cce5ae4eab86fa23f4e0b45e3334fe89e9de863c2  version.json" | sha256sum -c -
+          echo "62766d1768b556cf484cbbd6fff2d53a035fa5dc4d3c5526bb7fe91522386e50  index.html" | sha256sum -c -
+          echo "3fe0f942296c303603dfbb181c52ff314117dbffd6d37089020b2a783f3c0e8e  v5.3.html" | sha256sum -c -
+          echo "56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html" | sha256sum -c -
+          echo "入口仍是 5.3，5.3 文件未动"
+      - name: gate
+        run: TZ=Asia/Shanghai node .github/scripts/timer_check.js v5.4.html
+      - name: commit
+        run: |
+          set -euo pipefail
+          git config user.name "release-bot"
+          git config user.email "release-bot@users.noreply.github.com"
+          git add v5.4.html version.json
+          git rm .github/workflows/release-54b.yml
+          git commit -m "5.4 加新版本提示：v5.4.html 读取 version.json，只提示不自动跳；入口仍为 5.3"
+          git push
