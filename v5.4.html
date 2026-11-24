@@ -734,21 +734,26 @@ function accDelRec(id){
     .catch(function(e){return {ok:false,status:e&&e.status||0,tombstone:false}});
 }
 function accPull(){
-  if(!accSess())return Promise.resolve({added:0,off:true});
+  var s=accSess();
+  if(!s)return Promise.resolve({added:0,off:true});
   return tombPull().then(function(delsRemoved){
-  return accCall('/rest/v1/records?select=*&user_id=eq.'+encodeURIComponent(accSess().uid)+'&order=date.asc')
-    .then(function(r){
-      if(r.status===401)throw {needlogin:1};
-      if(!r.ok)throw {status:r.status};
-      return r.json();
-    })
-    .then(function(rows){
-      var map={};data.records.forEach(function(r){map[r.id]=r});
-      var added=0;
-      rows.forEach(function(x){if(!x||tombHas(x.id)||map[x.id])return;var rr=accRec(x);data.records.push(rr);map[rr.id]=rr;added++});
-      recSig='';save();draw();
-      return {added:added,delsRemoved:delsRemoved||0};
-    });
+    var current=accSess();
+    if(!current||current.uid!==s.uid)throw {status:0};
+    return accCall('/rest/v1/records?select=*&user_id=eq.'+encodeURIComponent(s.uid)+'&order=date.asc')
+      .then(function(r){
+        if(r.status===401)throw {needlogin:1};
+        if(!r.ok)throw {status:r.status};
+        return r.json();
+      })
+      .then(function(rows){
+        var latest=accSess();
+        if(!latest||latest.uid!==s.uid)throw {status:0};
+        var map={};data.records.forEach(function(r){map[r.id]=r});
+        var added=0;
+        rows.forEach(function(x){if(!x||tombHas(x.id)||map[x.id])return;var rr=accRec(x);data.records.push(rr);map[rr.id]=rr;added++});
+        recSig='';save();draw();
+        return {added:added,delsRemoved:delsRemoved||0};
+      });
   });
 }
 function syncAll(first){
