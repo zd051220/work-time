@@ -346,62 +346,75 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
     /* mwFix53c：墓碑不过期，避免老记录被云端拉回 */
   }
   function tombPush(){
-    var s=accSess();if(!s||!DEL_TABLE_OK)return Promise.resolve(0);
+    var s=accSess();if(!s)return Promise.resolve(0);
+    if(!DEL_TABLE_OK)return Promise.reject({status:404,tombstone:true});
     var rows=(data.del||[]).map(function(x){return {user_id:s.uid,id:String(x.id),deleted_at:Number(x.at)||Date.now()}});
     if(!rows.length)return Promise.resolve(0);
     return accCall('/rest/v1/record_dels',{method:'POST',body:JSON.stringify(rows),headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
-      .then(function(r){if(r.status===404){DEL_TABLE_OK=false;return 0}return rows.length})
-      .catch(function(){return 0});
+      .then(function(r){
+        if(r.status===404){DEL_TABLE_OK=false;throw {status:404,tombstone:true}}
+        if(!r.ok)throw {status:r.status||0,tombstone:true};
+        return rows.length;
+      })
+      .catch(function(e){if(e&&e.tombstone)throw e;throw {status:e&&e.status||0,tombstone:true}});
   }
   function tombPull(){
-    var s=accSess();if(!s||!DEL_TABLE_OK)return Promise.resolve(0);
+    var s=accSess();if(!s)return Promise.resolve(0);
+    if(!DEL_TABLE_OK)return Promise.reject({status:404,tombstone:true});
     return accCall('/rest/v1/record_dels?select=id,deleted_at')
-      .then(function(r){if(r.status===404){DEL_TABLE_OK=false;return []}if(!r.ok)return [];return r.json()})
+      .then(function(r){
+        if(r.status===404){DEL_TABLE_OK=false;throw {status:404,tombstone:true}}
+        if(!r.ok)throw {status:r.status||0,tombstone:true};
+        return r.json();
+      })
       .then(function(rows){
-        if(!Array.isArray(rows)||!rows.length)return 0;
-        var n=0;
+        if(!Array.isArray(rows))throw {status:0,tombstone:true};
+        var n=0,changed=false;
         rows.forEach(function(x){
           if(!x||!x.id)return;
           var id=String(x.id);
-          tombAdd(id);
+          if(!tombHas(id)){tombAdd(id);changed=true}
           var before=(data.records||[]).length;
           data.records=(data.records||[]).filter(function(r){return r.id!==id});
-          if(before!==data.records.length)n++;
+          if(before!==data.records.length){n++;changed=true}
         });
-        if(n){save();render()}
+        if(changed){save();render()}
         return n;
       })
-      .catch(function(){return 0});
+      .catch(function(e){if(e&&e.tombstone)throw e;throw {status:e&&e.status||0,tombstone:true}});
   }
   function cloudRow(r,uid){return {user_id:uid,id:r.id,date:r.date,start_time:r.start,end_time:r.end,work:r.work,paid:r.paid,unpaid:r.unpaid,duration:r.duration,wage:r.wage,hours:r.hours,pay:r.pay,started:r.started||0}}
   function cloudRec(x){return {id:x.id,date:x.date,start:x.start_time,end:x.end_time,work:x.work,paid:x.paid,unpaid:x.unpaid,duration:x.duration,wage:Number(x.wage)||0,hours:Number(x.hours)||8,pay:Number(x.pay)||0,started:Number(x.started)||0}}
   function cloudDel(id){
-    if(!accSess())return;
-    accCall('/rest/v1/records?id=eq.'+encodeURIComponent(id),{method:'DELETE'})
-      .then(function(r){tombPush();if(!r.ok)toast('云端没删掉（'+r.status+'），下次同步会重试')})
-      .catch(function(){tombPush();toast('云端没删掉，检查网络')});
+    if(!accSess())return Promise.resolve();
+    return tombPush().then(function(){
+      return accCall('/rest/v1/records?id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+    }).then(function(r){if(!r.ok)toast('删除标记已同步，但云端记录没删掉（'+r.status+'）；下次同步会重试')})
+      .catch(function(e){toast(e&&e.tombstone?'删除已保存在本地，但删除标记尚未同步；请检查云端表权限后重试':'云端删除失败，检查网络后重试')});
   }
   function cloudPushAll(){
     var s=accSess();if(!s)return Promise.resolve(0);
-    tombPush();
-    var body=JSON.stringify((data.records||[]).filter(function(r){return !tombHas(r.id)}).map(function(r){return cloudRow(r,s.uid)}));
-    return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}})
-      .then(function(r){if(!r.ok)toast('上传云端失败（'+r.status+'）')})
-      .catch(function(){toast('上传云端失败，检查网络')});
+    return tombPush().then(function(){
+      var current=accSess();
+      if(!current||current.uid!==s.uid)throw {status:0};
+      var body=JSON.stringify((data.records||[]).filter(function(r){return !tombHas(r.id)}).map(function(r){return cloudRow(r,s.uid)}));
+      return accCall('/rest/v1/records',{method:'POST',body:body,headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}});
+    }).then(function(r){if(!r.ok)throw {status:r.status||0};return 1})
+      .catch(function(e){toast(e&&e.tombstone?'删除标记同步失败，已停止上传记录；请检查 record_dels 权限':'上传云端失败，检查网络后重试');return 0});
   }
   function cloudPull(){
     if(!accSess())return Promise.resolve(0);
-    return tombPull().then(function(){return accCall('/rest/v1/records?select=*&order=date.asc')
-      .then(function(r){if(!r.ok)throw 0;return r.json()})
-      .then(function(rows){
-        data=load();
-        var byId={};data.records.forEach(function(r){byId[r.id]=1});
-        var added=0;
-        rows.forEach(function(x){if(!x||tombHas(x.id)||byId[x.id])return;data.records.push(cloudRec(x));byId[x.id]=1;added++});
-        if(added)save();
-        return added;
-      })
-      .catch(function(){return 0});
+    return tombPull().then(function(){
+      return accCall('/rest/v1/records?select=*&order=date.asc')
+        .then(function(r){if(!r.ok)throw {status:r.status||0};return r.json()})
+        .then(function(rows){
+          data=load();
+          var byId={};data.records.forEach(function(r){byId[r.id]=1});
+          var added=0;
+          rows.forEach(function(x){if(!x||tombHas(x.id)||byId[x.id])return;data.records.push(cloudRec(x));byId[x.id]=1;added++});
+          if(added)save();
+          return added;
+        });
     });
   }
   function cloudTag(){
@@ -414,6 +427,9 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
     cloudPull().then(function(n){
       cloudTag();render();
       if(n)toast('从云端拉回 '+n+' 条记录');
+    }).catch(function(e){
+      cloudTag();render();
+      toast(e&&e.tombstone?'删除标记同步失败，已停止云端拉取；本地数据未被云端覆盖':'云端同步失败，请检查网络后重试');
     });
   }
   boot();
