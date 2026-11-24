@@ -22,7 +22,7 @@ on:
         required: true
         type: string
       assert_unchanged:
-        description: '不允许被本次发布改动的文件，逗号分隔'
+        description: '不允许被本次发布改动的文件，逗号分隔（目标文件自身会自动跳过）'
         required: false
         default: 'index.html,version.json,v5.4.html,ledger54.html,v5.3.html,ledger.html'
         type: string
@@ -59,15 +59,15 @@ jobs:
           fi
           sha256sum "$TARGET" | tee /tmp/sha.txt
 
-      - name: 计时门禁（仅 HTML）
+      - name: 计时门禁（仅主页版本文件）
         env:
           TARGET: ${{ inputs.target_path }}
         run: |
           set -euo pipefail
-          if [[ "$TARGET" == *.html ]]; then
+          if [[ "$TARGET" =~ ^v[0-9].*\.html$ ]]; then
             node .github/scripts/timer_check.js "$TARGET"
           else
-            echo "非 HTML，跳过计时门禁"
+            echo "不是主页版本文件，跳过计时门禁"
           fi
 
       - name: 限定改动范围
@@ -86,6 +86,7 @@ jobs:
           for g in "${LIST[@]}"; do
             g=$(echo "$g" | xargs)
             [[ -z "$g" ]] && continue
+            if [[ "$g" == "$TARGET" ]]; then continue; fi
             if echo "$CHANGED" | grep -qx "$g"; then
               echo "拒绝：$g 在禁止改动名单里"; exit 1
             fi
