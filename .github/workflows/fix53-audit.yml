@@ -1,0 +1,55 @@
+name: fix53-audit
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix53-audit
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 确认仓库文件没被别人改过
+        run: |
+          echo "b8091e2180d4795840428faa2abfb560b4e5d32f1036c22def05ba1beb1f0207  v5.3.html" | sha256sum -c -
+          echo "d491386559f6b7ff18421cbf4ca4d4cc1db9cce043b5920bcc1ff2b088bd1ed2  ledger.html" | sha256sum -c -
+          echo "5aa67ccf72ebffe079b7aec98876d929438da6a425a9d39842a49f2f3cc8c5c6  v5.2.html" | sha256sum -c -
+
+      - name: 取回修复后的三个文件
+        run: |
+          curl -sSL --retry 3 -o v5.3.html "https://aka.doubaocdn.com/s/VbXN7btyep"
+          curl -sSL --retry 3 -o ledger.html "https://aka.doubaocdn.com/s/LV98XOGrx3"
+          curl -sSL --retry 3 -o v5.2.html "https://aka.doubaocdn.com/s/A7SLBMYGU7"
+          echo "80117f2705f658d2f321f2912d9a78337aba58b21eac99e5d7b41b35505607cf  v5.3.html" | sha256sum -c -
+          echo "56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html" | sha256sum -c -
+          echo "a18fad485907e88e7de69a9c7ba4be91058b01559f4d5198f982faec6ad90e77  v5.2.html" | sha256sum -c -
+
+      - name: 计时自检（20 项，失败即拒绝提交）
+        run: |
+          TZ=Asia/Shanghai node .github/scripts/timer_check.js v5.3.html
+
+      - name: 提交并推送
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add v5.3.html ledger.html v5.2.html
+          if git diff --cached --quiet; then echo "没有变化，跳过"; exit 0; fi
+          git commit -m "fix(5.3): 版本号与入口对齐、下班重复结算、只读页删除丢失、主页/账本互相覆盖、锁释放与墓碑复活等稳定性修复"
+          git push
+
+      - name: 自删本工作流
+        run: |
+          git rm .github/workflows/fix53-audit.yml
+          git commit -m "chore: 移除一次性 fix53-audit 工作流"
+          git push
