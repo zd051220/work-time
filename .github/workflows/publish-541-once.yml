@@ -1,0 +1,49 @@
+name: publish-541-once
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 下载并校验新文件
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/v541.html https://aka.doubaocdn.com/s/LeDShsMemW
+          curl -fsSL -o /tmp/l541.html https://aka.doubaocdn.com/s/9uQO5c3JI6
+          curl -fsSL -o /tmp/t541.html https://aka.doubaocdn.com/s/AV0HMtrtKb
+          curl -fsSL -o /tmp/ef.ts https://aka.doubaocdn.com/s/vW978bilI3
+          echo 'b4623d8597d24c644143ff41853e5ffd75e97cf48d233f8ea1f49d21bdf2b503  /tmp/v541.html' | sha256sum -c -
+          echo '344a74effce7194b1e30ed2154adcc3dfcbd8b8206f754ceab9af170e612bec4  /tmp/l541.html' | sha256sum -c -
+          echo 'd683ba6c1d839a9f2b68546af6e3e76cb7f2d1c21b74e205edadb2071b7f858c  /tmp/t541.html' | sha256sum -c -
+      - name: 断言旧文件没被改动
+        run: |
+          set -euo pipefail
+          sha256sum -c <<'EOF'
+d2b96294e27774b1a48b8eec1cfcbe648fc2894b94e177aaad6480e74d6bc614  v5.4.html
+418d21c6f865da1ac483ef10f5230b7a7fb27c6a8d88af82ede155b126c00ed1  ledger54.html
+ae5bd54d6a7105b29f4c7a42539100a0283103aecbbd489a2e3db20d39eda14d  index.html
+3fe0f942296c303603dfbb181c52ff314117dbffd6d37089020b2a783f3c0e8e  v5.3.html
+56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html
+b251e32349677b89773a230cce5ae4eab86fa23f4e0b45e3334fe89e9de863c2  version.json
+EOF
+      - name: 落盘并提交
+        run: |
+          set -euo pipefail
+          cp /tmp/v541.html v5.4.1.html
+          cp /tmp/l541.html ledger54-5.4.1.html
+          cp /tmp/t541.html test-5.4.1.html
+          mkdir -p supabase/functions/delete-account
+          cp /tmp/ef.ts supabase/functions/delete-account/index.ts
+          node .github/scripts/timer_check.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add v5.4.1.html ledger54-5.4.1.html test-5.4.1.html supabase/functions/delete-account/index.ts
+          git commit -m 'feat: 新增 5.4.1 独立测试版（身份锁+真实删号接口+P2 校验）'
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/zd051220/work-time.git HEAD:main
+          git rm .github/workflows/publish-541-once.yml
+          git commit -m 'chore: 删除一次性发布工作流'
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/zd051220/work-time.git HEAD:main
