@@ -1,0 +1,9 @@
+# 已停用：5.4.1 已于 2026-11-24 发布完成。
+# 该文件仅留作操作记录，不再随 push 运行；确认后可在网页端删除。
+name: publish-541-once (disabled)
+on: workflow_dispatch
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo '5.4.1 已发布，此工作流已停用'
