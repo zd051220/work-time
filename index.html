@@ -43,9 +43,9 @@ li b{color:#3f2f20}
     <li><b>计时归属本机</b>：正在计时的打卡绑在当前设备上，别的设备登录只看不接管，不会悄悄覆盖你的计时。</li>
     <li><b>账本页同步一致</b>：账本页删除同样写删除标记，两个页面不再互相打架。</li>
   </ul>
-  <a class="go" href="xiaomao-banjin-5.1.html">先进入 5.1 用着 ›</a>
+  <a class="go" href="v5.1.html">先进入 5.1 用着 ›</a>
   <div class="auto" id="auto">6 秒后自动进入 5.1</div>
-  <div class="tip">账本页 <a href="ledger.html">ledger.html</a> · <a href="xiaomao-banjin-5.1.html">直接进入</a></div>
+  <div class="tip">账本页 <a href="ledger.html">ledger.html</a> · <a href="v5.1.html">直接进入</a></div>
 </main>
 <script>
 (function(){
@@ -61,7 +61,7 @@ tick();setInterval(tick,1000);
 var left=6,au=document.getElementById('auto');
 var t=setInterval(function(){
   left--;au.textContent=left+' 秒后自动进入 5.1';
-  if(left<=0){clearInterval(t);location.replace('xiaomao-banjin-5.1.html')}
+  if(left<=0){clearInterval(t);location.replace('v5.1.html')}
 },1000);
 })();
 </script>

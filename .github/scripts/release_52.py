@@ -3,7 +3,7 @@
 
 做的事：
 1. 读取仓库里的 xiaomao-banjin-5.1.html，打上 5.2 补丁（删除墓碑 / 计时归属 / 留言板统计），
-   写出 xiaomao-banjin-5.2.html；
+   写出 v5.2.html；
 2. 把 ledger.html 升级为 5.2（同样支持删除墓碑）；
 3. 写入 manifest.json、icon.svg，把 index.html 换成 5.2 上线页。
 
@@ -12,7 +12,7 @@
 import base64, gzip, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MAIN = os.path.join(ROOT, 'xiaomao-banjin-5.1.html')
+MAIN = os.path.join(ROOT, 'v5.1.html')
 LEDGER = os.path.join(ROOT, 'ledger.html')
 
 B_PAIRS = "H4sIANHpBGsC/9VZ63PTVhb/V0R2J5JioziUUlZGMLx2yvYBQ7L9kmQysnVtayNL3ivZOLU1w74gbHluh3ZhKW1o02GW8pzZkqGwO9M/pWM75hP/wp579bqS7cRJvNDlQ5Cuzj2ve+55/NwYK6u6OSZzs7NjNRVzNrJPVe3SjF5GWDGrhpEdS3MDvsyZkxPc29Iern318vq9h92V1dbaH149v9l98O/2N+c7X53vPjz36vly98FK5/Pv2y/+1n58+9XzCymuvfzVyxvftO98un7nGnx/+fcnnft3YLFz+cL6zT93Hzxqv7jevXOvvXyPvlJmn1xo/+N254tVYMBNTM6ZRKNjxz9ShELVzDu6ZQpig6zVPNUcvNSoKYaVV41px8JqEUlF5JxwUFngy2cWNFTjRTevOvmSgMSGqxeEXTVgoPAan/pAdUoSVk3NKgui5FjTDtbNovDWPlGyDT2PhD3pqYxIRcQE2AkB6RorwsXIqWKTq7miIGYDA95fmDl85P3jCyffUxxcRdmx+TQ3OxbYxBmWqvmG5VQbKY0awjZ8kN9OY5S3sGbLs/NpOBm6SCx36XntgEFaQwasub4qZJfkf1dqqqFr096LkK/i4IN4iHmhXLK+tWS7y3iBKLddlnBIhzFWlyTdpv9TctBWFClHeFL8FamgGw7CUWzUxYavUH18vC7pmitKZbXSj6Cha7J/4oRQTKuO/GG1nAN2dUl1xGYz47riQPuo034zffJDyaZM9MKS0Mfpmuqokv8Sup8u+i+uSFw1Akb0POkCPDSbcLKip2QFmRrwPY1qOjoj21LsvdmksYBArok+CqR6wbWNjaBEDSjhb7PJ80FslS0NyfwZCy/yafL3A1vOpCuqrtGHqhk+xiUO1myEDKnGkGACXW2JMFfIn6wtGartHHaUY6qDJNM6AxeaiI/TAAMFGPSnjl9zP7XCRZ0zOY4kIzWfJ5dCgHDbxZ6m6MVd/JJvfbtPx34i+o6PJ1d2KcSGUCpVm6P/iBhsA//YDca26BNzBdWwEZXkk/dRxCci1oyeK0MEPIk1Io6OJXEE4LHTcDQ4XYU73yAKQW2LF6qbiRLVvnW39ewaFL716zdaa/8ki1eevnp+sX3l29ba2faVR1HpuvIZVEBY7P7rqccEyFprl1rA89wlKHVheaO1LVTKscq5d1VbICqRFK4p7EXOFiwskGVdyWT1A5pkQAw7payeSokN4plZfR4ymKIofj4DNoGHSLFxWW+5CbGHNY2KJU4MhMalB7HGKCkGBFKFxCOTSv1EGl0BV6QMiPqGXmbuxu6p/ZmJPXsn3tqXyUxMZTKZbF8VNkjxQiJdiwdBApWXNJK5NbTDUcJ7E1pHYpEt04EDT2GrrEPVwci2jBoSGtaiTJyathf1Cn1iLMTWGVsRWO8NLj9VG+EFcJwtQSSmk8UItiMHaQs9RYnxrBtpTwT7YbFlxX16cMlR1TAEfhJ2OJO1qUmv2kCLY9h8ulFGTsnSZP7UyekZPp2ztCU5UbWIEmK6hFQNkqvc4E9hVECYl3mqQpU4QIGesoh2a9UKNFhgiZ32pCtl3dTLqsGDUd51lpwSMiPHYRrp0Cg4qlO1IdT3ZvaKjVhf5SWDwL291rrMJyxZi2mPlxwwjUR7ZZ5pOJmdVEqwNeMOCDfw42jCLTP8GR2yIWbyjgLRFEUPPxp3QjdBwwzcJoZLwUcs/c4mbhp0dCQsGmySjnd39Du4o08MZ8LcTvxoKtE7JYa8eFxlT6oeyfEk1YEvvVBMPYwYQs5kL102vpfNd0ymTPDIIdACKWx7FuTniJD9GidNZjccBhsGlaAqkxY2rpgnET71kSmaqVRIzWyEbSbhnJ/WiwrPZ20VYkvMalgliSR0qic5cNOm9yHTE/2J6tpTeo8h4zTKhwUn1sJsmrisQmELecs+BMeLfi/xKWTmoVP77ekTR61yxTKR6dAyFWY0CPvjM8f5wZnnf5c4Yu3d/61/ohKb3b6r+jPp77WeuGIy7nA+UzUNaTAgbNVnfo6dGIc3hMkVRJJq53kxeZIj1igqKwn3k8x/GpWtGvJjZgcmMF3/wPxKjIGWZpZkzHmvW8WYFDgSt3VIKWxSot0hxmKW7MAko80rGGepqamUyySoAakpm0hNvpfoXzdMU8xcsaHeUA2CpE4TfrMZWeIXiB3ZsyNz0sxJyswzwSEiS8mDKzIDGlEYkm3UYpB20qen9QkaNSXRqMVsivWnUbKLZXJXjHy8kUDmDkcaGHoNDVv0wqJLfCu64iaGENbDG+D7bBTFGKLJt398PLrajVgGT+ZJZHtRCA+kjXIs1XYE3pssO09WgnlxmU8RWj9hNpv8+otr6z/c4sUU/+o5mSfX715qX73cXn7a+QwG0YfdP71oX1lun3+2fvkRD4a63kGNwspk1/MmrW6tfdL5bqV99WLn/iqM0y/PX+o+vO7ZS8/1gF1RTS5vqLatzI05anFujPR3c2OF3FGrajpzYwe7/7ndubzaWrt/YJIQHzwwqem1g3PmAfgv3GlaDoKttrNkIHgtq7iom3KGy3BTmUoduBD3jkpYITcN9kab/bdAeMEynd22/jGSp6Yq9WzeMiws/+JXuf3733knm9Asa+gm2l1CerHkyFPSPlChc//r9q276z982X2w8tPZb7dpbgLByr0roLqDVS/1l5SGWtEX0ZI8feS99OEqNAxY/1glpDJ/BKkYYY5PwTeXoLr+xgDOWOR0k/PWSrOL8wp9hIdgUCvF26PXK5ppagm2Tk7G9ut5AZHWZfpIiqmtlfwkCV17oVLNwWjbMy8HUzExosEfhYOFNmv3zFIFwXysVrxxGIRNklEKWi1vwOYbLr/hQOxNZE4Jyh4MS8PNY8yQRFxhKfFxrC4eqs9m5uV6DFezQiHsXmQovxR4L2752LSBDBEZkgN+9W1V+PbTJ51bF+BMLIlgH3aK51rPnkGEdq5+9/L8tc4XK9yPTzmCqP3lcffBo9azc5TWT1tA7VOQxTKkHrWI/NX16ze6d8/ym44tfVTur6p3Zzo3/9j5/HtIUnCXW2t/9aC89ovH7U8vJSVGXemcScLl1whpAu1dvcLZu8oEFVQm2DpmIK2IsPcLHQRZEH15w6pqCcjS837vr0o0Ot8MqJgQzMKKGwGLI4AWhwcXRwUvwon3GMxAjL2ozzYQnzcIKA4NKYaq/jwhxB2jXpkgyBlfMMw3hkX6B0k4FI4oSHYMDL5eaHATcHDb8GAvQDgURLgZSLgZTNjbIveBBmPjlneFewDCRL/eZ8tWgcKtQYUxsDCAC/3RFSMTbiMDE/YAhVHN3fKt6Klu4WA7Gsw0YUOWyoNphR6YP4xAY+L9ANh9uArdhPejHx9NvKPRpDdSdqSb76e4I/3NjSiLJ3EnX/TIQcGN+9PBQ1+QZ/qNeX2G28FRNkjGxc7XZztfrgbjZBCE3tn+nL3HYCk7dWRsXt7IhaHErXozBkf1Q2r6ZLQBuA2TEWgnEwOf+gJMQ8obHnXammp9b2Ks0g8FAA9b0jfBoEevyEDomYXadoI1b4La5pZOaAHc3IvGemdCsVoxG5EqU/1QZg/CIuuin3x7ahr9OqK6NqMWhWBg2xY8zZjuJ6DtOOD12B/B0wMdMT/v/hf3mzJ3hyoAAA=="
@@ -43,7 +43,7 @@ def main():
     if 'record_dels' not in out:
         print('!! 5.2 补丁不完整：没有 record_dels')
         sys.exit(1)
-    open(os.path.join(ROOT, 'xiaomao-banjin-5.2.html'), 'w', encoding='utf-8').write(out)
+    open(os.path.join(ROOT, 'v5.2.html'), 'w', encoding='utf-8').write(out)
 
     led = open(LEDGER, encoding='utf-8').read()
     if 'record_dels' in led:
@@ -54,7 +54,7 @@ def main():
     open(os.path.join(ROOT, 'manifest.json'), 'w', encoding='utf-8').write(unblob(B_MANIFEST))
     open(os.path.join(ROOT, 'icon.svg'), 'w', encoding='utf-8').write(unblob(B_ICON))
     open(os.path.join(ROOT, 'index.html'), 'w', encoding='utf-8').write(unblob(B_INDEX))
-    print('5.2 已完成：xiaomao-banjin-5.2.html / ledger.html / index.html / manifest.json / icon.svg')
+    print('5.2 已完成：v5.2.html / ledger.html / index.html / manifest.json / icon.svg')
 
 
 if __name__ == '__main__':
