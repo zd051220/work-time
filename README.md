@@ -9,7 +9,8 @@
 | 站点根地址（自动跳转 5.4） | https://zd051220.github.io/work-time/ |
 | 当前主页 5.4 | https://zd051220.github.io/work-time/v5.4.html |
 | 完整账本（5.4） | https://zd051220.github.io/work-time/ledger54.html |
-| 5.4.1 测试入口（独立，未切正式） | https://zd051220.github.io/work-time/test-5.4.1.html |
+| v5.5 内测版（独立体验，不替换正式版） | https://zd051220.github.io/work-time/beta-v5.5.html |
+| 5.4.1 历史测试入口 | https://zd051220.github.io/work-time/test-5.4.1.html |
 | 5.4.1 测试账本 | https://zd051220.github.io/work-time/ledger54-5.4.1.html |
 
 ## 当前文件
@@ -17,9 +18,9 @@
 | 文件 | 说明 |
 | --- | --- |
 | `index.html` | 站点入口，5 秒后跳 `v5.4.html`，带兜底链接与历史入口 |
-| `v5.4.html` | **当前正式版**：账号账本分库存、改密码、注销（清云端）、一个页面计时、跨午夜拆账 |
+| `v5.4.html` | **当前正式版**：账号账本分库存、改密码、清空云端账本（不删除登录账号）、一个页面计时、跨午夜拆账 |
 | `ledger54.html` | 5.4 的完整账本页 |
-| `v5.4.1.html` | **测试版**：账号身份锁 + 删号不再假装成功 + 导入上限；未部署删号函数时只清云端账本 |
+| `beta-v5.5.html` | **当前内测版**：底部四栏与「我的」五个独立子页面、账号身份锁、备份恢复保护、计时云同步 |\n| `v5.4.1.html` | 历史测试版：账号身份锁 + 导入上限；未部署删号函数时只清云端账本 |
 | `ledger54-5.4.1.html` | 5.4.1 的账本页 |
 | `test-5.4.1.html` | 5.4.1 测试入口页 |
 | `v5.3.html` / `v5.2.html` / `v5.1.html` | 历史版本，`index.html` 里有入口；5.3 可作回滚版 |
@@ -29,7 +30,7 @@
 | `manifest.json` / `icon.svg` | PWA 清单与图标 |
 | `.github/scripts/timer_check.js` | 发布前计时纯函数门禁（20 项断言） |
 | `.github/workflows/release-manual.yml` | 手动发布流程：下载→哈希→门禁→单文件提交 |
-| `supabase/functions/delete-account/index.ts` | 真正删号的 Edge Function，**尚未部署** |
+| `supabase/functions/delete-account/index.ts` | 真正删号的 Edge Function 源码，**尚未部署、前端未启用** |
 
 ## 计时规则
 
@@ -44,7 +45,7 @@
 - **本地**：主页和账本页同域名，共用 localStorage，key `catGold_v5`（按账号分库时为 `catGold_v5.u.<uid>`）。
 - **登录态**：key `mw_acct_v1`（token、refresh、uid、昵称、过期时间）。access token 1 小时过期，到期前自动续期；401 重试一次。
 - **云端记录**：Supabase 表 `records`，主键 `user_id + id`，RLS 只能读写自己的行；`feedback` 表做留言板（免登录可读可发）。
-- **进行中打卡**：写在当前用户的 `user_metadata.session`，登录后定时去重推送。
+- **正式版 5.4 进行中打卡**：写在当前用户的 `user_metadata.session`，登录后定时去重推送。\n- **v5.5 内测版进行中打卡**：使用 `work_sessions` 表和 `sync_work_session` RPC；恢复时会对离线时间进行核对。
 
 ## 后端配置（Supabase）
 
