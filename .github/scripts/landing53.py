@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""写入口页：小猫搬金条 5.3 已上线。"""
+import io
+import sys
+
+HTML = """<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小猫搬金条 5.3 · 已上线</title>
+<meta name="theme-color" content="#fff3d6">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+*{box-sizing:border-box} body{margin:0;min-height:100vh;background:linear-gradient(160deg,#fff1d2,#fffaf2 45%,#f8f1e8);color:#49382c;
+font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;padding:22px 20px 30px}
+.box{max-width:360px;margin:0 auto;text-align:center}
+.tag{display:inline-block;font-size:11px;font-weight:900;color:#8a6a2c;background:#fff4d9;border:1px solid #f0dcae;border-radius:999px;padding:5px 12px;letter-spacing:.5px}
+.cat{font-size:50px;line-height:1;margin:16px 0 8px}
+h1{font-size:20px;margin:0;font-weight:900;letter-spacing:.5px}
+.h1sub{font-size:11px;color:#a6917a;margin-top:6px;line-height:1.6}
+ul{text-align:left;margin:16px 0 0;padding:14px 16px;background:#fffdf8;border:1px solid #f1e3cc;border-radius:14px;box-shadow:0 2px 10px #c9a76a1a;list-style:none}
+li{font-size:12px;line-height:1.75;color:#5a4835;margin:0 0 8px} li:last-child{margin-bottom:0} li b{color:#3f2f20}
+.go{display:block;margin-top:16px;font-size:14px;font-weight:900;color:#5b3f12;text-decoration:none;background:linear-gradient(#f9d780,#e9ae3f);padding:15px;border-radius:16px;box-shadow:0 4px 0 #d49b35}
+.go:active{transform:translateY(1px)}
+.auto{font-size:11px;color:#a6917a;margin-top:10px}
+.tip{font-size:11px;color:#a6917a;margin-top:14px}
+.tip a{color:#8a6a2c}
+.pwa{font-size:11px;color:#a6917a;line-height:1.7;margin-top:14px;background:#fffdf8;border:1px dashed #eddfc8;border-radius:12px;padding:10px 12px}
+</style></head>
+<body>
+<main class="box">
+  <div class="tag">5.3 已上线</div>
+  <div class="cat">🐈</div>
+  <h1>小猫搬金条 5.3</h1>
+  <div class="h1sub">手机开着不费电了，两个页面也不再抢着计时</div>
+  <ul>
+    <li><b>只让一个页面计时</b>：同一台手机上开了两个页面（比如主页和账本页），只有一个在真计时，另一个只跟着显示；想换就点「接管计时」，不会再把时间互相覆盖。</li>
+    <li><b>挂着更省电</b>：页面闲着不再每秒重写一屏数字，空闲时的刷新从每秒 24 次降到每秒 1 次，挂机更省电、也不容易卡。</li>
+    <li><b>账本页不再捣乱</b>：在账本页删记录，不会再把旧的计时状态写回去，不会再莫名弹「时间早于上次记录」。</li>
+    <li><b>5.2 的都保留</b>：删掉的记录不会复活、计时只认发起的那台设备、跨午夜照旧按天拆账。</li>
+  </ul>
+  <a class="go" href="v5.3.html">进入小猫搬金条 5.3 ›</a>
+  <div class="auto" id="auto">5 秒后自动进入 5.3</div>
+  <div class="tip">完整账本 <a href="ledger.html">ledger.html</a> · 上一版 <a href="v5.2.html">5.2</a> · 旧版 <a href="v5.1.html">5.1</a></div>
+  <div class="pwa">想把小猫放到手机桌面？iPhone：Safari 分享 →「添加到主屏幕」；Android：Chrome 右上菜单 →「安装应用」/「添加到主屏幕」。</div>
+</main>
+<script>
+(function(){
+  var left=5, au=document.getElementById('auto');
+  var t=setInterval(function(){
+    left--; au.textContent=left+' 秒后自动进入 5.3';
+    if(left<=0){ clearInterval(t); location.replace('v5.3.html'); }
+  },1000);
+  if(location.search.indexOf('stay=1')>-1){ clearInterval(t); au.textContent='已停止自动跳转'; }
+})();
+</script>
+</body></html>
+"""
+
+p = sys.argv[1] if len(sys.argv) > 1 else 'index.html'
+io.open(p, 'w', encoding='utf-8').write(HTML)
+print('%s: 已写入 5.3 入口页（%d 字符）' % (p, len(HTML)))

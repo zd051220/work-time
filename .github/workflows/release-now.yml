@@ -1,0 +1,64 @@
+name: release-now-52-53
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-now
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 生成 5.2（若还没有）
+        env:
+          TZ: Asia/Shanghai
+        run: |
+          if [ -f v5.2.html ]; then
+            echo "5.2 已存在，跳过构建"
+          else
+            python3 .github/scripts/release_52.py
+            python3 .github/scripts/strip_notice.py v5.2.html
+            python3 .github/scripts/finish52.py
+            node .github/scripts/timer_check.js v5.2.html
+          fi
+
+      - name: 生成 5.3
+        env:
+          TZ: Asia/Shanghai
+        run: |
+          if [ -f v5.3.html ]; then
+            echo "5.3 已存在，跳过构建"
+          else
+            python3 .github/scripts/release_53.py v5.2.html v5.3.html
+            node .github/scripts/timer_check.js v5.3.html
+          fi
+
+      - name: 入口页换成 5.3
+        run: python3 .github/scripts/landing53.py index.html
+
+      - name: 提交并推送
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add -A
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "release 5.2 + 5.3: 删除墓碑/计时归属 + 单写者计时 + 省电渲染；入口页切 5.3"
+          git push
+
+      - name: 自删本工作流
+        run: |
+          if [ -f .github/workflows/release-now.yml ]; then
+            git rm .github/workflows/release-now.yml
+            git commit -m "chore: 移除一次性 release-now 工作流"
+            git push
+          fi
