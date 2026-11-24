@@ -320,17 +320,20 @@ tabs.forEach(function(b){
 });
 var SECS=['sec-home','sec-setup','sec-stat','sec-ledger','sec-backup'];if('IntersectionObserver' in window){
   var pick=function(){
-    var y=window.innerHeight*0.42, best=null, bestD=1e9;
+    /* mwPick53：按“已经滚过 42% 线的最后一个小节”判定，避免短卡片把高亮抢走 */
+    var y=56, best='sec-home';
     SECS.forEach(function(id){
       var el=$(id); if(!el) return;
-      var d=Math.abs(el.getBoundingClientRect().top-y);
-      if(d<bestD){bestD=d;best=id}
+      if(el.getBoundingClientRect().top<=y) best=id;
     });
-    if(best&&best!=='sec-setup') setTab(best);
+    if(best==='sec-setup') best='sec-home';
+    setTab(best);
   };
   var io=new IntersectionObserver(pick,{rootMargin:'-40% 0px -45% 0px',threshold:[0,.2,.6]});
   SECS.forEach(function(id){var el=$(id); if(el) io.observe(el)});
-  window.addEventListener('scroll', function(){ if(!io) pick() }, {passive:true});
+  /* mwPick53b：滚动过程中也按几何位置实时校正高亮 */
+  var mwPend=false;
+  window.addEventListener('scroll', function(){ if(mwPend)return; mwPend=true; requestAnimationFrame(function(){ mwPend=false; pick() }); }, {passive:true});
 }
 
 /* ===== 更新公告 ===== */
