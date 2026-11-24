@@ -126,7 +126,7 @@ section.card{scroll-margin-top:14px}
 <div class="actions"><button class="btn paid" id="paidBtn" disabled>☕ 开始带薪摸鱼</button><button class="btn unpaid" id="unpaidBtn" disabled>🌿 开始不带薪摸鱼</button></div>
 <div class="actions"><button class="btn stop" id="resumeBtn" disabled style="grid-column:1/-1">↩️ 摸够了，继续工作</button></div>
 <div class="breakstatus" id="breakStatus"></div><div class="now" id="now">现在时间 --:--:--</div></section>
-<section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</b><b id="breakTotal">00:00:00</b></div></div></section>
+<section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</span><b id="breakTotal">00:00:00</b></div></div></section>
 <section class="card" id="sec-ledger"><div class="head"><h2>📅 每月搬金账本</h2><div class="monthbar"><button id="prev">‹</button><strong id="month">----</strong><button id="next">›</button></div></div><div class="sum"><span>本月累计收入</span><b id="monthTotal">¥0.00</b></div><div id="records"><div class="empty">这个月还没有搬金记录～</div></div><div style="margin-top:13px"><a href="ledger54.html" style="display:inline-block;font-size:11px;font-weight:800;color:#8e7047;text-decoration:none;border:1px solid #efe2cf;background:#fff9ef;border-radius:11px;padding:9px 13px">打开完整账本 ›</a></div></section>
 <section class="card" id="sec-backup"><div class="head"><h2>🧰 数据备份</h2><span class="tag" id="saveTag">本地保存</span></div><div class="tools"><button class="tool" id="export">导出备份</button><button class="tool" id="import">导入备份</button><input id="file" type="file" accept="application/json" hidden></div><div class="note">记录保存在当前浏览器。更换手机或清理浏览器数据前，请先导出备份。导入会先自动备份现有数据，再显示要新增多少条、跳过多少条，确认后才写入；不会把备份里的“进行中打卡”接上继续计时。</div></section>
 <div style="text-align:center;margin:2px 0 16px"><a href="cat-game-beta.html" style="font-size:10px;color:#ddd0bb;text-decoration:none">🐾 听说这儿藏了只猫…</a></div>
@@ -142,7 +142,7 @@ section.card{scroll-margin-top:14px}
 <div id="accOn" style="display:none">
 <div class="accRow"><div><div class="accName" id="accName">—</div><div class="accSub" id="accSub">已登录</div></div><button class="accOut" id="accOut">退出</button></div>
 <div class="fbRow"><button class="fbMain" id="accSync">立即同步</button><button class="fbAlt" id="accPull">从云端拉取</button></div>
-<div class="fbRow"><button class="fbAlt" id="accPwd">修改密码</button><button class="fbAlt" id="accDel">注销账号</button></div>
+<div class="fbRow"><button class="fbAlt" id="accPwd">修改密码</button><button class="fbAlt" id="accDel">清空云端账本</button></div>
 </div>
 <div class="accMsg" id="accMsg"></div>
 </section>
@@ -171,7 +171,7 @@ section.card{scroll-margin-top:14px}
   <ul>
    <li><b>账号账本分开存（重要）</b>：换账号登录会切到那个账号自己的账本，不会把上一个账号的记录混进来或同步到新账号；不登录的账本仍然只在这台设备上。</li>
    <li><b>能改密码了</b>：登录后在账号卡里点「修改密码」，改完下次用新密码登录。</li>
-   <li><b>能注销账号</b>：点「注销账号」并输入「注销」确认，会删掉这个账号在云端的记录、把本机这个账号的账本归档，然后退出登录。</li>
+   <li><b>清空云端账本</b>：可删除这个账号的云端记录并退出登录；当前版本不会删除登录账号本身，本机账本会先归档。</li>
    <li><b>5.3 的都保留</b>：一个页面计时、关掉自动接手、账本合并、删掉不复活、跨午夜拆账。</li>
   </ul>
   <div class="addr">账本页：ledger54.html（同域名共用一份数据与登录态）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步（登录后云端也同步）。<br>换设备前建议先「导出备份」，再登录账号。</div>
@@ -334,7 +334,7 @@ $('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return
 };
 $('prev').onclick=function(){var p=monthView.split('-'),y=Number(p[0]),m=Number(p[1])-1;if(m<1){m=12;y--}monthView=y+'-'+pad2(m);recSig='';drawRecords()};$('next').onclick=function(){var p=monthView.split('-'),y=Number(p[0]),m=Number(p[1])+1;if(m>12){m=1;y++}monthView=y+'-'+pad2(m);recSig='';drawRecords()};
 function exportNow(name){var blob=new Blob([JSON.stringify({version:5,exportedAt:new Date().toISOString(),records:data.records,session:data.session},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(url)},1000)}
-$('export').onclick=function(){exportNow('小猫搬金条5.3备份_'+day()+'.json');toast('备份文件已导出')};
+$('export').onclick=function(){exportNow('小猫搬金条5.4备份_'+day()+'.json');toast('备份文件已导出')};
 $('import').onclick=function(){$('file').click()};
 $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){
   try{
@@ -348,12 +348,15 @@ $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=n
     exportNow('导入前自动备份_'+day()+'_'+String(Date.now()).slice(-6)+'.json');
     var ok=confirm('备份文件版本：'+(ver||'未知')+'\n文件内记录：'+incoming.length+' 条\n新增：'+news.length+' 条，重复跳过：'+dup+' 条\n本地现有：'+data.records.length+' 条\n\n已自动导出当前数据作为安全备份（在下载里）。\n确定导入吗？');
     if(!ok){toast('已取消导入，当前数据没变');return}
-    /* mwFix53g：用户主动导入的这几条，明确恢复它们（清掉同名墓碑），否则会被当“已删除”过滤 */
-    var inIds={};news.forEach(function(r){inIds[r.id]=1});
-    data.del=(data.del||[]).filter(function(x){return !inIds[String(x.id)]});
+    /* 用户主动导入备份：清除内存、本地磁盘及云端对应删除标记，再恢复备份记录 */
+    var restoreIds=incoming.map(function(r){return String(r.id)});
+    clearLocalTombstonesForRestore(restoreIds);
     news.forEach(function(r){data.records.push(r)});
     save();recSig='';draw();toast('导入完成，新增 '+news.length+' 条，跳过重复 '+dup+' 条');
-    if(accSess&&accSess()){syncAll(false)}
+    if(accSess&&accSess()){
+      deleteCloudTombstones(restoreIds).then(function(){syncAll(false)})
+        .catch(function(){toast('本地已导入，但云端删除标记未清除；请稍后重试同步')});
+    }
   }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
 };reader.readAsText(f);e.target.value=''};
 function onHide(){visible=false;if(isWriter&&data.session&&!data.session.pendingReview){accrue(Date.now(),'hide');save()}lastWall=Date.now();lastMono=performance.now()}
@@ -647,6 +650,28 @@ function tombAdd(id){
   if(!tombHas(id))data.del.push({id:String(id),at:Date.now()});
   /* mwFix53c：墓碑不再按 180 天裁剪 —— 裁剪后老记录会被云端拉回来。本地只存 id+时间，体量可忽略。 */
 }
+function clearLocalTombstonesForRestore(ids){
+  var wanted={};(ids||[]).forEach(function(id){wanted[String(id)]=1});
+  data.del=(data.del||[]).filter(function(x){return !wanted[String(x.id)]});
+  var cur=null;
+  try{cur=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  if(cur&&Array.isArray(cur.del)){
+    cur.del=cur.del.filter(function(x){return !wanted[String(x.id)]});
+    localStorage.setItem(KEY,JSON.stringify(cur));
+  }
+}
+function deleteCloudTombstones(ids){
+  var account=accSess(),list=(ids||[]).map(String);
+  if(!account||!DEL_TABLE_OK||!list.length)return Promise.resolve(true);
+  var chunks=[];for(var i=0;i<list.length;i+=80)chunks.push(list.slice(i,i+80));
+  return chunks.reduce(function(chain,chunk){
+    return chain.then(function(){
+      var values=chunk.map(function(id){return '"'+id.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"'}).join(',');
+      return accCall('/rest/v1/record_dels?id='+encodeURIComponent('in.('+values+')'),{method:'DELETE'})
+        .then(function(r){if(!r.ok)throw {status:r.status};return true});
+    });
+  },Promise.resolve(true));
+}
 function tombPush(){
   var s=accSess();
   if(!s||!DEL_TABLE_OK)return Promise.resolve({ok:true,skip:true});
@@ -770,7 +795,7 @@ if($('accLogin')){
   };
   $('accDel').onclick=function(){
     var s=accSess(); if(!s){accMsg('还没登录');return}
-    if(!confirm('注销账号会删除这个账号在云端的全部记录，并把本机这个账号的账本归档（不删、可导出）。\n确定要注销「'+(s.nick||s.uid)+'」吗？'))return;
+    if(!confirm('当前版本暂未部署真正删除登录账号的服务端功能。继续后会清空这个账号的云端账本记录、清理云端进行中的计时并退出登录；登录账号本身仍保留（同名不能重新注册）。本机账本会先归档，可导出。\n\n确定继续处理「'+(s.nick||s.uid)+'」吗？'))return;
     var word=prompt('请输入「注销」两个字确认');
     if(word!=='注销'){accMsg('没有输入「注销」，已取消');return}
     accMsg('正在注销…');
@@ -785,7 +810,8 @@ if($('accLogin')){
        避免“注销完记录又被推回来” */
     var tries=0;
     function wipe(){
-      return accCall('/rest/v1/records?user_id=eq.'+uidEnc,{method:'DELETE'})
+      return accCall('/auth/v1/user',{method:'PUT',body:JSON.stringify({data:{session:null,mwSavedAt:Date.now()}})})
+        .then(function(r){if(!r.ok)throw {status:'计时状态清理失败'};return accCall('/rest/v1/records?user_id=eq.'+uidEnc,{method:'DELETE'})})
         .then(function(r){if(!r.ok)throw {status:r.status};return accCall('/rest/v1/record_dels?user_id=eq.'+uidEnc,{method:'DELETE'})})
         .then(function(r){if(r&&!r.ok)throw {status:r.status};return accCall('/rest/v1/records?select=id&user_id=eq.'+uidEnc)})
         .then(function(r){
@@ -805,7 +831,7 @@ if($('accLogin')){
       .then(function(){
         try{localStorage.removeItem(KEY)}catch(e){}
         logoutSoft();
-        toast('账号已注销，云端记录已删除');
+        toast('云端账本已清空，已退出登录（账号本身仍保留）');
         setTimeout(function(){location.reload()},300);
       })
       .catch(function(e){
