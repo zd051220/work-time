@@ -12,15 +12,7 @@ jobs:
       - name: 改公告文案（删号不再假装成功）
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import io
-          p='v5.4.1.html'
-          s=io.open(p,encoding='utf-8').read()
-          a='账号身份锁 + 真实的删号流程（测试版，未切正式入口）'
-          b='账号身份锁 + 删号不再假装成功（未部署服务端时只清账本）'
-          assert s.count(a)==1, 'anchor not found'
-          io.open(p,'w',encoding='utf-8').write(s.replace(a,b,1))
-          PY
+          python3 -c "import io;p='v5.4.1.html';s=io.open(p,encoding='utf-8').read();a='账号身份锁 + 真实的删号流程（测试版，未切正式入口）';b='账号身份锁 + 删号不再假装成功（未部署服务端时只清账本）';assert s.count(a)==1;io.open(p,'w',encoding='utf-8').write(s.replace(a,b,1))"
           sha256sum v5.4.1.html
           git config user.name 'release-bot'
           git config user.email 'release-bot@users.noreply.github.com'
