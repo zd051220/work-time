@@ -206,7 +206,7 @@ var lastMono=performance.now();
 var lastWall=Date.now();
 var jumpWarn='';
 var toastTimer=null;
-var sesPushTimer=null, sesPushChain=Promise.resolve(), mwEndedSession=null;
+var sesPushTimer=null, sesPushChain=Promise.resolve(), mwEndedSession=null;try{mwEndedSession=JSON.parse(localStorage.getItem(KEY+'_ended')||'null')}catch(e){}
 /* 5.2 后端补丁：设备标识（计时归属）+ 删除墓碑（防止删掉的记录被别的设备拉回来） */
 var DEV=(function(){var v=null;try{v=localStorage.getItem('mw_dev')}catch(e){}if(!v){v='d'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('mw_dev',v)}catch(e){}}return v})();
 var DEL_TABLE_OK=true;
@@ -299,7 +299,7 @@ function changeMode(mode){var s=data.session;if(!s||s.pendingReview)return;accru
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&h>0&&Number.isFinite(w)&&Number.isFinite(h))){toast('请填写有效的大于 0 的日薪和工作时长');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);
   data.session={sid:'ws-'+String(now),date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5,dev:DEV};
   data.session.days={};data.session.days[day(now)]={work:0,paid:0,unpaid:0};
-  lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
+  if(mwEndedSession&&now>mwEndedSession.started){mwEndedSession=null;try{localStorage.removeItem(KEY+'_ended')}catch(e){}}lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
 $('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}
   var now=Date.now(),r=s.wage/s.hours/3600,lastDate=day(now);
@@ -317,7 +317,7 @@ $('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return
     var rec={id:id,date:d,start:st,end:en,work:duration(b.work),paid:duration(b.paid),unpaid:duration(b.unpaid),duration:duration(payMs+b.unpaid),wage:s.wage,hours:s.hours,pay:payMs/1000*r,started:idx===0?s.started:0};
     data.records.push(rec);made.push(rec);
   });
-  mwEndedSession={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),started:Number(s.started)||0};data.session=null;jumpWarn='';$('endTime').value=hhmm(now);monthView=ym(new Date());recSig='';save();if(accSess&&accSess())sesPush(true);draw();
+  mwEndedSession={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),started:Number(s.started)||0};try{localStorage.setItem(KEY+'_ended',JSON.stringify(mwEndedSession))}catch(e){}data.session=null;jumpWarn='';$('endTime').value=hhmm(now);monthView=ym(new Date());recSig='';save();if(accSess&&accSess())sesPush(true);draw();
   if(mwBc){try{mwBc.postMessage({type:'snap',session:null})}catch(e){}}
   toast(made.length>1?('下班啦！跨了 '+made.length+' 天，已按天拆成 '+made.length+' 条'):'下班啦！这一段已记账～');
   if(accSess&&accSess()){var i=0;var pushNext=function(){if(i>=made.length){if($('accSub'))$('accSub').textContent='已同步 · 本地共 '+data.records.length+' 条';return}accPushOne(made[i++]).then(function(res){if(!res.ok){toast('有记录没同步到云端，点「立即同步」重试');return}pushNext()})};pushNext()}
@@ -634,7 +634,7 @@ function sesPush(forceNow){
       if(!current||current.uid!==account.uid)return false;
       return accCall('/rest/v1/rpc/sync_work_session',{method:'POST',body:JSON.stringify(body),headers:{'Content-Type':'application/json'}})
         .then(function(r){if(!r.ok)throw {status:r.status};return r.json()})
-        .then(function(row){applyCloudSession(row);if(ended&&mwEndedSession&&mwEndedSession.sid===ended.sid)mwEndedSession=null;return true});
+        .then(function(row){applyCloudSession(row);if(ended&&mwEndedSession&&mwEndedSession.sid===ended.sid){mwEndedSession=null;try{localStorage.removeItem(KEY+'_ended')}catch(e){}}return true});
     }).catch(function(e){if($('accSub'))$('accSub').textContent='计时状态同步失败'+(e&&e.status?'（'+e.status+'）':'')+'，请检查网络';return false});
   },forceNow?0:500);
 }
@@ -650,7 +650,7 @@ function applyCloudSession(row){
   }
   if(row.status==='active'&&validSession(row.payload)){
     var remote=upgradeSession(row.payload);
-    if(!local||remote.sid===local.sid||remote.started>local.started){
+    if(!local||remote.started>local.started||(remote.sid===local.sid&&Number(remote.lastAt)>=Number(local.lastAt))){
       if(remote.dev!==DEV){
         var gap=Date.now()-(Number(remote.lastAt)||Date.now());
         if(gap>MAX_AUTO_GAP||gap<0){
@@ -665,6 +665,7 @@ function applyCloudSession(row){
 }
 function sesRestore(forceCloud){
   if(!accSess())return Promise.resolve(false);
+  if(mwEndedSession&&isWriter){sesPush(true);return Promise.resolve(false)}
   return accReq('/rest/v1/work_sessions?select=session_id,started_at,status,payload,updated_at')
     .then(function(r){if(!r.ok)throw {status:r.status};return r.json()})
     .then(function(rows){
