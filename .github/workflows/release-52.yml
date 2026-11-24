@@ -21,7 +21,7 @@ jobs:
       - name: Check if already released
         id: check
         run: |
-          if [ -f xiaomao-banjin-5.2.html ]; then
+          if [ -f v5.2.html ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -31,24 +31,37 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: python3 .github/scripts/release_52.py
 
-      - name: Add game easter egg to 5.2
+      - name: Game easter egg and link rewrite
         if: steps.check.outputs.skip == 'false'
         run: |
           python3 - <<'PYEGG'
           import io
-          p = 'xiaomao-banjin-5.2.html'
-          s = io.open(p, encoding='utf-8').read()
-          if 'game-beta.html' not in s:
-              egg = ('<div style="text-align:center;margin:2px 0 16px">'
-                     '<a href="game-beta.html" style="font-size:10px;color:#ddd0bb;text-decoration:none">'
-                     '🐾 听说这儿藏了只猫…</a></div>')
-              anchor = '<section class="card" id="sec-account">'
-              assert s.count(anchor) == 1, 'anchor not unique'
-              s = s.replace(anchor, egg + '\n' + anchor)
+
+          def read(p):
+              return io.open(p, encoding='utf-8').read()
+
+          def write(p, s):
               io.open(p, 'w', encoding='utf-8').write(s)
-              print('easter egg inserted')
+
+          p = 'v5.2.html'
+          s = read(p)
+          anchor = '<section class="card" id="sec-account">'
+          if 'cat-game-beta.html' not in s:
+              egg = ('<div style="text-align:center;margin:2px 0 16px">'
+                     '<a href="cat-game-beta.html" style="font-size:10px;color:#ddd0bb;text-decoration:none">'
+                     '🐾 听说这儿藏了只猫…</a></div>')
+              assert s.count(anchor) == 1, 'anchor not unique'
+              write(p, s.replace(anchor, egg + '\n' + anchor))
+              print('5.2: 彩蛋已插入 -> cat-game-beta.html')
           else:
-              print('easter egg already present')
+              print('5.2: 彩蛋已存在')
+
+          i = read('index.html')
+          i = i.replace('xiaomao-banjin-5.2.html', 'v5.2.html')
+          i = i.replace('xiaomao-banjin-5.1.html', 'v5.1.html')
+          write('index.html', i)
+          assert 'xiaomao-banjin-5.' not in read('index.html'), 'index 仍有旧名'
+          print('index: 链接已指向新文件名')
           PYEGG
 
       - name: Commit and push
