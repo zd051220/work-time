@@ -1,0 +1,35 @@
+name: fix-notice-53
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-notice53
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: 改 5.3 弹窗公告与 5.2 公告条
+        run: python3 .github/scripts/fix_notice53.py
+      - name: 提交并推送
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add -A
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "docs: 5.3 更新公告弹窗与 5.2 公告条改为对应版本内容"
+          git push
+      - name: 自删本工作流
+        run: |
+          git rm .github/workflows/fix-notice-53.yml
+          git commit -m "chore: 移除一次性 fix-notice-53 工作流"
+          git push
