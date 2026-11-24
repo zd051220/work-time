@@ -1,0 +1,32 @@
+name: code-audit
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "*.html"
+      - ".github/scripts/**"
+      - ".github/workflows/code-audit.yml"
+  pull_request:
+    paths:
+      - "*.html"
+      - ".github/scripts/**"
+      - ".github/workflows/code-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Static code audit
+        run: node .github/scripts/code_audit.js
+      - name: Timer regression tests (formal)
+        run: node .github/scripts/timer_check.js v5.4.html
+      - name: Timer regression tests (beta)
+        run: node .github/scripts/timer_check.js beta-v5.5.html
