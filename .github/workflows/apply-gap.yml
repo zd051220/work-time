@@ -1,0 +1,58 @@
+name: apply-gap
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-gap
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 阈值改为 3 小时（幂等）
+        run: |
+          python3 - <<'PY'
+          import io
+          p = 'v5.1.html'
+          s = io.open(p, encoding='utf-8').read()
+          old = 'var MAX_AUTO_GAP=30*60*1000;'
+          new = 'var MAX_AUTO_GAP=3*60*60*1000;'
+          if old in s:
+              assert s.count(old) == 1, '旧阈值命中 %d 次' % s.count(old)
+              io.open(p, 'w', encoding='utf-8').write(s.replace(old, new, 1))
+              print('v5.1.html: MAX_AUTO_GAP -> 3 小时')
+          elif new in s:
+              print('v5.1.html: 已是 3 小时，跳过')
+          else:
+              raise SystemExit('!! 阈值行未找到')
+          PY
+
+      - name: 提交前跑计时自检
+        env:
+          TZ: Asia/Shanghai
+        run: node .github/scripts/timer_check.js v5.1.html
+
+      - name: 提交并推送
+        run: |
+          git config user.name "xiaomao-release"
+          git config user.email "zd051220@163.com"
+          git add -A
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "timer: 离线核对阈值放宽到 3 小时"
+          git push
+
+      - name: 自删本一次性工作流
+        run: |
+          if [ -f .github/workflows/apply-gap.yml ]; then
+            git rm .github/workflows/apply-gap.yml
+            git commit -m "chore: 移除一次性 apply-gap 工作流"
+            git push
+          fi
