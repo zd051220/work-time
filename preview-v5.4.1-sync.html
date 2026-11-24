@@ -86,7 +86,7 @@ section.card{scroll-margin-top:14px}
 .fbMore{width:100%;margin-top:10px;border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:12px;
   padding:11px;font-size:11.5px;font-weight:850;font-family:inherit;cursor:pointer}
 .fbMail{display:block;text-align:center;margin-top:12px;font-size:10.5px;color:#b5a38d;text-decoration:none}
-/* ===== 账号云同步 ===== */
+.fbAdminBox{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fffaf2}.fbAdminHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:900;color:#7d5a20}.fbAdminActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.fbAdminActions button{border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:10px;padding:8px 10px;font-size:11px;font-weight:850;font-family:inherit}.fbAdminRow{padding:10px 0;border-bottom:1px dashed var(--line)}.fbAdminRow:last-child{border:0}\n/* ===== 账号云同步 ===== */
 .accRow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff7e8;border-radius:14px;padding:12px 13px;margin-bottom:10px}
 .accName{font-size:13px;font-weight:900;color:#7d5a20}
 .accSub{font-size:10px;color:#a58e70;margin-top:4px}
@@ -146,7 +146,7 @@ section.card{scroll-margin-top:14px}
 <textarea class="tarea" id="fbText" maxlength="300"></textarea>
 <div class="fbBar"><input class="fbName" id="fbName" maxlength="12"><button class="fbMain" id="fbGo">发布</button></div>
 <div id="fbList"><div class="fbTip">正在加载留言…</div></div>
-<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%91%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a>
+<a class="fbMail" href="mailto:zd051220@163.com?subject=%E5%B0%8F%E7%8C%AB%E6%90%AC%E9%91%91%E6%9D%A1%E5%8F%8D%E9%A6%88">不方便公开发？点这里直接发邮件给站长</a><div class="fbAdminBox"><div class="fbAdminHead"><span>留言管理</span><span id="fbAdminState" style="font-weight:500;color:#a58e70">管理员入口</span></div><div id="fbAdminLogin"><div class="note" style="margin:7px 0">首次设置独立管理密码需先登录获授权的网站管理员账号。</div><div class="fbBar"><input class="fbName" id="fbAdminPass" type="password" maxlength="128" placeholder="管理员密码"><button class="fbMain" id="fbAdminEnter">进入</button></div><div class="fbAdminActions"><button id="fbAdminSetup">用已登录的管理员账号设置/修改管理密码</button></div></div><div id="fbAdminPanel" style="display:none"><div class="fbAdminActions"><button id="fbAdminReload">刷新管理列表</button><button id="fbAdminExit">退出管理</button></div><div id="fbAdminList"><div class="fbTip">正在加载…</div></div></div><div id="fbAdminMsg" class="accMsg"></div></div>
 </section>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="sec-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
@@ -938,58 +938,24 @@ window.addEventListener('online',function(){setTimeout(function(){if(accSess&&ac
 /* ===== 留言板（Supabase）===== */
 var SB='https://zemrafvmhfxqdeqauejt.supabase.co';
 var SBK='sb_publishable_Ph9NerYom52CuK4vWK2mLA_n9qBWigC';
-var FB_STEP=8, fbOffset=0, fbBusy=false;
-function sbH(extra){var h={apikey:SBK,Authorization:'Bearer '+SBK};if(extra){for(var k in extra)h[k]=extra[k]}return h}
-function loadStats(){
-  fetch(SB+'/rest/v1/rpc/stats_public',{method:'POST',headers:sbH({'Content-Type':'application/json'}),body:'{}'})
-    .then(function(r){if(!r.ok)throw 0;return r.json()})
-    .then(function(x){
-      var o=Array.isArray(x)?x[0]:x;
-      if(!o)throw 0;
-      var el=$('fbStat');
-      if(el)el.textContent='已有 '+o.users+' 人在搬金条 · 一共记了 '+o.records+' 条 · '+o.messages+' 条留言';
-    })
-    .catch(function(){var el=$('fbStat');if(el)el.textContent='统计暂时没连上，不影响留言';
-    });
-}
+var FB_STEP=8, fbOffset=0, fbBusy=false, FB_ADMIN_KEY='mw_feedback_admin_token_v1';
+var fbAdminToken=localStorage.getItem(FB_ADMIN_KEY)||'';
+function sbH(extra){var h={apikey:SBK,Authorization:'Bearer '+SBK};if(extra)for(var k in extra)h[k]=extra[k];return h}
+function fbRpc(name,body,token){return fetch(SB+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+(token||SBK),'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){return r.text().then(function(t){var j={};try{j=t?JSON.parse(t):{}}catch(e){}if(!r.ok)throw {status:r.status,data:j};return j})})}
+function loadStats(){fetch(SB+'/rest/v1/rpc/stats_public',{method:'POST',headers:sbH({'Content-Type':'application/json'}),body:'{}'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(x){var o=Array.isArray(x)?x[0]:x;if(!o)throw 0;$('fbStat').textContent='已有 '+o.users+' 人在搬金条 · 一共记了 '+o.records+' 条 · '+o.messages+' 条留言'}).catch(function(){$('fbStat').textContent='统计暂时没连上，不影响留言'})}
 function fbWhen(s){var d=new Date(s);if(isNaN(d.getTime()))return '';var p=function(n){return String(n).padStart(2,'0')};return (d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())}
 function fbItemHTML(x){return '<div class="fbItem"><div class="fbTop"><b>'+escapeHTML(x.name||'匿名')+'</b><span>'+fbWhen(x.created_at)+'</span></div><div class="fbBody">'+escapeHTML(x.content||'')+'</div></div>'}
-function fbAppend(list,more){
-  var box=$('fbList');
-  if(fbOffset===0)box.innerHTML='';
-  if(!list.length&&fbOffset===0){box.innerHTML='<div class="fbTip">还没有人留言，做第一个吧～</div>';return}
-  var wrap=box.querySelector('.fbItems');
-  if(!wrap){box.innerHTML='<div class="fbItems"></div>';wrap=box.querySelector('.fbItems')}
-  wrap.innerHTML+=list.map(fbItemHTML).join('');
-  var moreBtn=box.querySelector('.fbMore');
-  if(more){ if(!moreBtn){moreBtn=document.createElement('button');moreBtn.className='fbMore';moreBtn.textContent='看更早的留言';box.appendChild(moreBtn);moreBtn.onclick=function(){loadFeed(true)}} }
-  else if(moreBtn){moreBtn.remove()}
-}
-function loadFeed(append){
-  if(fbBusy)return;fbBusy=true;
-  if(append)fbOffset+=FB_STEP;else fbOffset=0;
-  fetch(SB+'/rest/v1/feedback?select=name,content,created_at&order=created_at.desc&limit='+(FB_STEP+1)+'&offset='+fbOffset,{headers:sbH()})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
-    .then(function(rows){
-      var more=rows.length>FB_STEP, list=more?rows.slice(0,FB_STEP):rows;
-      fbAppend(list,more);
-      if(fbOffset===0)$('fbCount').textContent=list.length?('最新 '+list.length+' 条'):'还没人留言';
-      else $('fbCount').textContent='已看 '+(fbOffset+list.length)+' 条';
-    })
-    .catch(function(){ $('fbList').innerHTML='<div class="fbTip">留言板暂时没连上网络，稍后再试，或直接发邮件。</div>'; $('fbCount').textContent='未连接' })
-    .then(function(){fbBusy=false});
-}
-$('fbGo').onclick=function(){
-  var msg=($('fbText').value||'').trim();
-  var name=($('fbName').value||'').trim().slice(0,12)||'匿名';
-  if(msg.length<2){toast('写两个字再发吧～');$('fbText').focus();return}
-  var btn=$('fbGo');btn.disabled=true;btn.textContent='发送中';
-  fetch(SB+'/rest/v1/feedback',{method:'POST',headers:sbH({'Content-Type':'application/json','Prefer':'return=minimal'}),
-    body:JSON.stringify({name:name,content:msg,page:'xiaomao-banjin-5.4.1'})})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);$('fbText').value='';loadFeed(false);toast('留言已发布，谢谢反馈！')})
-    .catch(function(){toast('没发出去（网络或权限），可先发邮件')})
-    .then(function(){btn.disabled=false;btn.textContent='发布'});
-};
+function fbAppend(list,more){var box=$('fbList');if(fbOffset===0)box.innerHTML='';if(!list.length&&fbOffset===0){box.innerHTML='<div class="fbTip">还没有人留言，做第一个吧～</div>';return}var wrap=box.querySelector('.fbItems');if(!wrap){box.innerHTML='<div class="fbItems"></div>';wrap=box.querySelector('.fbItems')}wrap.innerHTML+=list.map(fbItemHTML).join('');var mb=box.querySelector('.fbMore');if(more){if(!mb){mb=document.createElement('button');mb.className='fbMore';mb.textContent='看更早的留言';box.appendChild(mb);mb.onclick=function(){loadFeed(true)}}}else if(mb)mb.remove()}
+function loadFeed(append){if(fbBusy)return;fbBusy=true;var next=append?fbOffset+FB_STEP:0;fetch(SB+'/rest/v1/feedback?select=name,content,created_at&order=created_at.desc,id.desc&limit='+(FB_STEP+1)+'&offset='+next,{headers:sbH()}).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json()}).then(function(rows){fbOffset=next;var more=rows.length>FB_STEP,list=more?rows.slice(0,FB_STEP):rows;fbAppend(list,more);$('fbCount').textContent=fbOffset===0?(list.length?'最新 '+list.length+' 条':'还没人留言'):'已看 '+(fbOffset+list.length)+' 条'}).catch(function(){$('fbList').innerHTML='<div class="fbTip">留言板暂时没连上网络，稍后再试，或直接发邮件。</div>';$('fbCount').textContent='未连接'}).then(function(){fbBusy=false})}
+$('fbGo').onclick=function(){var msg=($('fbText').value||'').trim(),name=($('fbName').value||'').trim().slice(0,12)||'匿名';if(msg.length<2||msg.length>300){toast('留言需要 2–300 个字');$('fbText').focus();return}var btn=$('fbGo');btn.disabled=true;btn.textContent='发送中';fetch(SB+'/rest/v1/feedback',{method:'POST',headers:sbH({'Content-Type':'application/json','Prefer':'return=minimal'}),body:JSON.stringify({name:name,content:msg,page:'xiaomao-banjin-5.4.1'})}).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);$('fbText').value='';loadFeed(false);toast('留言已发布，谢谢反馈！')}).catch(function(e){toast(e&&e.message==='HTTP 429'?'发得有点快，请过一会儿再试':'没发出去（网络或权限），可先发邮件')}).then(function(){btn.disabled=false;btn.textContent='发布'})};
+function fbAdminMsg(t,ok){var el=$('fbAdminMsg');el.textContent=t||'';el.className='accMsg'+(t?' show':'')+(ok?' ok':'')}
+function fbAdminMode(on){$('fbAdminLogin').style.display=on?'none':'';$('fbAdminPanel').style.display=on?'':'none';$('fbAdminState').textContent=on?'管理模式已开启':'管理员入口'}
+function fbAdminLoad(){fbRpc('feedback_admin_list',{p_token:fbAdminToken}).then(function(rows){var box=$('fbAdminList');if(!rows||!rows.length)box.innerHTML='<div class="fbTip">目前没有留言</div>';else box.innerHTML=rows.map(function(x){var h=!!x.hidden_at;return '<div class="fbAdminRow" data-id="'+Number(x.id)+'"><div class="fbTop"><b>#'+Number(x.id)+' · '+escapeHTML(x.name||'匿名')+'</b><span>'+(h?'已隐藏':'公开中')+' · '+fbWhen(x.created_at)+'</span></div><div class="fbBody">'+escapeHTML(x.content||'')+'</div><div class="fbAdminActions"><button data-act="toggle">'+(h?'恢复显示':'隐藏留言')+'</button><button data-act="delete">永久删除</button></div></div>'}).join('');fbAdminMode(true);fbAdminMsg('管理列表已更新',true)}).catch(function(e){fbAdminToken='';localStorage.removeItem(FB_ADMIN_KEY);fbAdminMode(false);fbAdminMsg(e&&e.status===401?'管理密码无效或已过期，请重新进入':'暂时无法读取管理列表，请确认管理员权限和密码')})}
+$('fbAdminEnter').onclick=function(){var p=$('fbAdminPass').value||'';if(!p){fbAdminMsg('请输入管理员密码');return}var b=$('fbAdminEnter');b.disabled=true;b.textContent='验证中';fbRpc('feedback_admin_password_login',{p_password:p}).then(function(t){if(!t)throw 0;fbAdminToken=t;localStorage.setItem(FB_ADMIN_KEY,t);$('fbAdminPass').value='';fbAdminLoad()}).catch(function(){fbAdminMsg('管理员密码不正确，或尚未设置')}).then(function(){b.disabled=false;b.textContent='进入'})};
+$('fbAdminSetup').onclick=function(){var s=accSess();if(!s){fbAdminMsg('请先登录获授权的网站管理员账号');return}var p=prompt('请设置独立管理员密码（至少 12 位）。此密码不是网站登录密码。');if(p===null)return;if(p.length<12||p.length>128){fbAdminMsg('密码长度需要 12–128 位');return}accToken().then(function(t){if(!t)throw 0;return fbRpc('feedback_admin_set_password',{p_password:p},t)}).then(function(){fbAdminMsg('独立管理员密码已设置，现在可以用它进入留言管理。',true)}).catch(function(){fbAdminMsg('设置失败：当前登录账号没有管理员授权，或登录已过期')})};
+$('fbAdminExit').onclick=function(){fbAdminToken='';localStorage.removeItem(FB_ADMIN_KEY);fbAdminMode(false);fbAdminMsg('已退出留言管理')};$('fbAdminReload').onclick=fbAdminLoad;
+$('fbAdminList').addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('button[data-act]'):null;if(!b)return;var row=b.closest('.fbAdminRow');if(!row)return;var id=Number(row.getAttribute('data-id')),act=b.getAttribute('data-act');if(act==='delete'&&!confirm('确定永久删除这条留言？删除后无法恢复。'))return;b.disabled=true;var hidden=row.querySelector('[data-act="toggle"]').textContent==='隐藏留言';var req=act==='delete'?fbRpc('feedback_admin_delete',{p_id:id,p_token:fbAdminToken}):fbRpc('feedback_admin_set_hidden',{p_id:id,p_hidden:hidden,p_token:fbAdminToken});req.then(function(){toast(act==='delete'?'留言已永久删除':'留言显示状态已更新');fbAdminLoad();loadFeed(false);loadStats()}).catch(function(){toast('操作失败：管理员权限可能已失效');fbAdminLoad()}).then(function(){b.disabled=false})});
+if(fbAdminToken)fbAdminLoad();
 loadFeed(false);loadStats();
 
 })();
