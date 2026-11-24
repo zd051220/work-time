@@ -1,8 +1,0 @@
-# 已停用：5.4.1 公告文案已修正完成，保留作操作记录。
-name: fix-541-banner-once (disabled)
-on: workflow_dispatch
-jobs:
-  noop:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo '已停用'
