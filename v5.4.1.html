@@ -633,10 +633,12 @@ function sesRestore(){
   if(!accSess())return Promise.resolve(false);
   return accReq('/auth/v1/user').then(function(r){if(!r.ok)throw 0;return r.json()})
     .then(function(u){
-      var rs=u&&u.user_metadata&&u.user_metadata.session;
-      /* 云端明确为 null 时，收起另一台设备留下的旧计时；本机拥有的计时不被空状态误清 */
+      var meta=u&&u.user_metadata||{},rs=meta.session;
+      var cloudAt=Number(meta.mwSavedAt)||0;
+      var localAt=data.session?(Number(data.session.lastAt)||Number(data.session.started)||0):0;
+      /* 只在云端快照比本地状态新时应用，避免旧设备把新状态覆盖 */
       if(!rs){
-        if(data.session&&data.session.dev&&data.session.dev!==DEV){
+        if(data.session&&cloudAt>localAt){
           data.session=null;save();draw();
           toast('另一台设备已下班，本机计时状态已同步');
           return true;
@@ -644,8 +646,7 @@ function sesRestore(){
         return false;
       }
       if(!validSession(rs))return false;
-      /* 只让本机计时拥有者保留自己的实时内存；非拥有设备以云端状态为准 */
-      if(data.session&&data.session.dev===DEV)return false;
+      if(data.session&&cloudAt&&cloudAt<=localAt)return false;
       if(!rs.dev)rs.dev=DEV;
       var g=Date.now()-(Number(rs.lastAt)||Date.now());
       if(g>MAX_AUTO_GAP||g<0){
@@ -653,7 +654,7 @@ function sesRestore(){
         rs.lastAt=Date.now();jumpWarn='已从云端恢复打卡，请先核对离线期间的时间。';
       }
       data.session=upgradeSession(rs);save();draw();
-      toast('已恢复云端未结束的打卡，可以接着算');
+      toast('已按云端最新状态更新计时');
       return true;
     })
     .catch(function(){return false});
