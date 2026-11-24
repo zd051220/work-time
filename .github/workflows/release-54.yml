@@ -1,0 +1,40 @@
+name: release-54
+on:
+  push:
+permissions:
+  contents: write
+concurrency:
+  group: release-54
+  cancel-in-progress: false
+jobs:
+  pub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: download
+        run: |
+          set -euo pipefail
+          curl -sSL "https://aka.doubaocdn.com/s/NbyW8kfMQ7" -o v5.4.html
+          curl -sSL "https://aka.doubaocdn.com/s/nmkamgJZ8J" -o ledger54.html
+          curl -sSL "https://aka.doubaocdn.com/s/4kbeAXn6md" -o index.html
+      - name: verify-sha
+        run: |
+          set -euo pipefail
+          echo "28a9836216cc7189f55d6cc2dbe5a0b089b22215040d66c9d75f345b68e0a7ef  v5.4.html" | sha256sum -c -
+          echo "418d21c6f865da1ac483ef10f5230b7a7fb27c6a8d88af82ede155b126c00ed1  ledger54.html" | sha256sum -c -
+          echo "88bcfb6d6478660db8a99e3089393182f494bdac85f03fa702bfd7ea48b9e094  index.html" | sha256sum -c -
+          echo "3fe0f942296c303603dfbb181c52ff314117dbffd6d37089020b2a783f3c0e8e  v5.3.html" | sha256sum -c -
+          echo "56a0dd5a84addc560a1807727f6cef22a89c0fbda9f47ad1cc77b88472a2b621  ledger.html" | sha256sum -c -
+          echo "5.3 原文件未被改动"
+      - name: timing-gate
+        run: TZ=Asia/Shanghai node .github/scripts/timer_check.js v5.4.html
+      - name: commit
+        run: |
+          set -euo pipefail
+          git config user.name "release-bot"
+          git config user.email "release-bot@users.noreply.github.com"
+          git add v5.4.html ledger54.html index.html
+          git rm .github/workflows/release-54.yml
+          git commit -m "5.4 上线：新增 v5.4.html 与 ledger54.html，入口 index 切到 5.4；v5.3 与 ledger 原文件保留"
+          git push
