@@ -309,7 +309,8 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
       .then(function(j){
         /* 5.4.1 安全补丁：刷新令牌期间若账号已切换，丢弃旧账号响应，绝不覆盖新登录态 */
         var expectedUid=String(s.uid||'');
-        if(mwCurrentUid()!==expectedUid||(j.user&&String(j.user.id)!==expectedUid))return null;
+        var current=accRaw();
+      if(!current||String(current.uid||'')!==expectedUid||current.refresh!==s.refresh||(j.user&&String(j.user.id)!==expectedUid))return null;
         localStorage.setItem(ACC_KEY,JSON.stringify({token:j.access_token,refresh:j.refresh_token||s.refresh,uid:expectedUid,email:s.email,nick:s.nick,exp:Math.floor(Date.now()/1000)+(Number(j.expires_in)||3600)}));return accRaw()
       })
       .catch(function(){return null});
