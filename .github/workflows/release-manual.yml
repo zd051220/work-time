@@ -1,4 +1,4 @@
-name: 发布（手动）
+name: release-manual
 
 # 手动发布：只在你点“Run workflow”时执行。
 # 不做入口切换，不自动跑；一次只提交 target_path 一个文件。
@@ -36,7 +36,6 @@ concurrency:
 
 jobs:
   release:
-    name: 发布
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
