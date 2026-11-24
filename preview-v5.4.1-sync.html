@@ -646,7 +646,7 @@ function sesRestore(forceCloud){
       var localStarted=data.session?(Number(data.session.started)||0):0;
       /* 本机正在创建的会话优先于更早云快照；手动同步时则以另一设备的云端状态为准 */
       if(!rs){
-        if(data.session&&cloudAt&&(forceCloud||cloudAt>localStarted)){
+        if(data.session&&cloudAt>localStarted){
           data.session=null;save();draw();
           toast('云端显示另一台设备已下班，本机已结束旧计时');
           return true;
@@ -655,7 +655,7 @@ function sesRestore(forceCloud){
       }
       if(!validSession(rs))return false;
       if(data.session&&rs.dev&&rs.dev===DEV)return false;
-      if(!forceCloud&&data.session&&cloudAt&&cloudAt<=localStarted)return false;
+      if(data.session&&cloudAt&&cloudAt<=localStarted)return false;
       if(!rs.dev)rs.dev='remote';
       var g=Date.now()-(Number(rs.lastAt)||Date.now());
       if(g>MAX_AUTO_GAP||g<0){
@@ -795,7 +795,7 @@ function syncAll(first){
   if(!s){accMsg('还没登录，先填用户名和密码');return Promise.resolve(false)}
   if($('accSub'))$('accSub').textContent='同步中…';
   accMsg('同步中…');
-  return sesRestore(true).then(function(){return accPull()}).then(function(res){
+  return sesRestore().then(function(){return accPull()}).then(function(res){
     var current=accSess();
     if(!current||current.uid!==s.uid)throw {status:0};
     var uid=current.uid;
