@@ -93,7 +93,7 @@ h2{font-size:14px;margin:0;font-weight:900}
 
   <section class="card">
     <div class="sec-title"><h2>🧾 本月明细</h2><span class="tag" id="dayTag">—</span></div>
-    <div id="records"><div class="empty">这个月还没有记录<br><a href="preview-v5.4.1-sync.html">去首页开工 ›</a></div></div>
+    <div id="records"><div class="empty">这个月还没有记录<br><a href="preview-v5.4.1-sync.html">去首页开工 ›</a></div></div><div id="recordsPager" style="display:none"></div>
   </section>
 
   <section class="card">
@@ -169,7 +169,7 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
   function pad(n){return String(n).padStart(2,'0')}
   function ym(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)}
   function money(n,d){return '¥'+(Number(n)||0).toFixed(d==null?2:d)}
-  var monthView=ym(new Date());
+  var monthView=ym(new Date()),recordsPage=1,RECORDS_PER_PAGE=8;
   function toast(t){var el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show')},2200)}
 
   function monthRecords(m){
@@ -185,7 +185,8 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
 
   function render(){
     data=load();
-    var arr=monthRecords(monthView);
+    var arr=monthRecords(monthView),pages=Math.max(1,Math.ceil(arr.length/RECORDS_PER_PAGE));
+    recordsPage=Math.min(Math.max(1,recordsPage),pages);
     $('month').textContent=monthView.replace('-','年')+'月';
     var total=arr.reduce(function(v,r){return v+payOf(r)},0);
     $('monthTotal').textContent=money(total);
@@ -195,22 +196,23 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
     var days=arr.length?new Set(arr.map(function(r){return r.date})).size:0;
     $('avg').textContent=days?money(total/days,0):'¥0';
     $('dayTag').textContent=days?days+' 天':'本月';
-
-    var box=$('records');
-    if(!arr.length){
-      box.innerHTML='<div class="empty">这个月还没有记录<br><a href="preview-v5.4.1-sync.html">去首页开工 ›</a></div>';
-    }else{
+    var box=$('records'),pager=$('recordsPager');
+    if(!arr.length){box.innerHTML='<div class="empty">这个月还没有记录<br><a href="preview-v5.4.1-sync.html">去首页开工 ›</a></div>';pager.style.display='none'}
+    else{
       var html='';
-      arr.forEach(function(r){
+      arr.slice((recordsPage-1)*RECORDS_PER_PAGE,recordsPage*RECORDS_PER_PAGE).forEach(function(r){
         html+='<div class="rec"><div class="rinfo"><div class="rdate">'+esc(r.date)+' · '+esc(r.start)+'—'+esc(r.end)+'</div>'+
           '<div class="rmeta">工作 '+esc(r.work)+' · 带薪 '+esc(r.paid)+' · 不带薪 '+esc(r.unpaid)+'</div></div>'+
           '<div class="rside"><div class="rpay">'+money(r.pay)+'</div>'+
           '<button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
       });
       box.innerHTML=html;
+      if(pages>1){pager.style.display='flex';pager.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12px;color:#8e7047';pager.innerHTML='<button type="button" data-page="prev" '+(recordsPage===1?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===1?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">上一页</button><span style="font-weight:800;min-width:68px;text-align:center">第 '+recordsPage+' / '+pages+' 页</span><button type="button" data-page="next" '+(recordsPage===pages?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===pages?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">下一页</button>'}
+      else{pager.style.display='none';pager.innerHTML=''}
     }
     renderBars();
   }
+  $('recordsPager').addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('button[data-page]'):null;if(!b||b.disabled)return;recordsPage+=b.getAttribute('data-page')==='next'?1:-1;render()});
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function validRecord(r){return r&&typeof r==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||''))}
   function normalizeAll(arr){var out=[],seen={};(Array.isArray(arr)?arr:[]).forEach(function(r){if(!validRecord(r))return;
@@ -244,11 +246,11 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
 
   $('prev').onclick=function(){shift(-1)};
   $('next').onclick=function(){shift(1)};
-  $('back').onclick=function(){monthView=ym(new Date());render()};
+  $('back').onclick=function(){monthView=ym(new Date());recordsPage=1;render()};
   function shift(n){
     var p=monthView.split('-'),y=+p[0],m=+p[1]+n;
     if(m<1){m=12;y--}if(m>12){m=1;y++}
-    monthView=y+'-'+pad(m);render();
+    monthView=y+'-'+pad(m);recordsPage=1;render();
   }
 
   $('records').addEventListener('click',function(e){
