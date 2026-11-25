@@ -183,6 +183,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   setText('connection','云端已同步');
  }
  function workMessage(message){setText('workMessage',message||'')}
+ var workClockTimer=null;
  function makeIdempotencyKey(){
   if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
   return 'work-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14);
@@ -197,16 +198,24 @@ button{font:inherit;color:inherit;cursor:pointer}
    var card=document.createElement('div');card.className='notice';card.style.marginBottom='8px';
    var title=document.createElement('b');title.textContent='工作进行中 · '+(active.job_code||'岗位');card.appendChild(title);
    var detail=document.createElement('div');detail.style.marginTop='5px';
-   var end=Date.parse(active.completes_at),remaining=Math.max(0,Math.ceil((end-Date.now())/1000));
-   detail.textContent='开始于 '+new Date(active.started_at).toLocaleString('zh-CN')+' · 预计完成 '+new Date(active.completes_at).toLocaleString('zh-CN')+(remaining>0?' · 剩余 '+Math.floor(remaining/3600)+'小时'+Math.floor(remaining%3600/60)+'分钟':' · 已到预计完成时间');
+   var end=Date.parse(active.completes_at);
+   var claim=document.createElement('button');claim.type='button';claim.className='action';claim.style.marginTop='9px';
+   function updateWorkClock(){
+    var remaining=Math.max(0,Math.ceil((end-Date.now())/1000));
+    detail.textContent='开始于 '+new Date(active.started_at).toLocaleString('zh-CN')+' · 预计完成 '+new Date(active.completes_at).toLocaleString('zh-CN')+(remaining>0?' · 剩余 '+Math.floor(remaining/3600)+'小时'+Math.floor(remaining%3600/60)+'分钟'+(remaining%60)+'秒':' · 已到预计完成时间');
+    if(!claim.dataset.submitting){claim.textContent=remaining>0?'尚未完成':'向云端核验并领取';claim.disabled=remaining>0}
+   }
    card.appendChild(detail);
-   var claim=document.createElement('button');claim.type='button';claim.className='action';claim.style.marginTop='9px';claim.textContent=remaining>0?'尚未完成':'向云端核验并领取';
-   claim.disabled=remaining>0;claim.addEventListener('click',function(){
-    claim.disabled=true;claim.textContent='核验中…';workMessage('正在向服务器核验订单和奖励…');
+   claim.addEventListener('click',function(){
+    if(claim.disabled||claim.dataset.submitting)return;
+    claim.dataset.submitting='1';claim.disabled=true;claim.textContent='核验中…';workMessage('正在向服务器核验订单和奖励…');
     window.catGameCloud.claimWork(active.order_id).then(function(next){window.catGameSnapshot=next;renderSnapshot(next);workMessage('奖励已由服务器核验并发放。')})
      .catch(function(err){workMessage(err.message||'领取失败，请稍后刷新重试')})
-     .then(function(){if(claim.isConnected)claim.disabled=false});
+     .then(function(){delete claim.dataset.submitting;if(claim.isConnected)updateWorkClock()});
    });
+   updateWorkClock();
+   if(workClockTimer)clearInterval(workClockTimer);
+   workClockTimer=setInterval(updateWorkClock,1000);
    card.appendChild(claim);orders.appendChild(card);
   }else{
    var empty=document.createElement('div');empty.className='muted';empty.textContent='当前没有进行中的工作订单。';orders.appendChild(empty);
