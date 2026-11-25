@@ -118,6 +118,33 @@ button{font:inherit;color:inherit;cursor:pointer}
 </div>
 <script>
 (function(){
+ var pending={},seq=0;
+ function rpc(method){
+  return new Promise(function(resolve,reject){
+   var id='g'+Date.now().toString(36)+(++seq).toString(36);
+   var timer=setTimeout(function(){delete pending[id];reject(new Error('云端响应超时'))},12000);
+   pending[id]={resolve:resolve,reject:reject,timer:timer};
+   window.parent.postMessage({type:'game-rpc',id:id,method:method},window.location.origin);
+  });
+ }
+ window.addEventListener('message',function(ev){
+  if(ev.origin!==window.location.origin||ev.source!==window.parent)return;
+  var m=ev.data||{};
+  if(m.type!=='game-rpc-result'||!pending[m.id])return;
+  var p=pending[m.id];delete pending[m.id];clearTimeout(p.timer);
+  if(m.ok)p.resolve(m.data);else p.reject(new Error(m.error||'云端读取失败'));
+ });
+ window.catGameCloud={bootstrap:function(){return rpc('game_bootstrap')},snapshot:function(){return rpc('game_get_snapshot')}};
+ window.catGameCloud.bootstrap().then(function(snapshot){
+  window.catGameSnapshot=snapshot;
+  document.querySelectorAll('.pill').forEach(function(el){if(el.textContent.indexOf('云端待接入')>=0)el.textContent='云端已连接'});
+  document.dispatchEvent(new CustomEvent('cat-game-cloud-ready',{detail:snapshot}));
+ }).catch(function(err){
+  document.dispatchEvent(new CustomEvent('cat-game-cloud-error',{detail:err.message}));
+ });
+})();
+
+(function(){
  var names=['home','adventure','work','bag','homecat','mine','village','forest'];
  function show(name){
   if(name==='village'||name==='forest')name='adventure';
