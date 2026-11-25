@@ -33,7 +33,8 @@ Deno.serve(async (req) => {
   const uid = userData.user.id;
 
   // 2) 先删业务数据，再删账号；每一步失败都如实返回，不假装成功
-  for (const table of ["records", "record_dels"]) {
+  // work_sessions / feedback 建表早于仓库迁移，不假定线上有 on delete cascade，显式删除兜底。
+  for (const table of ["records", "record_dels", "work_sessions", "feedback"]) {
     const { error } = await admin.from(table).delete().eq("user_id", uid);
     if (error) return json({ ok: false, error: "delete_" + table + "_failed", detail: error.message }, 500);
   }
