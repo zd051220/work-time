@@ -21,7 +21,9 @@ drop policy if exists game_job_catalog_select_active on public.game_job_catalog;
 create policy game_job_catalog_select_active on public.game_job_catalog
   for select to authenticated using (is_active);
 revoke all on public.game_job_catalog from anon, authenticated;
-grant select on public.game_job_catalog to authenticated;
+-- Expose only display/configuration metadata. Reward amounts remain private to server functions.
+grant select (job_code, display_name, allowed_durations_minutes, is_active)
+  on public.game_job_catalog to authenticated;
 
 create or replace function private.game_get_snapshot()
 returns jsonb language plpgsql security definer set search_path = ''
@@ -99,7 +101,8 @@ begin
   if v_order.status='claimed' then return private.game_get_snapshot(); end if;
   if v_order.status<>'active' then raise exception 'work_order_not_claimable' using errcode = '55000'; end if;
   if v_now<v_order.completes_at then raise exception 'work_order_not_finished' using errcode = '55000'; end if;
-  select * into v_catalog from public.game_job_catalog where job_code=v_order.job_code and is_active;
+  -- A job may be disabled for new starts without invalidating an order already in progress.
+  select * into v_catalog from public.game_job_catalog where job_code=v_order.job_code;
   if not found then raise exception 'job_unavailable' using errcode = '55000'; end if;
   v_payout:=v_catalog.rewards_by_duration->v_order.duration_code;
   if v_payout is null or jsonb_typeof(v_payout)<>'object' or not(v_payout?'coins')
