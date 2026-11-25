@@ -6,7 +6,6 @@ on:
     paths:
       - "*.html"
       - "supabase/migrations/**"
-      - ".github/scripts/cat_game_migration_check.js"
       - ".github/scripts/**"
       - ".github/workflows/code-audit.yml"
   pull_request:
@@ -33,6 +32,11 @@ jobs:
         run: node .github/scripts/cat_game_migration_check.js
       - name: Cat game work-order behaviour check
         run: node .github/scripts/cat_work_order_check.js
+      - name: Cat game database behaviour checks (PGlite)
+        run: |
+          npm init -y > /dev/null 2>&1
+          npm install --no-audit --no-fund @electric-sql/pglite@0.6.0
+          node .github/scripts/cat_game_pg_check.mjs .
       - name: Timer regression tests (formal)
         run: node .github/scripts/timer_check.js v5.4.html
       - name: Timer regression tests (beta)
