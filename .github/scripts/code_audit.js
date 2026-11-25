@@ -10,7 +10,8 @@ const targets = files.length ? files : [
   'beta-v5.5.html',
   'preview-v5.4.1-sync.html',
   'ledger54.html',
-  'preview-ledger54-5.4.1-sync.html'
+  'preview-ledger54-5.4.1-sync.html',
+  'cat-game-v2.html'
 ];
 let failures = 0;
 function fail(file, message) {
