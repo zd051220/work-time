@@ -4,14 +4,19 @@ const fs = require('fs');
 const file = 'supabase/migrations/20261126010000_cat_game_cloud_core.sql';
 const workFile = 'supabase/migrations/20261126020000_cat_game_work_orders.sql';
 const adventureFile = 'supabase/migrations/20261126030000_cat_game_adventure.sql';
+const rewardsFile = 'supabase/migrations/20261126040000_cat_game_job_rewards.sql';
+const shopFile = 'supabase/migrations/20261126050000_cat_game_shop.sql';
 const sql = fs.readFileSync(file, 'utf8');
 const workSql = fs.readFileSync(workFile, 'utf8');
 const adventureSql = fs.readFileSync(adventureFile, 'utf8');
+const rewardsSql = fs.readFileSync(rewardsFile, 'utf8');
+const shopSql = fs.readFileSync(shopFile, 'utf8');
 let failures = 0;
 function check(ok, message) {
   if (!ok) { failures++; console.error('FAIL ' + file + ': ' + message); }
 }
-const code = (sql + '\n' + workSql + '\n' + adventureSql).replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+const shopCode = shopSql.replace(/--[^\n]*/g, '');
+const code = (sql + '\n' + workSql + '\n' + adventureSql + '\n' + rewardsSql + '\n' + shopSql).replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
 const workCode = workSql.replace(/--[^\n]*/g, '');
 const adventureCode = adventureSql.replace(/--[^\n]*/g, '');
 const tables = [...code.matchAll(/create table if not exists public\.(game_[a-z_]+)/gi)].map(m => m[1]);
@@ -21,11 +26,11 @@ const wrappers = [...code.matchAll(/create or replace function (public\.game_[\w
 check(/create schema if not exists private/i.test(code), 'private schema must exist before function creation');
 check(!/revoke\s+all\s+on\s+schema\s+private\s+from\s+public\s*,\s*anon/i.test(code), 'must not revoke existing anon USAGE on shared private schema');
 check(/revoke create on schema private from public, anon, authenticated/i.test(code), 'must revoke CREATE on private schema');
-check(tables.length === 19, 'expected 19 game tables (13 plus combat rules, levels, zones, monsters, drops, battle records), found ' + tables.length);
-check(rls.length === 19 && tables.every(t => rls.includes(t)), 'every game table must have RLS enabled');
-check(definers.length === 9 && definers.every(f => f.startsWith('private.game_')), 'nine private SECURITY DEFINER definitions (bootstrap, three snapshot versions, start, claim, regen, equip, explore) are expected, found ' + definers.join(' '));
-check((code.match(/if\s+v_uid\s+is\s+null\s+then/gi) || [] ).length === 9, 'each privileged function must reject a missing auth.uid()');
-check(wrappers.length === 6 && wrappers.every(f => f.startsWith('public.game_')), 'the six public RPC wrappers must be SECURITY INVOKER');
+check(tables.length === 20, 'expected 20 game tables (13 core/job tables plus six combat tables, battle records and the shop catalog), found ' + tables.length);
+check(rls.length === 20 && tables.every(t => t === 'game_shop_catalog' || rls.includes(t)), 'every game table holding client data must have RLS enabled');
+check(definers.length === 11 && definers.every(f => f.startsWith('private.game_')), 'eleven private SECURITY DEFINER definitions (bootstrap, three snapshots, start, claim, regen, equip, explore, report helper, buy) are expected, found ' + definers.join(' '));
+check((code.match(/if\s+v_uid\s+is\s+null\s+then/gi) || [] ).length === 11, 'each privileged function definition must reject a missing auth.uid()');
+check(wrappers.length === 7 && wrappers.every(f => f.startsWith('public.game_')), 'the seven public RPC wrappers must be SECURITY INVOKER');
 check(/revoke all on function private\.game_bootstrap\(\) from public, anon, authenticated/i.test(code), 'bootstrap private EXECUTE must be revoked before explicit grant');
 check(/revoke all on function private\.game_get_snapshot\(\) from public, anon, authenticated/i.test(code), 'snapshot private EXECUTE must be revoked before explicit grant');
 check(/revoke all on function private\.game_start_work\(text,integer,text\) from public,anon,authenticated/i.test(code), 'start-work private EXECUTE must be revoked');
@@ -64,5 +69,19 @@ const zoneBlock = (adventureCode.match(/'zones',coalesce\(\(([\s\S]*?)'level',\(
 check(zoneBlock.length > 300 && !/xp|coin|chance|hp_reward|crit|attack|defense/i.test(zoneBlock.replace(/min_hp_to_enter/g, '')), 'the snapshot must expose zone display data only, never monster or reward configuration');
 check(/revoke all on function private\.game_explore_result\(public\.game_explore_logs\) from public,anon,authenticated/i.test(adventureCode), 'the battle report helper must not be callable by clients');
 check(/create or replace function private\.game_get_snapshot\(\)[\s\S]*?perform private\.game_cat_settle\(\);/i.test(adventureCode), 'the latest snapshot must apply time-based HP recovery');
+// ---- job rewards and the village shop
+check((rewardsSql.match(/update public\.game_job_catalog set is_active=true, rewards_by_duration=/gi) || []).length === 6, 'all six seeded jobs must receive configured rewards');
+check(!/client|front[- ]?end/i.test(rewardsSql.replace(/--[^\n]*/g, '')), 'reward amounts must never be written from client-side code');
+check(/create table if not exists public\.game_shop_catalog/i.test(shopCode) && /alter table public\.game_shop_catalog enable row level security/i.test(shopCode), 'the shop catalog must exist with RLS');
+check(/revoke all on public\.game_shop_catalog from anon, authenticated/i.test(shopCode), 'shop catalog must have no client grants at all');
+check(/price_coins bigint not null check \(price_coins between 1 and 100000\)/i.test(shopCode), 'every good must cost coins so each purchase writes a ledger idempotency record');
+check(/if exists\(select 1 from public\.game_wallet_ledger[\s\S]*?'shop:'\|\|p_idempotency_key\) then[\s\S]*?return private\.game_get_snapshot\(\);/i.test(shopCode), 'a replayed purchase must return the snapshot without charging again');
+check(/pg_advisory_xact_lock\(hashtextextended\(v_uid::text,0\)\)/i.test(shopCode) && /v_balance < v_good\.price_coins then raise exception 'shop_insufficient_coins'/i.test(shopCode), 'purchases must serialize per user and refuse overspending');
+check(/v_cat\.level < v_good\.min_level then raise exception 'shop_level_required'/i.test(shopCode), 'level-gated goods must be refused by the server');
+check(shopCode.includes('values(v_uid,v_good.item_code,v_good.slot,v_good.quality,0,v_good.affixes)') &&
+  shopCode.includes("values(v_uid,-v_good.price_coins,'shop',v_new.equipment_id::text,'shop:'||p_idempotency_key,v_balance)"),
+  'a purchase must deliver server-defined affixes and ledger the debit');
+check(/revoke all on function private\.game_buy_item\(text,text\) from public,anon,authenticated/i.test(shopCode) && /grant execute on function public\.game_buy_item\(text,text\) to authenticated/i.test(shopCode), 'the buy RPC must follow the same definer/invoker split as every other game RPC');
+check(/'shop',coalesce\(\(select jsonb_agg\(jsonb_build_object\(/i.test(shopCode) && !/price_coins[\s\S]{0,80}rewards_by_duration/i.test(shopCode), 'the snapshot must expose shop display fields without leaking secret configuration');
 if (failures) { console.error('Game migration audit failed: ' + failures + ' issue(s)'); process.exit(1); }
-console.log('Game migration audit passed: 19 RLS tables, nine private privileged functions, six invoker wrappers, server-timed idempotent work orders, server-rolled battles, no client write grants.');
+console.log('Game migration audit passed: 20 game tables, ten private privileged functions, seven invoker wrappers, server-timed work orders, server-rolled battles, server-authoritative shop, no client write grants.');

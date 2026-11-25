@@ -35,7 +35,8 @@ create table auth.users(id uuid primary key);
 create function auth.uid() returns uuid language sql stable
   as $$ select nullif(current_setting('test.uid',true),'')::uuid $$;
 `);
-for (const f of ['20261126010000_cat_game_cloud_core.sql', '20261126020000_cat_game_work_orders.sql', '20261126030000_cat_game_adventure.sql']) {
+for (const f of ['20261126010000_cat_game_cloud_core.sql', '20261126020000_cat_game_work_orders.sql', '20261126030000_cat_game_adventure.sql',
+  '20261126040000_cat_game_job_rewards.sql', '20261126050000_cat_game_shop.sql']) {
   await db.exec(mig(f));
 }
 await su('insert into auth.users(id) values ($1),($2),($3),($4),($5),($6),($7)', [A, B, C, D, E, F, G]);
@@ -44,13 +45,13 @@ await as(A);
 
 // structure: table count, RLS everywhere, definer/invoker split
 const tables = await su("select count(*)::int n from pg_class c join pg_namespace s on s.oid=c.relnamespace where s.nspname='public' and c.relkind='r'");
-check(tables[0].n === 19, 'expected 19 public tables, got ' + tables[0].n);
+check(tables[0].n === 20, 'expected 20 public tables, got ' + tables[0].n);
 const noRls = await su("select count(*)::int n from pg_class c join pg_namespace s on s.oid=c.relnamespace where s.nspname='public' and c.relkind='r' and not c.relrowsecurity");
 check(noRls[0].n === 0, 'every public table must have RLS enabled, missing ' + noRls[0].n);
 const priv = await su("select count(*)::int n from pg_proc p join pg_namespace s on s.oid=p.pronamespace where s.nspname='private' and p.prosecdef");
-check(priv[0].n === 7, 'expected 7 security definer functions in private after the redefinitions, got ' + priv[0].n);
+check(priv[0].n === 8, 'expected 8 security definer functions in private after the redefinitions, got ' + priv[0].n);
 const pub = await su("select p.proname, p.prosecdef from pg_proc p join pg_namespace s on s.oid=p.pronamespace where s.nspname='public' and p.proname like 'game_%' order by 1");
-check(pub.length === 6 && pub.every(r => !r.prosecdef), 'expected 6 invoker wrappers, got ' + JSON.stringify(pub.map(r => r.proname)));
+check(pub.length === 7 && pub.every(r => !r.prosecdef), 'expected 7 invoker wrappers, got ' + JSON.stringify(pub.map(r => r.proname)));
 
 // snapshot shape and what it must not leak
 const boot = (await one('select public.game_bootstrap() as s')).s;
@@ -59,6 +60,10 @@ check(boot.zones.length === 3 && boot.zones[0].zone_code === 'forest' && boot.zo
 check(boot.zones[1].unlocked === false && boot.zones[2].unlocked === false, 'mine and ruins must start locked');
 check(boot.level.xp_to_next === 40, 'level 1 must need 40 xp, got ' + JSON.stringify(boot.level));
 check(boot.item_names && boot.item_names.copper_ore === '铜矿石', 'item display names must come from the cloud');
+check(boot.shop && boot.shop.length === 12 && boot.shop[0].shop_code === 'wood_sword' && Number(boot.shop[0].price_coins) === 100
+  && Number(boot.shop[0].min_level) === 1, 'the shop must expose 12 goods starting with the 100-coin wood sword');
+check(boot.item_names.wood_sword === '木剑' && boot.shop[0].affixes[0].stat === 'attack' && Number(boot.shop[0].affixes[0].value) === 2,
+  'shop goods must carry display names and server-side affixes');
 check(!('xp_reward' in boot) && !('crit_chance' in boot) && !('chance' in boot), 'snapshot must not leak reward or drop configuration');
 
 // bootstrap is idempotent: a second call must not bump the profile revision
@@ -155,17 +160,22 @@ check(regen30.cat.hp === 100, 'regen must stop at max hp, got ' + regen30.cat.hp
 // work orders: validation, idempotency, claim payout
 await as(F);
 await one('select public.game_bootstrap()');
-await su("update public.game_job_catalog set is_active=true, rewards_by_duration=$1::jsonb where job_code='bakery'", ['{"60":{"coins":50}}']);
+const jobRows = await su('select job_code, is_active from public.game_job_catalog order by job_code');
+check(jobRows.length === 6 && jobRows.every(r => r.is_active), 'the rewards migration must activate all six seeded jobs');
 check(/invalid_work_order_request/.test(await errOf(`select public.game_start_work('bakery',60,'short')`)),
   'a short work idempotency key must be rejected');
 check(/job_unavailable/.test(await errOf(`select public.game_start_work('ghost',60,$1)`, ['k-work-0001'])),
   'an unknown job must be job_unavailable');
+await su("update public.game_job_catalog set is_active=false where job_code='fishing'");
 check(/job_unavailable/.test(await errOf(`select public.game_start_work('fishing',60,$1)`, ['k-work-0002'])),
-  'a seeded but inactive job must be job_unavailable');
+  'a job disabled server-side must be job_unavailable');
+await su("update public.game_job_catalog set is_active=true where job_code='fishing'");
 check(/duration_not_allowed/.test(await errOf(`select public.game_start_work('bakery',90,$1)`, ['k-work-0003'])),
   'a duration outside the catalog must be duration_not_allowed');
+await su("update public.game_job_catalog set rewards_by_duration=$1::jsonb where job_code='bakery'", ['{"60":{"coins":20}}']);
 check(/job_reward_not_configured/.test(await errOf(`select public.game_start_work('bakery',120,$1)`, ['k-work-0004'])),
   'an allowed duration without a configured reward must be job_reward_not_configured');
+await su("update public.game_job_catalog set rewards_by_duration=$1::jsonb where job_code='bakery'", ['{"60":{"coins":20},"120":{"coins":42},"240":{"coins":88},"480":{"coins":185}}']);
 const wStart = (await one(`select public.game_start_work('bakery',60,$1) as s`, ['k-work-0010'])).s;
 const orderRow = (await su('select order_id, extract(epoch from (completes_at-started_at))::int secs from public.game_work_orders where user_id=$1', [F]))[0];
 check(wStart.work_orders[0].status === 'active' && wStart.work_orders[0].job_code === 'bakery'
@@ -190,19 +200,20 @@ await as(F);
 await su("update public.game_work_orders set started_at=now()-interval '61 minutes', completes_at=now()-interval '1 second' where user_id=$1 and idempotency_key='k-work-0010'", [F]);
 const wClaim = (await one('select public.game_claim_work($1) as s', [wStart.work_orders[0].order_id])).s;
 const workLedger = (await su('select delta, reason, balance_after, idempotency_key from public.game_wallet_ledger where user_id=$1', [F]))[0];
-check(wClaim.wallet.coins === 50 && wClaim.work_orders[0].status === 'claimed' && wClaim.work_orders[0].claimed_at !== null
-  && Number(workLedger.delta) === 50 && workLedger.reason === 'work_order' && Number(workLedger.balance_after) === 50
+check(wClaim.wallet.coins === 20 && wClaim.work_orders[0].status === 'claimed' && wClaim.work_orders[0].claimed_at !== null
+  && Number(workLedger.delta) === 20 && workLedger.reason === 'work_order' && Number(workLedger.balance_after) === 20
   && workLedger.idempotency_key === 'work:' + wStart.work_orders[0].order_id,
-  'claiming a finished order must pay 50 coins into wallet and ledger exactly once');
+  'claiming a finished order must pay the configured 20 coins into wallet and ledger exactly once');
 const wClaim2 = (await one('select public.game_claim_work($1) as s', [wStart.work_orders[0].order_id])).s;
 const workLedgerCount = (await su('select count(*)::int n from public.game_wallet_ledger where user_id=$1', [F]))[0].n;
-check(wClaim2.wallet.coins === 50 && workLedgerCount === 1, 're-claiming must stay idempotent with no second payout');
+check(wClaim2.wallet.coins === 20 && workLedgerCount === 1, 're-claiming must stay idempotent with no second payout');
 const jobRow = (await su("select count(*)::int n from public.game_jobs where user_id=$1 and job_code='bakery'", [F]))[0].n;
 check(jobRow === 1, 'starting work must create the job row');
-check(wStart.job_catalog.length === 1 && wStart.job_catalog[0].job_code === 'bakery'
-  && JSON.stringify(wStart.job_catalog[0].allowed_durations_minutes) === JSON.stringify([60])
+const bakeryCat = wStart.job_catalog.find(j => j.job_code === 'bakery');
+check(wStart.job_catalog.length === 6 && bakeryCat
+  && JSON.stringify(bakeryCat.allowed_durations_minutes) === JSON.stringify([60, 120, 240, 480])
   && Object.keys(wStart.job_catalog[0]).sort().join() === 'allowed_durations_minutes,display_name,job_code',
-  'the snapshot job catalog must expose bakery with only the configured duration and no reward amounts');
+  'the snapshot job catalog must expose all six jobs with configured durations and no reward amounts');
 check((await rows('select job_code from public.game_job_catalog')).some(x => x.job_code === 'bakery'),
   'the client role may read the granted catalog columns');
 check(/permission denied/i.test(await errOf('select rewards_by_duration from public.game_job_catalog')),
@@ -238,6 +249,35 @@ await as(B);
 check(/equipment_not_found/.test(await errOf('select public.game_equip_item($1,true)', [eq1])),
   'another player must not equip my item');
 await as(G);
+
+// village shop: spend earned coins on equipment
+await as(F);
+check(/invalid_shop_request/.test(await errOf(`select public.game_buy_item('wood_sword','short')`)),
+  'a short shop idempotency key must be rejected');
+check(/shop_item_not_available/.test(await errOf(`select public.game_buy_item('ghost_item',$1)`, ['k-shop-0001'])),
+  'an unknown or inactive good must be shop_item_not_available');
+check(/shop_level_required/.test(await errOf(`select public.game_buy_item('copper_sword',$1)`, ['k-shop-0002'])),
+  'a level-1 cat must not buy the level-5 copper sword');
+check(/shop_insufficient_coins/.test(await errOf(`select public.game_buy_item('wood_sword',$1)`, ['k-shop-0003'])),
+  'buying with only 20 coins must be shop_insufficient_coins');
+await su('update public.game_wallets set coins=1000 where user_id=$1', [F]);
+const sBuy = (await one(`select public.game_buy_item('wood_sword',$1) as s`, ['k-shop-0010'])).s;
+const bought = (sBuy.equipment || []).find(e => e.item_code === 'wood_sword');
+const shopLedger = (await su("select delta, reason, balance_after, source_id from public.game_wallet_ledger where user_id=$1 and reason='shop'", [F]))[0];
+check(sBuy.wallet.coins === 900 && bought && bought.slot === 'weapon' && bought.quality === 'common'
+  && bought.affixes && bought.affixes[0].stat === 'attack' && String(bought.affixes[0].value) === '2',
+  'buying the wood sword must cost 100 coins and deliver a weapon with attack +2');
+check(Number(shopLedger.delta) === -100 && shopLedger.reason === 'shop' && Number(shopLedger.balance_after) === 900
+  && shopLedger.source_id === bought.equipment_id,
+  'the purchase must be ledgered as a negative delta with the new equipment as its source');
+const sReplay = (await one(`select public.game_buy_item('wood_sword',$1) as s`, ['k-shop-0010'])).s;
+const boughtCount = (await su("select count(*)::int n from public.game_equipment where user_id=$1 and item_code='wood_sword'", [F]))[0].n;
+check(sReplay.wallet.coins === 900 && boughtCount === 1, 'a replayed shop key must neither charge again nor duplicate the item');
+const sWear = (await one('select public.game_equip_item($1,true) as s', [bought.equipment_id])).s;
+check((sWear.equipment || []).find(e => e.equipment_id === bought.equipment_id).is_equipped === true,
+  'a bought sword must be wearable through the normal equip RPC');
+check(/permission denied/i.test(await errOf('select * from public.game_shop_catalog')),
+  'the client role must not read the shop catalog directly');
 
 // configuration and battle records stay server-only; the client role cannot write
 check(/permission denied/i.test(await errOf('select * from public.game_combat_rules')), 'the client role must not read combat rules');

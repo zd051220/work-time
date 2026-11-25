@@ -46,6 +46,7 @@ function el(id) { return ids[id] || (ids[id] = Object.assign(new El('div'), { id
   'jobCatalog', 'workOrderPanel', 'workMessage', 'connection', 'refreshCloud',
   'catXp', 'catAtk', 'catDef', 'catLuck', 'catMining', 'catSatiety', 'catMood', 'catAffection', 'cloudProgress',
   'jobGrowth', 'equipmentList', 'zoneList', 'battleResult', 'bagMessage', 'adventureMessage',
+  'shopList', 'shopBalance', 'shopCount', 'shopMessage',
   'zoneCardForest', 'zoneCardMine', 'zoneCardRuins'].forEach(el);
 const doc = {
   _l: {}, body: new El('body'),
@@ -266,6 +267,37 @@ new Function('window', 'document', 'CustomEvent', 'setTimeout', 'setInterval', '
   await micro();
   check(ids.equipmentList.children[0].find(n => n.tagName === 'BUTTON').textContent === '脱下', 'an equipped item must offer unequipping');
 
+  // The village shop renders cloud goods, prices and affixes; purchases send only id + key.
+  const shopSnapshot = Object.assign({}, rich, { shop: [
+    { shop_code: 'wood_sword', display_name: '木剑', icon: '🗡️', slot: 'weapon', quality: 'common', affixes: [{ stat: 'attack', value: 2 }], price_coins: 100, min_level: 1 },
+    { shop_code: 'copper_sword', display_name: '铜剑', icon: '⚔️', slot: 'weapon', quality: 'uncommon', affixes: [{ stat: 'attack', value: 6 }], price_coins: 500, min_level: 5 }
+  ] });
+  const beforeShop = sent.length;
+  refreshBtn.click();
+  await micro(); await micro();
+  await reply(sent[beforeShop], true, shopSnapshot);
+  await micro();
+  check(ids.shopBalance.textContent.indexOf('持有金币 1,234') === 0 && ids.shopCount.textContent === '2 件商品', 'shop header must show cloud coins and stock, got ' + ids.shopBalance.textContent);
+  const shopRows = ids.shopList.children;
+  check(shopRows.length === 2 && shopRows[0].textContent.indexOf('木剑') >= 0 && shopRows[0].textContent.indexOf('攻击 +2') >= 0 && shopRows[0].textContent.indexOf('100 金币') >= 0,
+    'shop goods must be rendered from the snapshot with cloud prices, got ' + ids.shopList.textContent);
+  const woodBtn = shopRows[0].find(n => n.tagName === 'BUTTON'), copperBtn = shopRows[1].find(n => n.tagName === 'BUTTON');
+  check(woodBtn.disabled === false && copperBtn.disabled === true && shopRows[1].textContent.indexOf('需要 Lv.5') >= 0,
+    'shop must disable goods the cat cannot afford or is too low-level for');
+  const beforeBuy = sent.length;
+  woodBtn.click(); woodBtn.click();
+  await micro(); await micro();
+  const buys = sent.slice(beforeBuy);
+  check(buys.length === 1 && buys[0].method === 'game_buy_item' && Object.keys(buys[0].params).sort().join() === 'p_idempotency_key,p_shop_code' &&
+    buys[0].params.p_shop_code === 'wood_sword' && buys[0].params.p_idempotency_key.length >= 8,
+    'buying must send only the shop code and an idempotency key, sent ' + JSON.stringify(buys));
+  check(!('price_coins' in buys[0].params) && !('coins' in buys[0].params), 'client must never send a price or coin amount');
+  await reply(buys[0], false, undefined, '{"code":"55000","details":null,"hint":null,"message":"shop_insufficient_coins"}');
+  await micro(); await micro();
+  check(ids.shopMessage.textContent === '金币不够，先去工作或冒险赚一些', 'shop refusals must be translated, got ' + ids.shopMessage.textContent);
+  await reply(sent[sent.length - 1], true, shopSnapshot);
+  await micro();
+
   // A battle sends the zone, the floor and an idempotency key, never any outcome.
   const goBtn = ids.zoneList.children[0].find(n => n.tagName === 'BUTTON');
   const beforeBattle = sent.length;
@@ -321,7 +353,10 @@ new Function('window', 'document', 'CustomEvent', 'setTimeout', 'setInterval', '
   /* ---------- main app bridge must stay token-free and whitelist-only ---------- */
   const beta = fs.readFileSync(path.join(__dirname, '..', '..', 'beta-v5.5.html'), 'utf8');
   const bridge = beta.slice(beta.indexOf('/* 游戏云端 RPC 桥'), beta.indexOf('loadFeed(false);loadStats();'));
-  check(bridge.length > 500 && /allowed=\{game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true,game_equip_item:true,game_start_explore:true\}/.test(bridge), 'bridge whitelist must cover exactly the six game RPCs');
+  check(bridge.length > 500 && /allowed=\{game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true,game_equip_item:true,game_start_explore:true,game_buy_item:true\}/.test(bridge), 'bridge whitelist must cover exactly the seven game RPCs');
+  check(bridge.indexOf("msg.method==='game_buy_item'") > 0 && bridge.indexOf("payload={p_shop_code:args.p_shop_code,p_idempotency_key:args.p_idempotency_key}") > 0 &&
+    bridge.indexOf("/^[a-z_]{1,20}$/.test(args.p_shop_code)") > 0,
+    'bridge must validate the shop code and rebuild the payload from validated fields only');
   check(/msg\.method==='game_equip_item'[\s\S]*?msg\.method==='game_start_explore'/.test(bridge) && /payload=\{p_equipment_id:args\.p_equipment_id,p_equipped:args\.p_equipped\}/.test(bridge) &&
     /payload=\{p_zone_code:args\.p_zone_code,p_floor:args\.p_floor,p_idempotency_key:args\.p_idempotency_key\}/.test(bridge),
     'bridge must rebuild the payload for the new RPCs from validated fields only');
