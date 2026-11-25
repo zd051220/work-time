@@ -124,7 +124,7 @@ begin
     raise exception 'Invalid, expired, used, or revoked authorization code' using errcode = '22023';
   end if;
 
-  if coalesce(p_record->>'date', '') !~ '^\\d{4}-\\d{2}-\\d{2}
+  if coalesce(p_record->>'date', '') !~ '^\d{4}-\d{2}-\d{2}
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
@@ -204,7 +204,7 @@ grant execute on function public.record_entry_grant_create() to authenticated;
 grant execute on function public.record_entry_grant_revoke() to authenticated;
 grant execute on function public.admin_create_record_for_user(text, jsonb) to authenticated;
 
-     or coalesce(p_record->>'start', '') !~ '^([01]\\d|2[0-3]):[0-5]\\d
+     or coalesce(p_record->>'start', '') !~ '^([01]\d|2[0-3]):[0-5]\d
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
@@ -283,7 +283,7 @@ grant execute on function public.record_entry_grant_create() to authenticated;
 grant execute on function public.record_entry_grant_revoke() to authenticated;
 grant execute on function public.admin_create_record_for_user(text, jsonb) to authenticated;
 
-     or coalesce(p_record->>'end', '') !~ '^([01]\\d|2[0-3]):[0-5]\\d
+     or coalesce(p_record->>'end', '') !~ '^([01]\d|2[0-3]):[0-5]\d
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
@@ -362,7 +362,7 @@ grant execute on function public.record_entry_grant_create() to authenticated;
 grant execute on function public.record_entry_grant_revoke() to authenticated;
 grant execute on function public.admin_create_record_for_user(text, jsonb) to authenticated;
 
-     or coalesce(p_record->>'work', '') !~ '^\\d{1,3}:[0-5]\\d:[0-5]\\d
+     or coalesce(p_record->>'work', '') !~ '^\d{1,3}:[0-5]\d:[0-5]\d
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
@@ -441,7 +441,7 @@ grant execute on function public.record_entry_grant_create() to authenticated;
 grant execute on function public.record_entry_grant_revoke() to authenticated;
 grant execute on function public.admin_create_record_for_user(text, jsonb) to authenticated;
 
-     or coalesce(p_record->>'paid', '') !~ '^\\d{1,3}:[0-5]\\d:[0-5]\\d
+     or coalesce(p_record->>'paid', '') !~ '^\d{1,3}:[0-5]\d:[0-5]\d
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
@@ -520,7 +520,7 @@ grant execute on function public.record_entry_grant_create() to authenticated;
 grant execute on function public.record_entry_grant_revoke() to authenticated;
 grant execute on function public.admin_create_record_for_user(text, jsonb) to authenticated;
 
-     or coalesce(p_record->>'unpaid', '') !~ '^\\d{1,3}:[0-5]\\d:[0-5]\\d
+     or coalesce(p_record->>'unpaid', '') !~ '^\d{1,3}:[0-5]\d:[0-5]\d
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
@@ -599,7 +599,7 @@ grant execute on function public.record_entry_grant_create() to authenticated;
 grant execute on function public.record_entry_grant_revoke() to authenticated;
 grant execute on function public.admin_create_record_for_user(text, jsonb) to authenticated;
 
-     or coalesce(p_record->>'duration', '') !~ '^\\d{1,3}:[0-5]\\d:[0-5]\\d
+     or coalesce(p_record->>'duration', '') !~ '^\d{1,3}:[0-5]\d:[0-5]\d
     raise exception 'Invalid date or time format' using errcode = '22023';
   end if;
 
