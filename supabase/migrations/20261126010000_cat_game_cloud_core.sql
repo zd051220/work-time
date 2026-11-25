@@ -1,7 +1,10 @@
 -- Cat Game V2: cloud save foundation.
 -- Keep privileged function implementations in a non-exposed schema.
 create schema if not exists private;
-revoke all on schema private from public, anon;
+-- Do not revoke schema USAGE from anon: this project already has existing
+-- private-schema RPC/hooks used by the current app. Restrict object creation
+-- instead, and grant only the game functions explicitly below.
+revoke create on schema private from public, anon, authenticated;
 grant usage on schema private to authenticated;
 -- NOTE: This migration is staged in Git only. Do not apply until the
 -- repository's missing historical migrations have been reconciled.
