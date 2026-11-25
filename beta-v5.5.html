@@ -165,6 +165,17 @@ section.card{scroll-margin-top:14px}
 <div class="accRow"><div><div class="accName" id="accName">—</div><div class="accSub" id="accSub">已登录</div></div><button class="accOut" id="accOut">退出</button></div>
 <div class="fbRow"><button class="fbMain" id="accSync">立即同步</button><button class="fbAlt" id="accPull">从云端拉取</button></div>
 <div class="fbRow"><button class="fbAlt" id="accPwd">修改密码</button><button class="fbAlt" id="accDel">注销账号</button></div>
+<div class="fbAdminBox" id="recordGrantBox" style="margin-top:12px">
+  <div class="fbAdminHead"><span>授权管理员代录一条上班数据</span><span style="font-weight:500;color:#a58e70">自愿授权</span></div>
+  <div class="note">需要别人帮你补记一条上班数据时，在这里生成授权码并发给管理员。授权码10分钟有效、只能使用一次；生成新码会撤销上一个未使用的码。</div>
+  <div class="fbAdminActions"><button id="recordGrantCreate">生成代录授权码</button><button id="recordGrantRevoke">撤销未使用授权</button></div>
+  <div id="recordGrantCodeWrap" style="display:none;margin-top:9px">
+    <input id="recordGrantCode" class="fbName" readonly aria-label="代录授权码" style="width:100%;font-family:monospace;letter-spacing:.4px">
+    <div class="note">请把完整授权码发给管理员。不要发给其他人。</div>
+    <div class="fbAdminActions"><button id="recordGrantCopy">复制授权码</button></div>
+  </div>
+  <div class="accMsg" id="recordGrantMsg"></div>
+</div>
 </div>
 <div class="accMsg" id="accMsg"></div>
 </section>
@@ -188,7 +199,28 @@ section.card{scroll-margin-top:14px}
   <div class="my-subpage" id="my-page-admin">
     <div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>管理员管理</b></div>
     <section class="card" id="sec-admin"><div class="head"><h2>🛡️ 留言管理</h2><span class="tag">管理员功能</span></div>
-    <div class="fbAdminBox"><div class="fbAdminHead"><span>留言管理</span><span id="fbAdminState" style="font-weight:500;color:#a58e70">管理员入口</span></div><div id="fbAdminLogin"><div class="note" style="margin:7px 0">首次设置独立管理密码需先登录获授权的网站管理员账号。</div><div class="fbBar"><input class="fbName" id="fbAdminPass" type="password" maxlength="128" placeholder="管理员密码"><button class="fbMain" id="fbAdminEnter">进入</button></div><div class="fbAdminActions"><button id="fbAdminAccountEnter">直接用管理员账号进入</button><button id="fbAdminSetup">设置/修改独立管理密码</button></div></div><div id="fbAdminPanel" style="display:none"><div class="fbAdminActions"><button id="fbAdminReload">刷新管理列表</button><button id="fbAdminExit">退出管理</button></div><div id="fbAdminList"><div class="fbTip">正在加载…</div></div></div><div id="fbAdminMsg" class="accMsg"></div></div>
+    <div class="fbAdminBox"><div class="fbAdminHead"><span>留言管理</span><span id="fbAdminState" style="font-weight:500;color:#a58e70">管理员入口</span></div><div id="fbAdminLogin"><div class="note" style="margin:7px 0">首次设置独立管理密码需先登录获授权的网站管理员账号。</div><div class="fbBar"><input class="fbName" id="fbAdminPass" type="password" maxlength="128" placeholder="管理员密码"><button class="fbMain" id="fbAdminEnter">进入</button></div><div class="fbAdminActions"><button id="fbAdminAccountEnter">直接用管理员账号进入</button><button id="fbAdminSetup">设置/修改独立管理密码</button></div></div><div id="fbAdminPanel" style="display:none">
+  <div class="fbAdminActions"><button id="fbAdminReload">刷新管理列表</button><button id="fbAdminExit">退出管理</button></div>
+  <div class="fbAdminBox" id="adminRecordEntryBox" style="display:none;margin-top:12px">
+    <div class="fbAdminHead"><span>代录上班数据</span><span style="font-weight:500;color:#a58e70">仅管理员账号</span></div>
+    <div class="note">把对方发来的授权码填在这里。保存后只会新增一条记录到对方账本，不会读取或改动对方其他数据。需使用「管理员账号进入」，独立管理密码仅用于留言管理。</div>
+    <div class="field" style="margin-top:10px"><label>对方的一次性授权码</label><input id="adminRecordCode" type="text" autocomplete="off" placeholder="粘贴授权码"></div>
+    <div class="grid" style="margin-top:10px">
+      <div class="field"><label>上班日期</label><input id="adminRecordDate" type="date"></div>
+      <div class="field"><label>日工资（元）</label><input id="adminRecordWage" type="number" min="0.01" step="0.01" value="200"></div>
+      <div class="field"><label>上班时间</label><input id="adminRecordStart" type="time" value="09:00"></div>
+      <div class="field"><label>下班时间</label><input id="adminRecordEnd" type="time" value="17:00"></div>
+      <div class="field"><label>标准工作时长（小时）</label><input id="adminRecordHours" type="number" min="0.1" max="24" step="0.1" value="8"></div>
+      <div class="field"><label>实际工作时长（HH:MM:SS）</label><input id="adminRecordWork" type="text" value="08:00:00" placeholder="08:00:00"></div>
+      <div class="field"><label>带薪休息（HH:MM:SS）</label><input id="adminRecordPaid" type="text" value="00:00:00" placeholder="00:00:00"></div>
+      <div class="field"><label>不带薪休息（HH:MM:SS）</label><input id="adminRecordUnpaid" type="text" value="00:00:00" placeholder="00:00:00"></div>
+    </div>
+    <div class="note" id="adminRecordCalc">计薪时长 = 实际工作 + 带薪休息；工资按日工资 ÷ 标准工作时长计算。</div>
+    <div class="fbAdminActions"><button id="adminRecordSubmit">确认代录并保存</button></div>
+    <div class="accMsg" id="adminRecordMsg"></div>
+  </div>
+  <div id="fbAdminList"><div class="fbTip">正在加载…</div></div>
+</div><div id="fbAdminMsg" class="accMsg"></div></div>
     </section>
   </div>
   <div class="my-subpage" id="my-page-settings">
@@ -1045,13 +1077,60 @@ function loadFeed(append){if(fbBusy)return;fbBusy=true;var next=append?fbOffset+
 $('fbGo').onclick=function(){var msg=($('fbText').value||'').trim(),name=($('fbName').value||'').trim().slice(0,12)||'匿名';if(msg.length<2||msg.length>300){toast('留言需要 2–300 个字');$('fbText').focus();return}var btn=$('fbGo');btn.disabled=true;btn.textContent='发送中';fetch(SB+'/rest/v1/feedback',{method:'POST',headers:sbH({'Content-Type':'application/json','Prefer':'return=minimal'}),body:JSON.stringify({name:name,content:msg,page:'xiaomao-banjin-5.4.1'})}).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);$('fbText').value='';loadFeed(false);toast('留言已发布，谢谢反馈！')}).catch(function(e){toast(e&&e.message==='HTTP 429'?'发得有点快，请过一会儿再试':'没发出去（网络或权限），可先发邮件')}).then(function(){btn.disabled=false;btn.textContent='发布'})};
 function fbAdminMsg(t,ok){var el=$('fbAdminMsg');el.textContent=t||'';el.className='accMsg'+(t?' show':'')+(ok?' ok':'')}
 function fbAdminMode(on){$('fbAdminLogin').style.display=on?'none':'';$('fbAdminPanel').style.display=on?'':'none';$('fbAdminState').textContent=on?'管理模式已开启':'管理员入口'}
-function fbAdminLoad(){fbRpc('feedback_admin_list',{p_token:fbAdminToken}).then(function(rows){var box=$('fbAdminList');if(!rows||!rows.length)box.innerHTML='<div class="fbTip">目前没有留言</div>';else box.innerHTML=rows.map(function(x){var h=!!x.hidden_at;return '<div class="fbAdminRow" data-id="'+Number(x.id)+'"><div class="fbTop"><b>#'+Number(x.id)+' · '+escapeHTML(x.name||'匿名')+'</b><span>'+(h?'已隐藏':'公开中')+' · '+fbWhen(x.created_at)+'</span></div><div class="fbBody">'+escapeHTML(x.content||'')+'</div><div class="fbAdminActions"><button data-act="toggle">'+(h?'恢复显示':'隐藏留言')+'</button><button data-act="delete">永久删除</button></div></div>'}).join('');fbAdminMode(true);fbAdminMsg('管理列表已更新',true)}).catch(function(e){fbAdminToken='';localStorage.removeItem(FB_ADMIN_KEY);fbAdminMode(false);fbAdminMsg(e&&e.status===401?'管理密码无效或已过期，请重新进入':'暂时无法读取管理列表，请确认管理员权限和密码')})}
+function fbAdminLoad(){fbRpc('feedback_admin_list',{p_token:fbAdminToken}).then(function(rows){var box=$('fbAdminList');if(!rows||!rows.length)box.innerHTML='<div class="fbTip">目前没有留言</div>';else box.innerHTML=rows.map(function(x){var h=!!x.hidden_at;return '<div class="fbAdminRow" data-id="'+Number(x.id)+'"><div class="fbTop"><b>#'+Number(x.id)+' · '+escapeHTML(x.name||'匿名')+'</b><span>'+(h?'已隐藏':'公开中')+' · '+fbWhen(x.created_at)+'</span></div><div class="fbBody">'+escapeHTML(x.content||'')+'</div><div class="fbAdminActions"><button data-act="toggle">'+(h?'恢复显示':'隐藏留言')+'</button><button data-act="delete">永久删除</button></div></div>'}).join('');fbAdminMode(true);$('adminRecordEntryBox').style.display=(fbAdminBearer&&accSess())?'':'none';fbAdminMsg('管理列表已更新',true)}).catch(function(e){fbAdminToken='';localStorage.removeItem(FB_ADMIN_KEY);$('adminRecordEntryBox').style.display='none';fbAdminMode(false);fbAdminMsg(e&&e.status===401?'管理密码无效或已过期，请重新进入':'暂时无法读取管理列表，请确认管理员权限和密码')})}
 $('fbAdminEnter').onclick=function(){fbAdminBearer='';var p=$('fbAdminPass').value||'';if(!p){fbAdminMsg('请输入管理员密码');return}var b=$('fbAdminEnter');b.disabled=true;b.textContent='验证中';fbRpc('feedback_admin_password_login',{p_password:p}).then(function(t){if(!t)throw 0;fbAdminToken=t;localStorage.setItem(FB_ADMIN_KEY,t);$('fbAdminPass').value='';fbAdminLoad()}).catch(function(){fbAdminMsg('管理员密码不正确，或尚未设置')}).then(function(){b.disabled=false;b.textContent='进入'})};
 $('fbAdminAccountEnter').onclick=function(){var s=accSess();if(!s){fbAdminMsg('请先登录网站管理员账号 ZD');return}accToken().then(function(t){if(!t)throw 0;fbAdminBearer=t;fbAdminToken='';return fbAdminLoad()}).catch(function(){fbAdminBearer='';fbAdminMsg('当前账号没有管理员权限，或登录已过期')})};
 $('fbAdminSetup').onclick=function(){var s=accSess();if(!s){fbAdminMsg('请先登录获授权的网站管理员账号');return}var p=prompt('请设置 8 位数字的独立管理员密码。此密码不是网站登录密码。');if(p===null)return;if(!/^\d{8}$/.test(p)){fbAdminMsg('管理员密码必须正好是 8 位数字');return}accToken().then(function(t){if(!t)throw 0;return fbRpc('feedback_admin_set_password',{p_password:p},t)}).then(function(){fbAdminMsg('独立管理员密码已设置，现在可以用它进入留言管理。',true)}).catch(function(){fbAdminMsg('设置失败：当前登录账号没有管理员授权，或登录已过期')})};
-$('fbAdminExit').onclick=function(){fbAdminToken='';fbAdminBearer='';localStorage.removeItem(FB_ADMIN_KEY);fbAdminMode(false);fbAdminMsg('已退出留言管理')};$('fbAdminReload').onclick=fbAdminLoad;
+$('fbAdminExit').onclick=function(){fbAdminToken='';fbAdminBearer='';localStorage.removeItem(FB_ADMIN_KEY);$('adminRecordEntryBox').style.display='none';fbAdminMode(false);fbAdminMsg('已退出留言管理')};$('fbAdminReload').onclick=fbAdminLoad;
 $('fbAdminList').addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('button[data-act]'):null;if(!b)return;var row=b.closest('.fbAdminRow');if(!row)return;var id=Number(row.getAttribute('data-id')),act=b.getAttribute('data-act');if(act==='delete'&&!confirm('确定永久删除这条留言？删除后无法恢复。'))return;b.disabled=true;var hidden=row.querySelector('[data-act="toggle"]').textContent==='隐藏留言';var req=act==='delete'?fbRpc('feedback_admin_delete',{p_id:id,p_token:fbAdminToken}):fbRpc('feedback_admin_set_hidden',{p_id:id,p_hidden:hidden,p_token:fbAdminToken});req.then(function(){toast(act==='delete'?'留言已永久删除':'留言显示状态已更新');fbAdminLoad();loadFeed(false);loadStats()}).catch(function(){toast('操作失败：管理员权限可能已失效');fbAdminLoad()}).then(function(){b.disabled=false})});
 if(fbAdminToken)fbAdminLoad();
+
+/* ===== 用户主动授权 + 管理员代录一条记录 ===== */
+function grantMsg(t,ok){var el=$('recordGrantMsg');if(!el)return;el.textContent=t||'';el.className='accMsg'+(t?' show':'')+(ok?' ok':'')}
+$('recordGrantCreate').onclick=function(){
+  var b=this;b.disabled=true;b.textContent='生成中…';grantMsg('正在生成一次性授权码…');
+  accToken().then(function(tk){if(!tk)throw 0;return fbRpc('record_entry_grant_create',{},tk)})
+    .then(function(code){if(typeof code!=='string'||!/^[-0-9a-f]{36}$/i.test(code))throw 0;$('recordGrantCode').value=code;$('recordGrantCodeWrap').style.display='';grantMsg('授权码已生成，有效期10分钟，只能使用一次。',true)})
+    .catch(function(){grantMsg('生成失败：请确认已登录并检查网络')})
+    .then(function(){b.disabled=false;b.textContent='重新生成授权码'});
+};
+$('recordGrantRevoke').onclick=function(){
+  var b=this;b.disabled=true;
+  accToken().then(function(tk){if(!tk)throw 0;return fbRpc('record_entry_grant_revoke',{},tk)})
+    .then(function(n){$('recordGrantCodeWrap').style.display='none';$('recordGrantCode').value='';grantMsg('已撤销 '+Number(n||0)+' 个未使用授权码。',true)})
+    .catch(function(){grantMsg('撤销失败，请确认登录状态后重试')})
+    .then(function(){b.disabled=false});
+};
+$('recordGrantCopy').onclick=function(){
+  var v=$('recordGrantCode').value;if(!v)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(function(){grantMsg('授权码已复制，请发给管理员。',true)}).catch(function(){ $('recordGrantCode').select();grantMsg('请长按或使用复制快捷键复制授权码')})}
+  else{$('recordGrantCode').select();try{document.execCommand('copy');grantMsg('授权码已复制，请发给管理员。',true)}catch(e){grantMsg('请手动复制输入框里的授权码')}}
+};
+
+function adminRecordMsg(t,ok){var el=$('adminRecordMsg');el.textContent=t||'';el.className='accMsg'+(t?' show':'')+(ok?' ok':'')}
+function durationSeconds(v){var m=String(v||'').match(/^(\d{1,3}):([0-5]\d):([0-5]\d)$/);return m?Number(m[1])*3600+Number(m[2])*60+Number(m[3]):null}
+$('adminRecordSubmit').onclick=function(){
+  var b=this;
+  if(!accSess()||!fbAdminBearer){adminRecordMsg('请先点击「直接用管理员账号进入」；独立管理密码不能使用代录功能。');return}
+  var code=$('adminRecordCode').value.trim(),date=$('adminRecordDate').value,start=$('adminRecordStart').value,end=$('adminRecordEnd').value;
+  var work=durationSeconds($('adminRecordWork').value),paid=durationSeconds($('adminRecordPaid').value),unpaid=durationSeconds($('adminRecordUnpaid').value);
+  var wage=Number($('adminRecordWage').value),hours=Number($('adminRecordHours').value);
+  if(!/^[-0-9a-f]{36}$/i.test(code)){adminRecordMsg('请填写完整的授权码。');return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end)){adminRecordMsg('请填写有效的日期、上班和下班时间。');return}
+  if(work===null||paid===null||unpaid===null||work+paid+unpaid<=0){adminRecordMsg('时长请按 HH:MM:SS 填写，且总时长必须大于0。');return}
+  if(!(wage>0&&wage<=1000000&&hours>0&&hours<=24)){adminRecordMsg('请填写有效的日工资和标准工作时长。');return}
+  var duration=function(n){var h=Math.floor(n/3600),m=Math.floor(n%3600/60),sec=n%60;return [h,m,sec].map(function(x){return String(x).padStart(2,'0')}).join(':')};
+  var paidSeconds=work+paid, pay=paidSeconds*wage/(hours*3600);
+  var rec={date:date,start:start,end:end,work:duration(work),paid:duration(paid),unpaid:duration(unpaid),duration:duration(work+paid+unpaid),wage:wage,hours:hours,pay:Number(pay.toFixed(6))};
+  if(!confirm('确认把这条记录保存到授权人的账本？\n日期：'+date+'\n时间：'+start+'—'+end+'\n计薪时长：'+duration(paidSeconds)+'\n预计工资：¥'+rec.pay.toFixed(2)+'\n授权码将立即失效。'))return;
+  b.disabled=true;b.textContent='保存中…';adminRecordMsg('正在验证授权并保存…');
+  accToken().then(function(tk){if(!tk)throw 0;return fbRpc('admin_create_record_for_user',{p_code:code,p_record:rec},tk)})
+    .then(function(result){if(!result||!result.ok)throw 0;$('adminRecordCode').value='';adminRecordMsg('代录成功！记录已保存到对方云端账本。对方刷新或点「从云端拉取」即可看到。',true);toast('已成功代录一条上班数据')})
+    .catch(function(e){adminRecordMsg(e&&e.status===401?'管理员账号权限不足或登录已过期。':'保存失败：授权码可能已过期、撤销或使用过，请让对方重新生成。')})
+    .then(function(){b.disabled=false;b.textContent='确认代录并保存'});
+};
+var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+String(grantDate.getMonth()+1).padStart(2,'0')+'-'+String(grantDate.getDate()).padStart(2,'0');
+
 loadFeed(false);loadStats();
 
 })();
