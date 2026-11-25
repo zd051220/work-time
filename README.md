@@ -23,17 +23,19 @@
 | `ledger54-5.4.1.html` | 5.4.1 的完整账本页 |
 | `v5.4.html` | 上一版（账号账本分库存、改密码、清空云端账本、一个页面计时），可作回滚版 |
 | `ledger54.html` | 5.4 的完整账本页 |
-| `beta-v5.5.html` | 内测版：底部四栏与「我的」五个独立子页面、账号身份锁、备份恢复保护、计时云同步；已接入小猫游戏桥 |
-| `cat-workshop.html` | 小猫游戏页：云端存档、工作订单、装备穿脱、冒险与战斗回放 |
+| `beta-v5.5.html` | 内测版（`index.html` 有入口，正式版仍是 5.4.1）：底部四栏与「我的」五个独立子页面、账号身份锁、备份恢复保护、计时云同步；已接入小猫游戏桥 |
+| `cat-workshop.html` | 小猫游戏页：云端存档、工作订单、金币商店买装备、装备穿脱、冒险与战斗回放 |
 | `test-5.4.1.html` | 5.4.1 的测试入口页（转正后保留） |
 | `v5.3.html` / `v5.2.html` / `v5.1.html` | 历史版本，`index.html` 里有入口 |
 | `ledger.html` | 5.3 及更早版本共用的旧账本页 |
 | `version.json` | 版本提示数据，5.4 启动时读取，`url` 指向 `v5.4.1.html` |
 | `manifest.json` / `icon.svg` | PWA 清单与图标 |
 | `.github/scripts/timer_check.js` | 发布前计时纯函数门禁（20 项断言） |
-| `.github/scripts/cat_game_pg_check.mjs` | 游戏迁移的 PGlite 行为检查（78 项断言，CI 内跑） |
+| `.github/scripts/cat_game_migration_check.js` | 五份游戏迁移的静态安全审计 |
+| `.github/scripts/cat_work_order_check.js` | 游戏页与父程序桥的行为检查（64 项） |
+| `.github/scripts/cat_game_pg_check.mjs` | 游戏迁移的 PGlite 行为检查（90 项断言，CI 内跑） |
 | `.github/workflows/release-manual.yml` | 手动发布流程：下载→哈希→门禁→单文件提交 |
-| `supabase/migrations/` | 小猫游戏三份迁移，**已于 2026-11-26 在 Supabase 执行** |
+| `supabase/migrations/` | 小猫游戏五份迁移：前三份（云存档/工单/冒险）**已于 2026-11-26 执行**；后两份（岗位奖励/商店）需在 Supabase SQL Editor 执行后才能上线游戏 |
 | `supabase/functions/delete-account/index.ts` | 真正删号的 Edge Function 源码，**尚未部署、前端未启用** |
 
 ## 计时规则
