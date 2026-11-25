@@ -19,8 +19,8 @@ check(!/revoke\s+all\s+on\s+schema\s+private\s+from\s+public\s*,\s*anon/i.test(c
 check(/revoke create on schema private from public, anon, authenticated/i.test(code), 'must revoke CREATE on private schema');
 check(tables.length === 13, 'expected 13 game tables including job catalog, found ' + tables.length);
 check(rls.length === 13 && tables.every(t => rls.includes(t)), 'every game table must have RLS enabled');
-check(definers.length === 4 && definers.every(f => f.startsWith('private.game_')), 'four private SECURITY DEFINER game functions are expected');
-check((code.match(/if\s+v_uid\s+is\s+null\s+then/gi) || []).length === 4, 'each privileged function must reject a missing auth.uid()');
+check(definers.length === 5 && definers.every(f => f.startsWith('private.game_')), 'five private SECURITY DEFINER definitions including snapshot replacement are expected');
+check((code.match(/if\s+v_uid\s+is\s+null\s+then/gi) || [] ).length === 5, 'each privileged function must reject a missing auth.uid()');
 check(wrappers.length === 4 && wrappers.every(f => f.startsWith('public.game_')), 'public RPC wrappers must be SECURITY INVOKER');
 check(/revoke all on function private\.game_bootstrap\(\) from public, anon, authenticated/i.test(code), 'bootstrap private EXECUTE must be revoked before explicit grant');
 check(/revoke all on function private\.game_get_snapshot\(\) from public, anon, authenticated/i.test(code), 'snapshot private EXECUTE must be revoked before explicit grant');
