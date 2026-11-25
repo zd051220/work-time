@@ -101,7 +101,7 @@ section.card{scroll-margin-top:14px}
 <body><main class="app">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">5.4.1</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
-<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>5.4.1 测试版</b>：账号身份锁 + 删号不再假装成功（未部署服务端时只清账本）</span><span class="arrow">›</span></div>
+<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>5.4.1 正式版</b>：账号身份锁 + 删号不再假装成功（未部署服务端时只清账本）</span><span class="arrow">›</span></div>
 
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
@@ -156,8 +156,8 @@ section.card{scroll-margin-top:14px}
 <div class="foot">今天也辛苦啦，小猫把你的每一秒都认真记下来了 ♡</div></main>
 <div class="mask" id="mask">
  <div class="sheet" role="dialog" aria-modal="true" aria-label="更新公告">
-  <h3>小猫搬金条 5.4.1 测试版</h3>
-  <div class="ver">独立测试版 · 不覆盖 5.4、不切正式入口（进站自动弹出，24 小时内不再重复）</div>
+  <h3>小猫搬金条 5.4.1 正式版</h3>
+  <div class="ver">正式版 · 站点入口已切到 5.4.1，5.4 保留为上一版（进站自动弹出，24 小时内不再重复）</div>
   <ul>
    <li><b>账号身份锁（重要）</b>：页面打开时绑定当时的账号；账号一变，这个旧页面立刻停止所有云端读写并提示重新加载，不会把 A 的记录传进 B。</li>
    <li><b>删号不再假装</b>：没有安全服务端时只做「清空云端账本 + 退出登录」，并明确写明账号本身没删；只有部署了删号函数才走真正删除。</li>
