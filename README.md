@@ -25,7 +25,6 @@
 | `test-5.4.1.html` | 5.4.1 测试入口页 |
 | `v5.3.html` / `v5.2.html` / `v5.1.html` | 历史版本，`index.html` 里有入口；5.3 可作回滚版 |
 | `ledger.html` | 5.3 及更早版本共用的旧账本页 |
-| `cat-game-beta.html` / `cat-game-1.0.html` | 小猫互动试玩入口与本体 |
 | `version.json` | 版本提示数据，5.4 启动时读取 |
 | `manifest.json` / `icon.svg` | PWA 清单与图标 |
 | `.github/scripts/timer_check.js` | 发布前计时纯函数门禁（20 项断言） |
@@ -63,5 +62,4 @@
 
 - 主程序版本：`v主版本.次版本.修订.html`，一个版本一个文件，不覆盖旧的。
 - 固定页面用通用名：`index.html`（站点入口）、`ledger.html`（5.3 及更早的账本）、`ledger54.html`（5.4 账本）。
-- 游戏：本体 `cat-game-<版本>.html`，测试版外壳 `cat-game-beta.html`。
 - PWA：`manifest.json` + `icon.svg`。
