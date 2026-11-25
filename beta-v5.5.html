@@ -136,13 +136,8 @@ section.card{scroll-margin-top:14px}
 <div class="actions"><button class="btn stop" id="resumeBtn" disabled style="grid-column:1/-1">↩️ 摸够了，继续工作</button></div>
 <div class="breakstatus" id="breakStatus"></div><div class="now" id="now">现在时间 --:--:--</div></section>
 </div>
-<div class="tab-page" id="tab-game">
-<section class="card" style="text-align:center;padding:30px 18px">
-<div style="font-size:42px;margin-bottom:12px">🐱</div>
-<h2 style="margin:0 0 8px;color:#654d32">猫咪冒险工坊</h2>
-<div class="note">新的冒险世界正在搭建中。这里将成为你的猫咪、工作、矿洞探索、装备和战斗入口。</div>
-<div style="margin-top:16px;padding:12px;border-radius:13px;background:#fff6e6;color:#987548;font-size:11px;font-weight:800">V2 全新制作中 · 云端存档架构</div>
-</section>
+<div class="tab-page" id="tab-game" style="padding:0;overflow:hidden">
+<iframe src="cat-game-v2.html" title="猫咪冒险工坊 V2" style="display:block;width:100%;height:calc(100dvh - 74px);min-height:620px;border:0;background:#eee5d6" loading="eager" allow="fullscreen"></iframe>
 </div>
 <div class="tab-page" id="tab-ledger">
 <section class="card" id="sec-ledger"><div class="head"><h2>📅 每月搬金账本</h2><div class="monthbar"><button id="prev">‹</button><strong id="month">----</strong><button id="next">›</button></div></div><div class="sum"><span>本月累计收入</span><b id="monthTotal">¥0.00</b></div><div id="records"><div class="empty">这个月还没有搬金记录～</div></div><div id="recordsPager" style="display:none"></div><div style="margin-top:13px"><a href="preview-ledger54-5.4.1-sync.html" style="display:inline-block;font-size:11px;font-weight:800;color:#8e7047;text-decoration:none;border:1px solid #efe2cf;background:#fff9ef;border-radius:11px;padding:9px 13px">打开完整账本 ›</a></div></section>
