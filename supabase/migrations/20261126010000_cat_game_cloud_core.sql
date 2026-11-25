@@ -1,4 +1,8 @@
 -- Cat Game V2: cloud save foundation.
+-- Keep privileged function implementations in a non-exposed schema.
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
 -- NOTE: This migration is staged in Git only. Do not apply until the
 -- repository's missing historical migrations have been reconciled.
 begin;
