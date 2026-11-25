@@ -57,12 +57,15 @@ button{font:inherit;color:inherit;cursor:pointer}
 .bottomnav button.active{background:#f8e8c8;color:#825b28}
 .notice{padding:10px 11px;background:#fff3d8;border:1px solid #efd9a9;border-radius:12px;color:#8b6939;font-size:10px;line-height:1.6}
 @media(min-width:700px){body{padding:16px 0}.game-shell{height:calc(100dvh - 32px);min-height:700px;border-radius:24px;border:1px solid #dfcfb3}}
+
+.brand-tools{display:flex;align-items:center;gap:8px;flex:none}
+.exit-game{border:1px solid #ead9b9;background:#fff4df;color:#8a6738;border-radius:9px;padding:6px 8px;font-size:9px;font-weight:900;white-space:nowrap}
 </style>
 </head>
 <body>
 <div class="game-shell">
 <header class="topbar">
- <div class="brand"><div>🐾 猫咪冒险工坊 <small>V2 · 竖屏冒险</small></div><small id="connection">云端连接中</small></div>
+ <div class="brand"><div>🐾 猫咪冒险工坊 <small>V2 · 竖屏冒险</small></div><div class="brand-tools"><button id="exitGame" class="exit-game" type="button">← 返回入口</button><small id="connection">云端连接中</small></div></div>
  <div class="stats">
   <div class="stat"><span>冒险等级</span><b id="level">Lv.1</b></div>
   <div class="stat"><span>金币</span><b id="coins">—</b></div>
@@ -206,6 +209,14 @@ button{font:inherit;color:inherit;cursor:pointer}
  document.querySelectorAll('[data-screen]').forEach(function(el){el.addEventListener('click',function(){show(el.getAttribute('data-screen'))})});
  document.querySelectorAll('[data-go]').forEach(function(el){el.addEventListener('click',function(){show(el.getAttribute('data-go'))})});
  window.addEventListener('message',function(e){if(e.data&&e.data.type==='game-nav')show(e.data.screen)});
+})();
+</script>
+<script>
+(function(){
+ var back=document.getElementById('exitGame');
+ if(back)back.addEventListener('click',function(){
+  window.parent.postMessage({type:'game-exit'},window.location.origin);
+ });
 })();
 </script>
 </body>
