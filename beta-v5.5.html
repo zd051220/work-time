@@ -1180,18 +1180,30 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 (function(){
   var frame=document.getElementById('game-play-frame');
   if(!frame)return;
-  var allowed={game_bootstrap:true,game_get_snapshot:true};
+  var allowed={game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true};
   window.addEventListener('message',function(ev){
     if(ev.origin!==window.location.origin||ev.source!==frame.contentWindow)return;
     var msg=ev.data||{};
     if(msg.type==='game-exit'){setTab('tab-game');return}
     if(msg.type!=='game-rpc'||typeof msg.id!=='string'||msg.id.length>80||!allowed[msg.method])return;
+    var args=msg.params&&typeof msg.params==='object'&&!Array.isArray(msg.params)?msg.params:{};
+    var payload={};
+    if(msg.method==='game_start_work'){
+      if(typeof args.p_job_code!=='string'||args.p_job_code.length>40||
+         !Number.isInteger(args.p_duration_minutes)||!['bakery','blacksmith','foraging','mining','fishing','delivery'].includes(args.p_job_code)||
+         ![60,120,240,480].includes(args.p_duration_minutes)||
+         typeof args.p_idempotency_key!=='string'||args.p_idempotency_key.length<8||args.p_idempotency_key.length>120)return;
+      payload={p_job_code:args.p_job_code,p_duration_minutes:args.p_duration_minutes,p_idempotency_key:args.p_idempotency_key};
+    }else if(msg.method==='game_claim_work'){
+      if(typeof args.p_order_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(args.p_order_id))return;
+      payload={p_order_id:args.p_order_id};
+    }
     Promise.resolve().then(function(){
       if(!accSess())throw new Error('请先登录工时账号');
       mwAssertAccountContext();
-      return accCall('/rest/v1/rpc/'+msg.method,{method:'POST',body:'{}'});
+      return accCall('/rest/v1/rpc/'+msg.method,{method:'POST',body:JSON.stringify(payload)});
     }).then(function(res){
-      if(!res.ok)throw new Error('云端请求失败（HTTP '+res.status+'）');
+      if(!res.ok)return res.text().then(function(body){throw new Error(body&&body.length<180?body:'云端请求失败（HTTP '+res.status+'）')});
       return res.json();
     }).then(function(data){
       frame.contentWindow.postMessage({type:'game-rpc-result',id:msg.id,ok:true,data:data},window.location.origin);
