@@ -178,7 +178,7 @@ grant select on public.game_profiles, public.game_cats, public.game_wallets,
   public.game_task_progress, public.game_achievements to authenticated;
 grant select on public.game_item_catalog to authenticated;
 
-create or replace function public.game_bootstrap()
+create or replace function private.game_bootstrap()
 returns jsonb
 language plpgsql
 security definer
@@ -198,11 +198,11 @@ begin
   insert into public.game_wallets(user_id) values (v_uid)
     on conflict (user_id) do nothing;
 
-  return public.game_get_snapshot();
+  return private.game_get_snapshot();
 end;
 $function$;
 
-create or replace function public.game_get_snapshot()
+create or replace function private.game_get_snapshot()
 returns jsonb
 language plpgsql
 security definer
@@ -231,8 +231,35 @@ begin
 end;
 $function$;
 
-revoke all on function public.game_bootstrap() from public, anon;
-revoke all on function public.game_get_snapshot() from public, anon;
+-- Keep privileged SECURITY DEFINER implementations outside the exposed API schema.
+-- The public RPC entry points below run as SECURITY INVOKER and delegate only
+-- to these narrowly scoped functions after the authenticated identity is checked.
+revoke all on function private.game_bootstrap() from public, anon, authenticated;
+revoke all on function private.game_get_snapshot() from public, anon, authenticated;
+grant usage on schema private to authenticated;
+grant execute on function private.game_bootstrap() to authenticated;
+grant execute on function private.game_get_snapshot() to authenticated;
+
+create or replace function public.game_bootstrap()
+returns jsonb
+language sql
+security invoker
+set search_path = ''
+as $function$
+  select private.game_bootstrap();
+$function$;
+
+create or replace function public.game_get_snapshot()
+returns jsonb
+language sql
+security invoker
+set search_path = ''
+as $function$
+  select private.game_get_snapshot();
+$function$;
+
+revoke all on function public.game_bootstrap() from public, anon, authenticated;
+revoke all on function public.game_get_snapshot() from public, anon, authenticated;
 grant execute on function public.game_bootstrap() to authenticated;
 grant execute on function public.game_get_snapshot() to authenticated;
 
