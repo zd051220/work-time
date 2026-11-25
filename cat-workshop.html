@@ -75,7 +75,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <main class="content">
 <section class="screen active" id="home">
  <div class="hero"><div class="sun"></div><div class="cloud">☁　☁</div><div class="pixel-cat">🐈</div><div class="hero-label">喵喵村 · 新手小屋</div><div class="bubble">今天也要慢慢变强呀！</div></div>
- <div class="panel" style="margin-top:11px"><div class="panel-title">我的小猫 <button class="action secondary" id="refreshCloud" type="button">刷新存档</button></div><div style="display:flex;gap:12px;align-items:center"><div style="font-size:45px">🐈</div><div style="flex:1"><b style="font-size:12px" id="catName">小橘</b><div class="muted">一只充满好奇心的冒险猫</div><div class="muted" style="margin-top:6px">生命值 <b id="catHp">— / —</b></div><div class="progress"><i id="catHpBar" style="width:0%"></i></div></div></div></div>
+ <div class="panel" style="margin-top:11px"><div class="panel-title">我的小猫 <button class="action secondary" id="refreshCloud" type="button">刷新存档</button></div><div style="display:flex;gap:12px;align-items:center"><div style="font-size:45px">🐈</div><div style="flex:1"><b style="font-size:12px" id="catName">小橘</b><div class="muted">一只充满好奇心的冒险猫</div><div class="muted" style="margin-top:6px">生命值 <b id="catHp">— / —</b></div><div class="progress"><i id="catHpBar" style="width:0%"></i></div><div class="muted" style="margin-top:6px">经验 <b id="catXp">—</b></div><div class="muted">攻击 <b id="catAtk">—</b> · 防御 <b id="catDef">—</b> · 幸运 <b id="catLuck">—</b> · 挖矿 <b id="catMining">—</b></div><div class="muted" id="cloudProgress" style="margin-top:4px"></div></div></div></div>
  <div class="panel"><div class="panel-title">快速前往 <span class="muted">选择你的下一步</span></div><div class="quick-grid"><button class="quick" data-go="work"><span>🧺</span>去工作</button><button class="quick" data-go="adventure"><span>🌲</span>去冒险</button><button class="quick" data-go="homecat"><span>🏡</span>回家看看</button></div></div>
  <div class="panel"><div class="panel-title">今日小目标 <span class="pill">轻松养成</span></div><div class="list"><div class="item"><div class="item-icon">🍞</div><div class="item-main"><b>认识村庄里的大家</b><small>逛逛村庄，了解工作和冒险地点</small></div><span class="pill">待探索</span></div><div class="item"><div class="item-icon">⛏️</div><div class="item-main"><b>准备第一次矿洞探索</b><small>先熟悉装备和矿洞规则</small></div><span class="pill">待探索</span></div></div></div>
 </section>
@@ -87,6 +87,7 @@ button{font:inherit;color:inherit;cursor:pointer}
  <button class="location" disabled><span>🏛️</span><b>地下遗迹</b><small>尚未解锁</small></button>
  <button class="location" disabled><span>🐉</span><b>Boss 领地</b><small>尚未解锁</small></button>
  </div></div>
+ <div class="panel"><div class="panel-title">探索进度 <span class="muted">来自云端存档</span></div><div class="list" id="worldProgressList"></div></div>
  <div class="notice">探索和战斗的正式奖励将在云端服务端完成后开放。当前界面不会把演示数据保存成真实游戏进度。</div>
 </section>
 <section class="screen" id="work">
@@ -95,6 +96,8 @@ button{font:inherit;color:inherit;cursor:pointer}
  <div class="work-order" id="workOrderPanel"><div class="muted">正在读取工作订单…</div></div>
  <div class="panel-title" style="margin-top:14px">可选岗位 <span class="muted">岗位和奖励由云端配置</span></div>
  <div class="list" id="jobCatalog"><div class="notice">正在读取云端岗位…</div></div>
+ <div class="panel-title" style="margin-top:14px">职业成长 <span class="muted">来自云端存档</span></div>
+ <div class="list" id="jobGrowth"></div>
  <p class="muted" id="workMessage" role="status" aria-live="polite" style="margin-top:10px"></p>
  </div>
 </section>
@@ -107,7 +110,7 @@ button{font:inherit;color:inherit;cursor:pointer}
  <div class="panel"><div class="panel-title">装备栏 <span class="pill">六个位置</span></div><div class="slots" id="equipmentSlots"><div class="slot">⚔️<small>武器</small></div><div class="slot">🪖<small>头盔</small></div><div class="slot">🛡️<small>盔甲</small></div><div class="slot">🥾<small>鞋子</small></div><div class="slot">🧤<small>手套</small></div><div class="slot">💍<small>饰品</small></div></div></div>
 </section>
 <section class="screen" id="homecat">
- <div class="panel"><div class="panel-title">小橘的家 <span class="pill">温馨木屋</span></div><div class="hero" style="min-height:220px;background:linear-gradient(#ead9b8,#d5b58a)"><div class="pixel-cat" style="top:65px">🐈</div><div class="hero-label">窗边的阳光刚刚好</div><div class="bubble">喵～回来啦？</div></div><div class="list" style="margin-top:10px"><div class="item"><div class="item-icon">🍲</div><div class="item-main"><b>饱食度</b><small>喂食和休息的生活状态</small></div><span class="pill">云端待接入</span></div><div class="item"><div class="item-icon">💛</div><div class="item-main"><b>心情与亲密度</b><small>长期陪伴，不会因离线惩罚</small></div><span class="pill">云端待接入</span></div></div></div>
+ <div class="panel"><div class="panel-title">小橘的家 <span class="pill">温馨木屋</span></div><div class="hero" style="min-height:220px;background:linear-gradient(#ead9b8,#d5b58a)"><div class="pixel-cat" style="top:65px">🐈</div><div class="hero-label">窗边的阳光刚刚好</div><div class="bubble">喵～回来啦？</div></div><div class="list" style="margin-top:10px"><div class="item"><div class="item-icon">🍲</div><div class="item-main"><b>饱食度</b><small>云端记录值；喂食功能尚未开放</small></div><span class="pill" id="catSatiety">—</span></div><div class="item"><div class="item-icon">💛</div><div class="item-main"><b>心情</b><small>云端记录值；休息功能尚未开放</small></div><span class="pill" id="catMood">—</span></div><div class="item"><div class="item-icon">🤝</div><div class="item-main"><b>亲密度</b><small>云端记录值；互动功能尚未开放</small></div><span class="pill" id="catAffection">—</span></div></div></div>
 </section>
 </main>
 <nav class="bottomnav" aria-label="游戏导航">
@@ -159,6 +162,22 @@ button{font:inherit;color:inherit;cursor:pointer}
  function setText(id,value){var el=document.getElementById(id);if(el)el.textContent=value}
  function itemIcon(code){var map={wood:'🪵',stone:'🪨',copper_ore:'🟤',bread:'🍞',potion:'🧪',coal:'⚫',herb:'🌿'};return map[code]||'📦'}
  function slotIcon(slot){var map={weapon:'⚔️',helmet:'🪖',armor:'🛡️',shoes:'🥾',gloves:'🧤',accessory:'💍'};return map[slot]||'🎒'}
+ var JOB_NAMES={bakery:'面包店学徒',blacksmith:'铁匠学徒',foraging:'森林采集员',mining:'矿场助手',fishing:'钓鱼学徒',delivery:'村庄送货员'};
+ var ZONE_NAMES={village:'喵喵村庄',forest:'静谧森林',mine:'新手矿洞'};
+ /* 通用列表：图标 + 标题 + 说明；没有数据时显示一句说明，不编造内容 */
+ function renderList(id,items,emptyText){
+  var box=document.getElementById(id);if(!box)return;
+  box.textContent='';
+  if(!items.length){var none=document.createElement('div');none.className='muted';none.textContent=emptyText;box.appendChild(none);return}
+  items.forEach(function(it){
+   var row=document.createElement('div');row.className='item';
+   var icon=document.createElement('div');icon.className='item-icon';icon.textContent=it.icon;
+   var main=document.createElement('div');main.className='item-main';
+   var title=document.createElement('b');title.textContent=it.title;
+   var sub=document.createElement('small');sub.textContent=it.sub;
+   main.appendChild(title);main.appendChild(sub);row.appendChild(icon);row.appendChild(main);box.appendChild(row);
+  });
+ }
  function renderSnapshot(snapshot){
   if(!snapshot||!snapshot.cat||!snapshot.wallet)throw new Error('云端存档结构不完整');
   var cat=snapshot.cat,profile=snapshot.profile||{},wallet=snapshot.wallet;
@@ -167,6 +186,18 @@ button{font:inherit;color:inherit;cursor:pointer}
   setText('stamina',String(Number(cat.hp)||0)+'/'+String(Number(cat.max_hp)||100));
   setText('catName',profile.public_name||'小橘');
   setText('catHp',String(Number(cat.hp)||0)+' / '+String(Number(cat.max_hp)||100));
+  setText('catXp',Number(cat.xp||0).toLocaleString('zh-CN'));
+  setText('catAtk',String(Number(cat.attack)||0));setText('catDef',String(Number(cat.defense)||0));
+  setText('catLuck',String(Number(cat.luck)||0));setText('catMining',String(Number(cat.mining_power)||0));
+  setText('catSatiety',Number(cat.satiety||0)+' / 100');setText('catMood',Number(cat.mood||0)+' / 100');setText('catAffection',String(Number(cat.affection)||0));
+  var tasks=Array.isArray(snapshot.tasks)?snapshot.tasks:[],achievements=Array.isArray(snapshot.achievements)?snapshot.achievements:[];
+  setText('cloudProgress',tasks.length||achievements.length?'云端进度：任务 '+tasks.length+' 条 · 成就 '+achievements.length+' 个':'');
+  renderList('jobGrowth',(Array.isArray(snapshot.jobs)?snapshot.jobs:[]).map(function(j){
+   return {icon:'🧺',title:(JOB_NAMES[j.job_code]||String(j.job_code||'职业'))+' · Lv.'+(Number(j.level)||1),sub:'职业经验 '+Number(j.xp||0).toLocaleString('zh-CN')+(j.specialization?' · 专精：'+j.specialization:' · 未选择专精')};
+  }),'还没有职业成长记录，开始工作后会在这里出现。');
+  renderList('worldProgressList',(Array.isArray(snapshot.world)?snapshot.world:[]).map(function(w){
+   return {icon:'🗺️',title:(ZONE_NAMES[w.zone_code]||String(w.zone_code||'未知区域')),sub:'云端记录：最深到达第 '+Number(w.max_floor||0)+' 层'};
+  }),'还没有探索记录，冒险系统开放后这里会更新。');
   var hp=Math.max(0,Math.min(100,(Number(cat.hp)||0)/Math.max(1,Number(cat.max_hp)||100)*100));
   var bar=document.getElementById('catHpBar');if(bar)bar.style.width=hp+'%';
   var inv=document.getElementById('inventorySlots');

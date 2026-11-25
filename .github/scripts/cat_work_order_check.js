@@ -43,7 +43,9 @@ class El {
 const ids = {};
 function el(id) { return ids[id] || (ids[id] = Object.assign(new El('div'), { id })); }
 ['level', 'coins', 'stamina', 'catName', 'catHp', 'catHpBar', 'inventorySlots', 'inventoryHint', 'equipmentSlots',
-  'jobCatalog', 'workOrderPanel', 'workMessage', 'connection', 'refreshCloud'].forEach(el);
+  'jobCatalog', 'workOrderPanel', 'workMessage', 'connection', 'refreshCloud',
+  'catXp', 'catAtk', 'catDef', 'catLuck', 'catMining', 'catSatiety', 'catMood', 'catAffection', 'cloudProgress',
+  'jobGrowth', 'worldProgressList'].forEach(el);
 const doc = {
   _l: {}, body: new El('body'),
   getElementById: id => ids[id] || null,
@@ -102,7 +104,9 @@ new Function('window', 'document', 'CustomEvent', 'setTimeout', 'setInterval', '
   const startedAt = new Date(now + skewMs - 60000).toISOString();
   const snapshot = (orders, catalog) => ({
     server_now: serverNow,
-    profile: { public_name: '测试猫' }, cat: { level: 3, hp: 80, max_hp: 100 }, wallet: { coins: 1234 },
+    profile: { public_name: '测试猫' },
+    cat: { level: 3, hp: 80, max_hp: 100, xp: 40, attack: 5, defense: 2, luck: 1, mining_power: 5, satiety: 80, mood: 90, affection: 12 },
+    wallet: { coins: 1234 },
     inventory: [], equipment: [], jobs: [], work_orders: orders, job_catalog: catalog, world: [], tasks: [], achievements: []
   });
   const bakery = { job_code: 'bakery', display_name: '面包店学徒', allowed_durations_minutes: [60, 120] };
@@ -111,6 +115,14 @@ new Function('window', 'document', 'CustomEvent', 'setTimeout', 'setInterval', '
   await reply(sent[0], true, snapshot([activeOrder], [bakery]));
   check(ids.coins.textContent === '1,234', 'snapshot wallet must be rendered, got ' + ids.coins.textContent);
   check(ids.catHp.textContent === '80 / 100', 'cat HP must come from the cloud snapshot');
+  // Character sheet, home state and growth lists must all be read from the snapshot.
+  check(ids.catXp.textContent === '40' && ids.catAtk.textContent === '5' && ids.catDef.textContent === '2' &&
+    ids.catLuck.textContent === '1' && ids.catMining.textContent === '5', 'XP and attributes must come from the cloud snapshot');
+  check(ids.catSatiety.textContent === '80 / 100' && ids.catMood.textContent === '90 / 100' && ids.catAffection.textContent === '12',
+    'home state must come from the cloud snapshot');
+  check(ids.cloudProgress.textContent === '' && ids.jobGrowth.textContent === '还没有职业成长记录，开始工作后会在这里出现。' &&
+    ids.worldProgressList.textContent === '还没有探索记录，冒险系统开放后这里会更新。',
+    'empty growth data must show an honest note, not invented progress');
 
   const catalogRow = ids.jobCatalog.children[0];
   const startBtn = catalogRow && catalogRow.find(n => n.tagName === 'BUTTON');
@@ -196,6 +208,27 @@ new Function('window', 'document', 'CustomEvent', 'setTimeout', 'setInterval', '
   await reply(sent[beforeRefresh], false, undefined, '{"code":"22023","details":null,"hint":null,"message":"some_new_code"}');
   await micro();
   check(ids.inventoryHint.textContent === 'some_new_code', 'unknown server codes must pass through unchanged');
+
+  // Cloud growth data (jobs, world, tasks, achievements) must be rendered as recorded.
+  const rich = Object.assign(snapshot([activeOrder], [bakery]), {
+    jobs: [{ job_code: 'bakery', level: 2, xp: 150 }, { job_code: 'mining', level: 1, xp: 0, specialization: '勘探' }],
+    world: [{ zone_code: 'forest', max_floor: 3 }, { zone_code: 'ruins_x', max_floor: 1 }],
+    tasks: [{ task_code: 'a' }, { task_code: 'b' }], achievements: [{ achievement_code: 'first_work' }]
+  });
+  const beforeRich = sent.length;
+  refreshBtn.click();
+  await micro(); await micro();
+  await reply(sent[beforeRich], true, rich);
+  await micro();
+  const growthRows = ids.jobGrowth.children;
+  check(growthRows.length === 2 && growthRows[0].textContent.indexOf('面包店学徒 · Lv.2') >= 0 && growthRows[0].textContent.indexOf('职业经验 150 · 未选择专精') >= 0,
+    'job growth must be rendered from the snapshot, got ' + ids.jobGrowth.textContent);
+  check(growthRows[1].textContent.indexOf('矿场助手 · Lv.1') >= 0 && growthRows[1].textContent.indexOf('专精：勘探') >= 0, 'job specialization must be rendered when set');
+  const worldRows = ids.worldProgressList.children;
+  check(worldRows.length === 2 && worldRows[0].textContent.indexOf('静谧森林') >= 0 && worldRows[0].textContent.indexOf('最深到达第 3 层') >= 0,
+    'world progress must be rendered from the snapshot, got ' + ids.worldProgressList.textContent);
+  check(worldRows[1].textContent.indexOf('ruins_x') >= 0 && worldRows[1].textContent.indexOf('第 1 层') >= 0, 'unknown zone codes must be shown as recorded');
+  check(ids.cloudProgress.textContent === '云端进度：任务 2 条 · 成就 1 个', 'task and achievement counts must come from the snapshot, got ' + ids.cloudProgress.textContent);
 
   /* ---------- main app bridge must stay token-free and whitelist-only ---------- */
   const beta = fs.readFileSync(path.join(__dirname, '..', '..', 'beta-v5.5.html'), 'utf8');
