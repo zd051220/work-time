@@ -32,14 +32,25 @@ declare v_uid uuid := auth.uid(); v_result jsonb;
 begin
   if v_uid is null then raise exception 'authentication_required' using errcode = '28000'; end if;
   select jsonb_build_object(
+    'server_now',clock_timestamp(),
     'profile',(select to_jsonb(p) from public.game_profiles p where p.user_id=v_uid),
     'cat',(select to_jsonb(c) from public.game_cats c where c.user_id=v_uid),
     'wallet',(select to_jsonb(w) from public.game_wallets w where w.user_id=v_uid),
     'inventory',coalesce((select jsonb_agg(to_jsonb(i) order by i.item_code) from public.game_inventory i where i.user_id=v_uid),'[]'::jsonb),
     'equipment',coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at) from public.game_equipment e where e.user_id=v_uid),'[]'::jsonb),
     'jobs',coalesce((select jsonb_agg(to_jsonb(j) order by j.job_code) from public.game_jobs j where j.user_id=v_uid),'[]'::jsonb),
-    'work_orders',coalesce((select jsonb_agg(to_jsonb(o) order by o.started_at desc) from public.game_work_orders o where o.user_id=v_uid and o.status in ('active','completed','claimed')),'[]'::jsonb),
-    'job_catalog',coalesce((select jsonb_agg(jsonb_build_object('job_code',jc.job_code,'display_name',jc.display_name,'allowed_durations_minutes',jc.allowed_durations_minutes) order by jc.job_code) from public.game_job_catalog jc where jc.is_active),'[]'::jsonb),
+    -- Open orders in full, plus only the latest claimed ones, so the snapshot does not grow without bound.
+    'work_orders',coalesce((select jsonb_agg(to_jsonb(o) order by o.started_at desc) from (
+      select w.* from public.game_work_orders w
+      where w.user_id=v_uid and (w.status in ('active','completed') or w.order_id in (
+        select c.order_id from public.game_work_orders c
+        where c.user_id=v_uid and c.status='claimed' order by c.claimed_at desc,c.order_id limit 10))
+    ) o),'[]'::jsonb),
+    -- Only durations with a server-configured reward are exposed; reward amounts stay private.
+    'job_catalog',coalesce((select jsonb_agg(jsonb_build_object('job_code',jc.job_code,'display_name',jc.display_name,
+      'allowed_durations_minutes',coalesce((select array(select d from unnest(jc.allowed_durations_minutes) d
+        where jc.rewards_by_duration ? d::text order by d)),'{}'::integer[])) order by jc.job_code)
+      from public.game_job_catalog jc where jc.is_active),'[]'::jsonb),
     'world',coalesce((select jsonb_agg(to_jsonb(wp) order by wp.zone_code) from public.game_world_progress wp where wp.user_id=v_uid),'[]'::jsonb),
     'tasks',coalesce((select jsonb_agg(to_jsonb(tp) order by tp.task_code) from public.game_task_progress tp where tp.user_id=v_uid),'[]'::jsonb),
     'achievements',coalesce((select jsonb_agg(to_jsonb(a) order by a.achievement_code) from public.game_achievements a where a.user_id=v_uid),'[]'::jsonb)
@@ -67,6 +78,10 @@ begin
       raise exception 'idempotency_key_reused' using errcode = '22023';
     end if;
     return private.game_get_snapshot();
+  end if;
+  -- Report a readable error before the one-active-order unique index rejects the insert.
+  if exists(select 1 from public.game_work_orders where user_id=v_uid and status='active') then
+    raise exception 'work_already_in_progress' using errcode = '55000';
   end if;
   select * into v_catalog from public.game_job_catalog where job_code=p_job_code and is_active for share;
   if not found then raise exception 'job_unavailable' using errcode = '22023'; end if;

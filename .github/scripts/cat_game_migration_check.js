@@ -37,5 +37,9 @@ check(code.includes('check (hp <= max_hp)'), 'cat HP must not exceed max HP');
 check(/grant select \(job_code, display_name, allowed_durations_minutes, is_active\)\s+on public\.game_job_catalog to authenticated/i.test(workSql), 'job catalog reward amounts must not be directly readable by clients');
 check(!/from public\.game_job_catalog where job_code=v_order\.job_code and is_active/i.test(workSql), 'disabling a job must not block claiming an already-started order');
 check(code.includes("'work_orders', coalesce((select jsonb_agg"), 'snapshot must include active/completed work order state');
+check(/'server_now',\s*clock_timestamp\(\)/i.test(workSql), 'snapshot must carry server time so clients never gate claims on the device clock');
+check(/c\.status='claimed' order by c\.claimed_at desc,\s*c\.order_id limit 10/i.test(workSql), 'snapshot must bound the claimed work order history');
+check(/raise exception 'work_already_in_progress'/i.test(workSql), 'a second active work order must raise a readable server error');
+check(/jc\.rewards_by_duration \? d::text/i.test(workSql), 'job catalog must expose only durations that have a server-configured reward');
 if (failures) { console.error('Game migration audit failed: ' + failures + ' issue(s)'); process.exit(1); }
 console.log('Game migration audit passed: 13 RLS tables, four private privileged RPCs, invoker wrappers, server-timed idempotent work orders, no client write grants.');

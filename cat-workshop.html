@@ -120,12 +120,26 @@ button{font:inherit;color:inherit;cursor:pointer}
 </div>
 <script>
 (function(){
- var pending={},seq=0;
+ var pending={},seq=0,clockOffsetMs=0;
+ /* 主页面桥原样转来服务器的错误内容，这里把错误码翻译成玩家能看懂的话 */
+ var CLOUD_ERRORS={authentication_required:'请先登录工时账号',ACCOUNT_CONTEXT_CHANGED:'登录账号发生了变化，请回到主页面确认账号后重试',invalid_work_order_request:'工作请求参数不合法',idempotency_key_reused:'这次提交和之前的不一致，请刷新存档后重试',work_already_in_progress:'已经有一份工作进行中，完成并领取后才能开始新的',job_unavailable:'这个岗位暂时没有开放',duration_not_allowed:'这个岗位不支持所选的工作时长',job_reward_not_configured:'这个岗位的奖励还没有配置好，暂时不能开始或领取',work_order_not_found:'没有找到这笔工作订单',work_order_not_claimable:'这笔工作订单现在不能领取',work_order_not_finished:'服务器时间还没到完成时间，请稍后再领',invalid_server_reward:'服务器奖励配置异常，请联系管理员',game_profile_not_initialized:'游戏存档还没有初始化，请刷新存档后重试'};
+ function cloudText(message){
+  var text=String(message||'');
+  try{var parsed=JSON.parse(text);if(parsed&&typeof parsed.message==='string')text=parsed.message}catch(e){}
+  return CLOUD_ERRORS[text]||text||'云端请求失败，请稍后重试';
+ }
+ /* 工作倒计时以服务器时间为准：用存档里的 server_now 校正本机时钟，手机时间不准也不会提前或迟迟不能领取 */
+ function serverNow(){return Date.now()+clockOffsetMs}
+ function syncClock(serverTime,sentAt){
+  if(!serverTime)return;
+  var t=Date.parse(String(serverTime).replace(/(\.\d{3})\d+/,'$1'));
+  if(isFinite(t))clockOffsetMs=t-(sentAt+Date.now())/2;
+ }
  function rpc(method,params){
   return new Promise(function(resolve,reject){
-   var id='g'+Date.now().toString(36)+(++seq).toString(36);
+   var id='g'+Date.now().toString(36)+(++seq).toString(36),sentAt=Date.now();
    var timer=setTimeout(function(){delete pending[id];reject(new Error('云端响应超时'))},12000);
-   pending[id]={resolve:resolve,reject:reject,timer:timer};
+   pending[id]={resolve:resolve,reject:reject,timer:timer,sentAt:sentAt};
    window.parent.postMessage({type:'game-rpc',id:id,method:method,params:params||{}},window.location.origin);
   });
  }
@@ -134,7 +148,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   var m=ev.data||{};
   if(m.type!=='game-rpc-result'||!pending[m.id])return;
   var p=pending[m.id];delete pending[m.id];clearTimeout(p.timer);
-  if(m.ok)p.resolve(m.data);else p.reject(new Error(m.error||'云端读取失败'));
+  if(m.ok){if(m.data&&typeof m.data==='object')syncClock(m.data.server_now,p.sentAt);p.resolve(m.data)}else p.reject(new Error(cloudText(m.error)));
  });
  window.catGameCloud={
   bootstrap:function(){return rpc('game_bootstrap')},
@@ -191,6 +205,8 @@ button{font:inherit;color:inherit;cursor:pointer}
  function renderWork(snapshot){
   var catalog=document.getElementById('jobCatalog'),orders=document.getElementById('workOrderPanel');
   if(!catalog||!orders)return;
+  /* 每次重绘先停掉旧的倒计时，订单领完后不再留下空转的定时器 */
+  if(workClockTimer){clearInterval(workClockTimer);workClockTimer=null}
   catalog.textContent='';orders.textContent='';
   var jobs=Array.isArray(snapshot.job_catalog)?snapshot.job_catalog:[];
   var active=(Array.isArray(snapshot.work_orders)?snapshot.work_orders:[]).filter(function(o){return o.status==='active'}).sort(function(a,b){return String(b.started_at).localeCompare(String(a.started_at))})[0];
@@ -198,11 +214,10 @@ button{font:inherit;color:inherit;cursor:pointer}
    var card=document.createElement('div');card.className='notice';card.style.marginBottom='8px';
    var title=document.createElement('b');title.textContent='工作进行中 · '+(active.job_code||'岗位');card.appendChild(title);
    var detail=document.createElement('div');detail.style.marginTop='5px';
-   var end=Date.parse(active.completes_at);
    var claim=document.createElement('button');claim.type='button';claim.className='action';claim.style.marginTop='9px';
    function updateWorkClock(){
-    var remaining=Math.max(0,Math.ceil((end-Date.now())/1000));
-    detail.textContent='开始于 '+new Date(active.started_at).toLocaleString('zh-CN')+' · 预计完成 '+new Date(active.completes_at).toLocaleString('zh-CN')+(remaining>0?' · 剩余 '+Math.floor(remaining/3600)+'小时'+Math.floor(remaining%3600/60)+'分钟'+(remaining%60)+'秒':' · 已到预计完成时间');
+    var remaining=Math.max(0,Math.ceil((toMs(active.completes_at)-serverNow())/1000));
+    detail.textContent='开始于 '+new Date(toMs(active.started_at)).toLocaleString('zh-CN')+' · 预计完成 '+new Date(toMs(active.completes_at)).toLocaleString('zh-CN')+(remaining>0?' · 剩余 '+Math.floor(remaining/3600)+'小时'+Math.floor(remaining%3600/60)+'分钟'+(remaining%60)+'秒':' · 已到预计完成时间');
     if(!claim.dataset.submitting){claim.textContent=remaining>0?'尚未完成':'向云端核验并领取';claim.disabled=remaining>0}
    }
    card.appendChild(detail);
@@ -214,7 +229,6 @@ button{font:inherit;color:inherit;cursor:pointer}
      .then(function(){delete claim.dataset.submitting;if(claim.isConnected)updateWorkClock()});
    });
    updateWorkClock();
-   if(workClockTimer)clearInterval(workClockTimer);
    workClockTimer=setInterval(updateWorkClock,1000);
    card.appendChild(claim);orders.appendChild(card);
   }else{
@@ -228,26 +242,31 @@ button{font:inherit;color:inherit;cursor:pointer}
    var row=document.createElement('div');row.className='item';
    var main=document.createElement('div');main.className='item-main';
    var name=document.createElement('b');name.textContent=labels[job.job_code]||job.display_name||job.job_code;main.appendChild(name);
-   var sub=document.createElement('small');sub.textContent='可选时长：'+(job.allowed_durations_minutes||[]).map(function(n){return n/60+' 小时'}).join('、');main.appendChild(sub);
+   var durations=(job.allowed_durations_minutes||[]).map(Number).filter(function(n){return n>0});
+   var sub=document.createElement('small');sub.textContent=durations.length?'可选时长：'+durations.map(function(n){return n/60+' 小时'}).join('、'):'暂未开放工作时长，等云端配置好奖励后开放';main.appendChild(sub);
    var controls=document.createElement('div');controls.style.display='flex';controls.style.flexDirection='column';controls.style.gap='5px';
    var select=document.createElement('select');select.setAttribute('aria-label','选择工作时长');select.style.maxWidth='95px';select.style.padding='6px';select.style.borderRadius='8px';select.style.border='1px solid #ead9b9';
-   (job.allowed_durations_minutes||[]).forEach(function(n){var option=document.createElement('option');option.value=String(n);option.textContent=n/60+' 小时';select.appendChild(option)});
+   durations.forEach(function(n){var option=document.createElement('option');option.value=String(n);option.textContent=n/60+' 小时';select.appendChild(option)});
    var start=document.createElement('button');start.type='button';start.className='action';start.textContent='开始工作';start.disabled=!!active||!select.options.length;
    start.addEventListener('click',function(){
     start.disabled=true;start.textContent='提交中…';workMessage('正在创建云端工作订单…');
     window.catGameCloud.startWork(job.job_code,Number(select.value),makeIdempotencyKey()).then(function(next){window.catGameSnapshot=next;renderSnapshot(next);workMessage('工作已开始，开始时间由服务器记录。')})
-     .catch(function(err){workMessage(err.message||'开始工作失败，请刷新后重试');start.disabled=false;start.textContent='开始工作'});
+     .catch(function(err){workMessage(err.message||'开始工作失败，请刷新后重试');start.disabled=false;start.textContent='开始工作';loadSnapshot().catch(function(){})});
    });
    controls.appendChild(select);controls.appendChild(start);row.appendChild(document.createElement('div')).className='item-icon';row.lastChild.textContent=(labels[job.job_code]||'🐾').slice(0,2);row.appendChild(main);row.appendChild(controls);catalog.appendChild(row);
   });
  }
  function showCloudError(message){setText('connection','云端未连接');setText('inventoryHint',message||'暂时无法读取云端背包')}
+ /* 云端时间戳可能带 6 位小数，先截成 3 位再解析，避免部分浏览器解析失败 */
+ function toMs(value){return Date.parse(String(value).replace(/(\.\d{3})\d+/,'$1'))}
+ /* 重新拉一次存档：提交失败时以服务器真实状态为准（例如响应丢失但订单已创建） */
+ function loadSnapshot(){return window.catGameCloud.snapshot().then(function(snapshot){window.catGameSnapshot=snapshot;renderSnapshot(snapshot);return snapshot})}
  document.addEventListener('cat-game-cloud-ready',function(e){try{renderSnapshot(e.detail)}catch(err){showCloudError(err.message)}});
  document.addEventListener('cat-game-cloud-error',function(e){showCloudError(e.detail)});
  var refresh=document.getElementById('refreshCloud');
  if(refresh)refresh.addEventListener('click',function(){
   refresh.disabled=true;refresh.textContent='同步中…';
-  window.catGameCloud.snapshot().then(function(snapshot){window.catGameSnapshot=snapshot;renderSnapshot(snapshot)}).catch(function(err){showCloudError(err.message)}).then(function(){refresh.disabled=false;refresh.textContent='刷新存档'});
+  loadSnapshot().catch(function(err){showCloudError(err.message)}).then(function(){refresh.disabled=false;refresh.textContent='刷新存档'});
  });
  /* 等父页面脚本注册消息代理，避免 iframe 先加载导致首次请求丢失 */
  setTimeout(function(){

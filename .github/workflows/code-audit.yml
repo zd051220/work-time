@@ -31,6 +31,8 @@ jobs:
         run: node .github/scripts/code_audit.js
       - name: Cat game migration security audit
         run: node .github/scripts/cat_game_migration_check.js
+      - name: Cat game work-order behaviour check
+        run: node .github/scripts/cat_work_order_check.js
       - name: Timer regression tests (formal)
         run: node .github/scripts/timer_check.js v5.4.html
       - name: Timer regression tests (beta)
