@@ -112,12 +112,35 @@ section.card{scroll-margin-top:14px}
 
 /* 新版本提示条（只在发现新版本时出现，点了才刷新，不打断打卡） */
 
+
+/* ===== 游戏入口与独立游戏页 ===== */
+.game-launch-card{margin-top:13px;overflow:hidden;border:1px solid #f0dfbf;border-radius:24px;background:#fffdf8;box-shadow:0 12px 30px #8b642012}
+.game-cover{height:235px;position:relative;overflow:hidden;background:linear-gradient(#b9d7d0 0 43%,#8eb27d 43% 70%,#70905d 70%);border-bottom:1px solid #e5d3b2}
+.game-cover:before{content:"";position:absolute;left:-8%;right:-8%;height:86px;bottom:38px;background:#83a96d;border-radius:50% 50% 0 0}
+.game-sun{position:absolute;right:34px;top:25px;width:43px;height:43px;border-radius:50%;background:#ffe7a5;box-shadow:0 0 0 9px #ffe7a544}
+.game-cloud{position:absolute;top:36px;left:27px;color:#fff9e8;font-size:27px;letter-spacing:10px}
+.game-cat{position:absolute;left:50%;top:76px;transform:translateX(-50%);font-size:94px;filter:drop-shadow(0 5px 0 #5c6f4c55)}
+.game-cover-label{position:absolute;left:16px;bottom:12px;color:#fff;font-size:12px;font-weight:900;text-shadow:0 2px 4px #304b2c}
+.game-launch-copy{padding:19px 17px 17px}
+.game-kicker{font-size:9px;letter-spacing:1.5px;color:#b58b4a;font-weight:900}
+.game-launch-copy h2{font-size:21px;margin:7px 0 8px;color:#62482c}
+.game-launch-copy p{font-size:12px;line-height:1.85;color:#8c7860;margin:0}
+.game-feature-row{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 17px}
+.game-feature-row span{background:#fff5df;border:1px solid #f2e4c4;border-radius:20px;padding:7px 9px;font-size:10px;color:#8d6b39;font-weight:800}
+.game-start-btn{width:100%;border:0;border-radius:15px;padding:15px;background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;font-size:14px;font-weight:950;box-shadow:0 4px 0 #d49b35;font-family:inherit;cursor:pointer}
+.game-start-btn span{float:right;font-size:20px;line-height:15px}
+.game-start-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #d49b35}
+.game-footnote{text-align:center;font-size:10px;color:#b19a7b;margin-top:12px;line-height:1.6}
+#tab-game-play{position:fixed;inset:0;z-index:45;background:#eee5d6}
+.game-play-frame{display:block;width:100%;height:100dvh;min-height:100%;border:0;background:#eee5d6}
+body.game-playing{padding-bottom:0!important;overflow:hidden}
+body.game-playing .tabbar{display:none!important}
 </style></head>
 <body><main class="app">
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 内测版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
-<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 内测版</b>：独立体验入口｜本轮重点：底部四栏独立切换、「我的」五个功能独立子页面</span><span class="arrow">›</span></div>
+<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 内测版</b>：底部新增「游戏」入口，点击后可先了解猫咪冒险工坊，再按「开始游戏」进入</span><span class="arrow">›</span></div>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
 <div class="progress"><div class="fill" id="fill"></div></div><div class="progressmeta"><span>计薪时长进度</span><span id="pct">0%</span></div>
@@ -136,20 +159,37 @@ section.card{scroll-margin-top:14px}
 <div class="actions"><button class="btn stop" id="resumeBtn" disabled style="grid-column:1/-1">↩️ 摸够了，继续工作</button></div>
 <div class="breakstatus" id="breakStatus"></div><div class="now" id="now">现在时间 --:--:--</div></section>
 </div>
-<div class="tab-page" id="tab-bill">
-<section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</span><b id="breakTotal">00:00:00</b></div></div></section>
-</div>
 <div class="tab-page" id="tab-ledger">
 <section class="card" id="sec-ledger"><div class="head"><h2>📅 每月搬金账本</h2><div class="monthbar"><button id="prev">‹</button><strong id="month">----</strong><button id="next">›</button></div></div><div class="sum"><span>本月累计收入</span><b id="monthTotal">¥0.00</b></div><div id="records"><div class="empty">这个月还没有搬金记录～</div></div><div id="recordsPager" style="display:none"></div><div style="margin-top:13px"><a href="preview-ledger54-5.4.1-sync.html" style="display:inline-block;font-size:11px;font-weight:800;color:#8e7047;text-decoration:none;border:1px solid #efe2cf;background:#fff9ef;border-radius:11px;padding:9px 13px">打开完整账本 ›</a></div></section>
 </div>
+<div class="tab-page" id="tab-game">
+  <header class="top"><div><div class="brand">🐾 猫咪冒险工坊</div><div class="sub">陪小橘探索村庄、工作、冒险，慢慢打造自己的家</div></div><div class="datepill">独立游戏</div></header>
+  <section class="game-launch-card">
+    <div class="game-cover"><div class="game-sun"></div><div class="game-cloud">☁　☁</div><div class="game-cat">🐈</div><div class="game-cover-label">喵喵村 · 新旅程即将开始</div></div>
+    <div class="game-launch-copy"><div class="game-kicker">CAT ADVENTURE WORKSHOP</div><h2>猫咪冒险工坊</h2><p>从喵喵村出发，认识伙伴、探索森林与矿洞，体验工作、收集和家园生活。每一次上线，都能继续自己的小猫旅程。</p>
+      <div class="game-feature-row"><span>🏡 村庄生活</span><span>🗺️ 探索冒险</span><span>🎒 收集养成</span></div>
+      <button class="game-start-btn" id="gameStartBtn" type="button">🐾 开始游戏 <span>›</span></button>
+      <div class="game-footnote">进入后将切换到独立游戏页面，游戏内有自己的导航栏。</div>
+    </div>
+  </section>
+</div>
+<div class="tab-page" id="tab-game-play" aria-label="猫咪冒险工坊游戏页面">
+  <iframe id="game-play-frame" class="game-play-frame" src="cat-workshop.html" title="猫咪冒险工坊游戏" loading="lazy" allow="fullscreen"></iframe>
+</div>
 <div class="tab-page" id="tab-me">
   <div class="my-menu" id="my-menu">
+    <button class="my-menu-item" data-my-open="bill"><span class="my-menu-icon">📦</span><span class="my-menu-copy"><b>账单</b><small>查看今日工资、计薪收入和摸鱼时长</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="account"><span class="my-menu-icon">👤</span><span class="my-menu-copy"><b>账号与云同步</b><small>登录、注册、退出、立即同步、从云端拉取</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="backup"><span class="my-menu-icon">🧰</span><span class="my-menu-copy"><b>数据备份</b><small>导出备份、导入备份、本地数据保护</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="feedback"><span class="my-menu-icon">💬</span><span class="my-menu-copy"><b>意见反馈</b><small>发布留言、查看留言、联系站长</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="admin"><span class="my-menu-icon">🛡️</span><span class="my-menu-copy"><b>管理员管理</b><small>留言管理、隐藏、恢复、删除留言</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="settings"><span class="my-menu-icon">⚙️</span><span class="my-menu-copy"><b>软件设置</b><small>版本信息、使用说明及其他设置</small></span><span class="my-menu-arrow">›</span></button>
   </div>
+<div class="my-subpage" id="my-page-bill">
+<div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>账单</b></div>
+<section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</span><b id="breakTotal">00:00:00</b></div></div></section>
+</div>
+
   <div class="my-subpage" id="my-page-account">
     <div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>账号与云同步</b></div>
     <section class="card" id="sec-account"><div class="head"><h2>👤 账号 · 云同步</h2><span class="tag" id="accTag">未登录</span></div>
@@ -183,7 +223,7 @@ section.card{scroll-margin-top:14px}
   <div class="my-subpage" id="my-page-backup">
     <div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>数据备份</b></div>
     <section class="card" id="sec-backup"><div class="head"><h2>🧰 数据备份</h2><span class="tag" id="saveTag">本地保存</span></div><div class="tools"><button class="tool" id="export">导出备份</button><button class="tool" id="import">导入备份</button><input id="file" type="file" accept="application/json" hidden></div><div class="note">记录保存在当前浏览器。更换手机或清理浏览器数据前，请先导出备份。导入会先自动备份现有数据，再显示要新增多少条、跳过多少条，确认后才写入；不会把备份里的“进行中打卡”接上继续计时。</div></section>
-    <div style="text-align:center;margin:2px 0 16px"><a href="cat-game-beta.html" style="font-size:10px;color:#ddd0bb;text-decoration:none">🐾 听说这儿藏了只猫…</a></div>
+    
   </div>
   <div class="my-subpage" id="my-page-feedback">
     <div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>意见反馈</b></div>
@@ -228,14 +268,14 @@ section.card{scroll-margin-top:14px}
     <section class="card" id="sec-settings"><div class="head"><h2>⚙️ 软件设置</h2><span class="tag">测试版</span></div>
       <div class="note">这里用于放置软件版本信息、使用说明和后续设置。当前版本：小猫搬金条 v5.5 内测版。此版本用于体验与收集反馈，不代表正式版更新。</div>
       <div class="tools"><button class="tool" id="settingsNoticeBtn">查看更新公告</button></div>
-      <div style="text-align:center;margin:12px 0 2px"><a href="cat-game-beta.html" style="font-size:10px;color:#ddd0bb;text-decoration:none">🐾 听说这儿藏了只猫…</a></div>
+      
     </section>
   </div>
 </div>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="tab-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
-<button data-t="tab-bill"><svg viewBox="0 0 24 24"><path d="M5 19V12M10 19V7.5M15 19v-5M20 19V10"/><path d="M4 19h16"/></svg><span>账单</span></button>
 <button data-t="tab-ledger"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 4v3M15.5 4v3"/><path d="M8 14h3M8 17h6"/></svg><span>账本</span></button>
+<button data-t="tab-game"><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 3.8 5.2l-1 3.2a2 2 0 0 1-3.2 1l-2.1-1.6h-5l-2.1 1.6a2 2 0 0 1-3.2-1l-1-3.2A4 4 0 0 1 7 8z"/><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/></svg><span>游戏</span></button>
 <button data-t="tab-me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.7-3.3 3-5 6.5-5s5.8 1.7 6.5 5"/></svg><span>我的</span></button>
 </nav>
 <div class="foot">今天也辛苦啦，小猫把你的每一秒都认真记下来了 ♡</div></main>
@@ -560,23 +600,27 @@ $('records').addEventListener('click', function(e){
 
 /* ===== 底部导航栏：四个独立页面 ===== */
 var tabs=Array.prototype.slice.call(document.querySelectorAll('.tabbar button'));
-var TAB_PAGES=['tab-home','tab-bill','tab-ledger','tab-me'];
+var TAB_PAGES=['tab-home','tab-ledger','tab-game','tab-game-play','tab-me'];
 function setTab(id){
+  if(TAB_PAGES.indexOf(id)<0)return;
   TAB_PAGES.forEach(function(pageId){
     var page=$(pageId);if(page)page.classList.toggle('active',pageId===id);
   });
-  tabs.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===id)});
+  var navId=id==='tab-game-play'?'tab-game':id;
+  tabs.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===navId)});
+  document.body.classList.toggle('game-playing',id==='tab-game-play');
   window.scrollTo({top:0,behavior:'instant'});
 }
 tabs.forEach(function(b){
   b.addEventListener('click',function(){
-    var id=b.getAttribute('data-t');if(TAB_PAGES.indexOf(id)<0)return;
-    setTab(id);
+    var id=b.getAttribute('data-t');if(TAB_PAGES.indexOf(id)>=0)setTab(id);
   });
 });
+var gameStart=$('gameStartBtn');
+if(gameStart)gameStart.addEventListener('click',function(){setTab('tab-game-play')});
 setTab('tab-home');
 /* 我的：五个功能入口分别进入独立子页面 */
-var MY_PAGES=['account','backup','feedback','admin','settings'];
+var MY_PAGES=['bill','account','backup','feedback','admin','settings'];
 function setMyPage(name){
   var menu=$('my-menu');if(menu)menu.style.display=name?'none':'grid';
   MY_PAGES.forEach(function(key){var page=$('my-page-'+key);if(page)page.classList.toggle('active',key===name)});
@@ -1131,6 +1175,50 @@ $('adminRecordSubmit').onclick=function(){
     .then(function(){b.disabled=false;b.textContent='确认代录并保存'});
 };
 var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+String(grantDate.getMonth()+1).padStart(2,'0')+'-'+String(grantDate.getDate()).padStart(2,'0');
+
+/* 游戏云端 RPC 桥：iframe 不接触 access/refresh token，只能请求白名单 RPC */
+(function(){
+  var frame=document.getElementById('game-play-frame');
+  if(!frame)return;
+  var allowed={game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true,game_equip_item:true,game_start_explore:true};
+  window.addEventListener('message',function(ev){
+    if(ev.origin!==window.location.origin||ev.source!==frame.contentWindow)return;
+    var msg=ev.data||{};
+    if(msg.type==='game-exit'){setTab('tab-game');return}
+    if(msg.type!=='game-rpc'||typeof msg.id!=='string'||msg.id.length>80||!allowed[msg.method])return;
+    var args=msg.params&&typeof msg.params==='object'&&!Array.isArray(msg.params)?msg.params:{};
+    var payload={};
+    if(msg.method==='game_start_work'){
+      if(typeof args.p_job_code!=='string'||args.p_job_code.length>40||
+         !Number.isInteger(args.p_duration_minutes)||!['bakery','blacksmith','foraging','mining','fishing','delivery'].includes(args.p_job_code)||
+         ![60,120,240,480].includes(args.p_duration_minutes)||
+         typeof args.p_idempotency_key!=='string'||args.p_idempotency_key.length<8||args.p_idempotency_key.length>120)return;
+      payload={p_job_code:args.p_job_code,p_duration_minutes:args.p_duration_minutes,p_idempotency_key:args.p_idempotency_key};
+    }else if(msg.method==='game_claim_work'){
+      if(typeof args.p_order_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(args.p_order_id))return;
+      payload={p_order_id:args.p_order_id};
+    }else if(msg.method==='game_equip_item'){
+      if(typeof args.p_equipment_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(args.p_equipment_id)||typeof args.p_equipped!=='boolean')return;
+      payload={p_equipment_id:args.p_equipment_id,p_equipped:args.p_equipped};
+    }else if(msg.method==='game_start_explore'){
+      if(typeof args.p_zone_code!=='string'||!/^[a-z_]{1,20}$/.test(args.p_zone_code)||!Number.isInteger(args.p_floor)||args.p_floor<1||args.p_floor>99||
+         typeof args.p_idempotency_key!=='string'||args.p_idempotency_key.length<8||args.p_idempotency_key.length>120)return;
+      payload={p_zone_code:args.p_zone_code,p_floor:args.p_floor,p_idempotency_key:args.p_idempotency_key};
+    }
+    Promise.resolve().then(function(){
+      if(!accSess())throw new Error('请先登录工时账号');
+      mwAssertAccountContext();
+      return accCall('/rest/v1/rpc/'+msg.method,{method:'POST',body:JSON.stringify(payload)});
+    }).then(function(res){
+      if(!res.ok)return res.text().then(function(body){throw new Error(body&&body.length<180?body:'云端请求失败（HTTP '+res.status+'）')});
+      return res.json();
+    }).then(function(data){
+      frame.contentWindow.postMessage({type:'game-rpc-result',id:msg.id,ok:true,data:data},window.location.origin);
+    }).catch(function(err){
+      frame.contentWindow.postMessage({type:'game-rpc-result',id:msg.id,ok:false,error:(err&&err.message)||'云端暂不可用'},window.location.origin);
+    });
+  });
+})();
 
 loadFeed(false);loadStats();
 
