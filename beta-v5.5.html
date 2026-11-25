@@ -139,11 +139,23 @@ section.card{scroll-margin-top:14px}
 <div class="tab-page" id="tab-bill">
 <section class="card" id="sec-stat"><div class="head"><h2>📦 今日时间账单</h2><span class="tag">实时统计</span></div><div class="miniGrid"><div class="mini"><span>每小时工资</span><b id="hourRate">¥25.00</b></div><div class="mini"><span>今天计薪收入</span><b id="todayPay">¥0.00</b></div><div class="mini"><span>摸鱼总时长</span><b id="breakTotal">00:00:00</b></div></div></section>
 </div>
-<div class="tab-page" id="tab-ledger">
+<div class="tab-page" id="tab-game">
+<section class="card" style="text-align:center;padding:30px 18px">
+<div style="font-size:42px;margin-bottom:12px">🐱</div>
+<h2 style="margin:0 0 8px;color:#654d32">猫咪冒险工坊</h2>
+<div class="note">新的冒险世界正在搭建中。这里将成为你的猫咪、工作、矿洞探索、装备和战斗入口。</div>
+<div style="margin-top:16px;padding:12px;border-radius:13px;background:#fff6e6;color:#987548;font-size:11px;font-weight:800">V2 全新制作中 · 云端存档架构</div>
+</section>
+</div>
+<div class="my-subpage" id="my-page-ledger">
+<div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>账本</b></div>
+<div>
 <section class="card" id="sec-ledger"><div class="head"><h2>📅 每月搬金账本</h2><div class="monthbar"><button id="prev">‹</button><strong id="month">----</strong><button id="next">›</button></div></div><div class="sum"><span>本月累计收入</span><b id="monthTotal">¥0.00</b></div><div id="records"><div class="empty">这个月还没有搬金记录～</div></div><div id="recordsPager" style="display:none"></div><div style="margin-top:13px"><a href="preview-ledger54-5.4.1-sync.html" style="display:inline-block;font-size:11px;font-weight:800;color:#8e7047;text-decoration:none;border:1px solid #efe2cf;background:#fff9ef;border-radius:11px;padding:9px 13px">打开完整账本 ›</a></div></section>
+</div>
 </div>
 <div class="tab-page" id="tab-me">
   <div class="my-menu" id="my-menu">
+    <button class="my-menu-item" data-my-open="ledger"><span class="my-menu-icon">📅</span><span class="my-menu-copy"><b>账本</b><small>查看每月记录、累计收入和完整账本</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="account"><span class="my-menu-icon">👤</span><span class="my-menu-copy"><b>账号与云同步</b><small>登录、注册、退出、立即同步、从云端拉取</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="backup"><span class="my-menu-icon">🧰</span><span class="my-menu-copy"><b>数据备份</b><small>导出备份、导入备份、本地数据保护</small></span><span class="my-menu-arrow">›</span></button>
     <button class="my-menu-item" data-my-open="feedback"><span class="my-menu-icon">💬</span><span class="my-menu-copy"><b>意见反馈</b><small>发布留言、查看留言、联系站长</small></span><span class="my-menu-arrow">›</span></button>
@@ -235,7 +247,7 @@ section.card{scroll-margin-top:14px}
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="tab-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
 <button data-t="tab-bill"><svg viewBox="0 0 24 24"><path d="M5 19V12M10 19V7.5M15 19v-5M20 19V10"/><path d="M4 19h16"/></svg><span>账单</span></button>
-<button data-t="tab-ledger"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 4v3M15.5 4v3"/><path d="M8 14h3M8 17h6"/></svg><span>账本</span></button>
+<button data-t="tab-game"><svg viewBox="0 0 24 24"><path d="M7.5 9.5c-2.4 0-4 1.8-4.5 4.7-.4 2.2.6 3.8 2.2 3.8 1.3 0 2.1-1.1 3-2.1h7.6c.9 1 1.7 2.1 3 2.1 1.6 0 2.6-1.6 2.2-3.8-.5-2.9-2.1-4.7-4.5-4.7z"/><path d="M8 5.5c-1.3 0-2.2 1-2.2 2.2S6.7 10 8 10s2.2-1 2.2-2.3S9.3 5.5 8 5.5zM16 5.5c-1.3 0-2.2 1-2.2 2.2S14.7 10 16 10s2.2-1 2.2-2.3S17.3 5.5 16 5.5z"/></svg><span>游戏</span></button>
 <button data-t="tab-me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.7-3.3 3-5 6.5-5s5.8 1.7 6.5 5"/></svg><span>我的</span></button>
 </nav>
 <div class="foot">今天也辛苦啦，小猫把你的每一秒都认真记下来了 ♡</div></main>
@@ -560,7 +572,7 @@ $('records').addEventListener('click', function(e){
 
 /* ===== 底部导航栏：四个独立页面 ===== */
 var tabs=Array.prototype.slice.call(document.querySelectorAll('.tabbar button'));
-var TAB_PAGES=['tab-home','tab-bill','tab-ledger','tab-me'];
+var TAB_PAGES=['tab-home','tab-bill','tab-game','tab-me'];
 function setTab(id){
   TAB_PAGES.forEach(function(pageId){
     var page=$(pageId);if(page)page.classList.toggle('active',pageId===id);
@@ -576,7 +588,7 @@ tabs.forEach(function(b){
 });
 setTab('tab-home');
 /* 我的：五个功能入口分别进入独立子页面 */
-var MY_PAGES=['account','backup','feedback','admin','settings'];
+var MY_PAGES=['ledger','account','backup','feedback','admin','settings'];
 function setMyPage(name){
   var menu=$('my-menu');if(menu)menu.style.display=name?'none':'grid';
   MY_PAGES.forEach(function(key){var page=$('my-page-'+key);if(page)page.classList.toggle('active',key===name)});
