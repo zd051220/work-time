@@ -28,6 +28,7 @@ create table if not exists public.game_cats (
   xp bigint not null default 0 check (xp >= 0),
   hp integer not null default 100 check (hp >= 0),
   max_hp integer not null default 100 check (max_hp > 0),
+  check (hp <= max_hp),
   attack integer not null default 5 check (attack >= 0),
   defense integer not null default 2 check (defense >= 0),
   luck integer not null default 0 check (luck >= 0),
@@ -82,11 +83,13 @@ create table if not exists public.game_equipment (
   slot text not null check (slot in ('weapon','helmet','armor','shoes','gloves','accessory')),
   quality text not null default 'common',
   level integer not null default 0 check (level >= 0),
-  affixes jsonb not null default '[]'::jsonb,
+  affixes jsonb not null default '[]'::jsonb check (jsonb_typeof(affixes) = 'array'),
   is_equipped boolean not null default false,
   created_at timestamptz not null default now()
 );
 create index if not exists game_equipment_user_idx on public.game_equipment(user_id);
+create unique index if not exists game_equipment_one_equipped_per_slot_idx
+  on public.game_equipment(user_id, slot) where is_equipped;
 
 create table if not exists public.game_jobs (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -113,6 +116,8 @@ create table if not exists public.game_work_orders (
   check (completes_at > started_at)
 );
 create index if not exists game_work_orders_user_status_idx on public.game_work_orders(user_id,status,completes_at);
+create unique index if not exists game_work_orders_one_active_per_user_idx
+  on public.game_work_orders(user_id) where status = 'active';
 
 create table if not exists public.game_world_progress (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -230,6 +235,7 @@ begin
     'inventory', coalesce((select jsonb_agg(to_jsonb(i) order by i.item_code) from public.game_inventory i where i.user_id = v_uid), '[]'::jsonb),
     'equipment', coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at) from public.game_equipment e where e.user_id = v_uid), '[]'::jsonb),
     'jobs', coalesce((select jsonb_agg(to_jsonb(j) order by j.job_code) from public.game_jobs j where j.user_id = v_uid), '[]'::jsonb),
+    'work_orders', coalesce((select jsonb_agg(to_jsonb(o) order by o.started_at desc) from public.game_work_orders o where o.user_id = v_uid and o.status in ('active','completed')), '[]'::jsonb),
     'world', coalesce((select jsonb_agg(to_jsonb(wp) order by wp.zone_code) from public.game_world_progress wp where wp.user_id = v_uid), '[]'::jsonb),
     'tasks', coalesce((select jsonb_agg(to_jsonb(tp) order by tp.task_code) from public.game_task_progress tp where tp.user_id = v_uid), '[]'::jsonb),
     'achievements', coalesce((select jsonb_agg(to_jsonb(a) order by a.achievement_code) from public.game_achievements a where a.user_id = v_uid), '[]'::jsonb)
