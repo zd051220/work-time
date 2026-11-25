@@ -23,9 +23,9 @@ check(wrappers.length === 2 && wrappers.every(f => f.startsWith('public.game_'))
 check(/revoke all on function private\.game_bootstrap\(\) from public, anon, authenticated/i.test(code), 'bootstrap private EXECUTE must be revoked before explicit grant');
 check(/revoke all on function private\.game_get_snapshot\(\) from public, anon, authenticated/i.test(code), 'snapshot private EXECUTE must be revoked before explicit grant');
 check(!/grant\s+(?:insert|update|delete|all)\s+on\s+(?:table\s+)?public\.game_/i.test(code), 'client roles must not receive direct game table write grants');
-check(/game_work_orders_one_active_per_user_idx[\\s\\S]*?where status = 'active'/i.test(code), 'database must enforce one active work order per user');
-check(/game_equipment_one_equipped_per_slot_idx[\\s\\S]*?where is_equipped/i.test(code), 'database must enforce one equipped item per slot');
-check(/check \\(hp <= max_hp\\)/i.test(code), 'cat HP must not exceed max HP');
-check(/'work_orders', coalesce\\(\\(select jsonb_agg/i.test(code), 'snapshot must include active/completed work order state');
+check(code.includes('game_work_orders_one_active_per_user_idx') && code.includes("where status = 'active'"), 'database must enforce one active work order per user');
+check(code.includes('game_equipment_one_equipped_per_slot_idx') && code.includes('where is_equipped'), 'database must enforce one equipped item per slot');
+check(code.includes('check (hp <= max_hp)'), 'cat HP must not exceed max HP');
+check(code.includes("'work_orders', coalesce((select jsonb_agg"), 'snapshot must include active/completed work order state');
 if (failures) { console.error('Game migration audit failed: ' + failures + ' issue(s)'); process.exit(1); }
 console.log('Game migration audit passed: 12 RLS tables, private privileged RPCs, invoker wrappers, no client write grants.');
