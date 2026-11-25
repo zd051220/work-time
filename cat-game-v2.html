@@ -62,17 +62,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 <body>
 <div class="game-shell">
 <header class="topbar">
- <div class="brand"><div>🐾 猫咪冒险工坊 <small>V2 · 竖屏冒险</small></div><small id="connection">云端存档待接入</small></div>
+ <div class="brand"><div>🐾 猫咪冒险工坊 <small>V2 · 竖屏冒险</small></div><small id="connection">云端连接中</small></div>
  <div class="stats">
   <div class="stat"><span>冒险等级</span><b id="level">Lv.1</b></div>
   <div class="stat"><span>金币</span><b id="coins">—</b></div>
-  <div class="stat"><span>体力</span><b id="stamina">—</b></div>
+  <div class="stat"><span>生命值</span><b id="stamina">—</b></div>
  </div>
 </header>
 <main class="content">
 <section class="screen active" id="home">
  <div class="hero"><div class="sun"></div><div class="cloud">☁　☁</div><div class="pixel-cat">🐈</div><div class="hero-label">喵喵村 · 新手小屋</div><div class="bubble">今天也要慢慢变强呀！</div></div>
- <div class="panel" style="margin-top:11px"><div class="panel-title">我的小猫 <span class="pill">橘猫 · 初来乍到</span></div><div style="display:flex;gap:12px;align-items:center"><div style="font-size:45px">🐈</div><div style="flex:1"><b style="font-size:12px">小橘</b><div class="muted">一只充满好奇心的冒险猫</div><div class="muted" style="margin-top:6px">生命值 <b>100 / 100</b></div><div class="progress"><i style="width:100%"></i></div></div></div></div>
+ <div class="panel" style="margin-top:11px"><div class="panel-title">我的小猫 <button class="action secondary" id="refreshCloud" type="button">刷新存档</button></div><div style="display:flex;gap:12px;align-items:center"><div style="font-size:45px">🐈</div><div style="flex:1"><b style="font-size:12px" id="catName">小橘</b><div class="muted">一只充满好奇心的冒险猫</div><div class="muted" style="margin-top:6px">生命值 <b id="catHp">— / —</b></div><div class="progress"><i id="catHpBar" style="width:0%"></i></div></div></div></div>
  <div class="panel"><div class="panel-title">快速前往 <span class="muted">选择你的下一步</span></div><div class="quick-grid"><button class="quick" data-go="work"><span>🧺</span>去工作</button><button class="quick" data-go="adventure"><span>🌲</span>去冒险</button><button class="quick" data-go="homecat"><span>🏡</span>回家看看</button></div></div>
  <div class="panel"><div class="panel-title">今日小目标 <span class="pill">轻松养成</span></div><div class="list"><div class="item"><div class="item-icon">🍞</div><div class="item-main"><b>认识村庄里的大家</b><small>逛逛村庄，了解工作和冒险地点</small></div><span class="pill">待探索</span></div><div class="item"><div class="item-icon">⛏️</div><div class="item-main"><b>准备第一次矿洞探索</b><small>先熟悉装备和矿洞规则</small></div><span class="pill">待探索</span></div></div></div>
 </section>
@@ -135,17 +135,63 @@ button{font:inherit;color:inherit;cursor:pointer}
   if(m.ok)p.resolve(m.data);else p.reject(new Error(m.error||'云端读取失败'));
  });
  window.catGameCloud={bootstrap:function(){return rpc('game_bootstrap')},snapshot:function(){return rpc('game_get_snapshot')}};
+ function setText(id,value){var el=document.getElementById(id);if(el)el.textContent=value}
+ function itemIcon(code){var map={wood:'🪵',stone:'🪨',copper_ore:'🟤',bread:'🍞',potion:'🧪',coal:'⚫',herb:'🌿'};return map[code]||'📦'}
+ function slotIcon(slot){var map={weapon:'⚔️',helmet:'🪖',armor:'🛡️',shoes:'🥾',gloves:'🧤',accessory:'💍'};return map[slot]||'🎒'}
+ function renderSnapshot(snapshot){
+  if(!snapshot||!snapshot.cat||!snapshot.wallet)throw new Error('云端存档结构不完整');
+  var cat=snapshot.cat,profile=snapshot.profile||{},wallet=snapshot.wallet;
+  setText('level','Lv.'+(Number(cat.level)||1));
+  setText('coins',Number(wallet.coins||0).toLocaleString('zh-CN'));
+  setText('stamina',String(Number(cat.hp)||0)+'/'+String(Number(cat.max_hp)||100));
+  setText('catName',profile.public_name||'小橘');
+  setText('catHp',String(Number(cat.hp)||0)+' / '+String(Number(cat.max_hp)||100));
+  var hp=Math.max(0,Math.min(100,(Number(cat.hp)||0)/Math.max(1,Number(cat.max_hp)||100)*100));
+  var bar=document.getElementById('catHpBar');if(bar)bar.style.width=hp+'%';
+  var inv=document.getElementById('inventorySlots');
+  if(inv){
+   inv.textContent='';
+   var rows=(Array.isArray(snapshot.inventory)?snapshot.inventory:[]).filter(function(x){return Number(x.quantity)>0});
+   rows.slice(0,12).forEach(function(row){
+    var cell=document.createElement('div'),small=document.createElement('small');
+    cell.className='slot';cell.appendChild(document.createTextNode(itemIcon(row.item_code)));
+    small.textContent=(row.item_code||'物品')+' × '+Number(row.quantity||0);cell.appendChild(small);inv.appendChild(cell);
+   });
+   if(!rows.length){var empty=document.createElement('div');empty.className='notice';empty.textContent='背包还是空的，去冒险收集第一件物品吧。';inv.appendChild(empty)}
+   setText('inventoryHint','云端背包 · '+rows.length+' 种物品');
+  }
+  var eq=document.getElementById('equipmentSlots');
+  if(eq){
+   eq.textContent='';
+   var labels={weapon:'武器',helmet:'头盔',armor:'盔甲',shoes:'鞋子',gloves:'手套',accessory:'饰品'};
+   ['weapon','helmet','armor','shoes','gloves','accessory'].forEach(function(slot){
+    var row=(snapshot.equipment||[]).find(function(x){return x.slot===slot&&x.is_equipped});
+    var cell=document.createElement('div'),small=document.createElement('small');
+    cell.className='slot';cell.appendChild(document.createTextNode(row?slotIcon(slot):'＋'));
+    small.textContent=row?(row.item_code+' · '+(row.quality||'普通')):labels[slot];
+    cell.appendChild(small);eq.appendChild(cell);
+   });
+  }
+  setText('connection','云端已同步');
+ }
+ function showCloudError(message){setText('connection','云端未连接');setText('inventoryHint',message||'暂时无法读取云端背包')}
+ document.addEventListener('cat-game-cloud-ready',function(e){try{renderSnapshot(e.detail)}catch(err){showCloudError(err.message)}});
+ document.addEventListener('cat-game-cloud-error',function(e){showCloudError(e.detail)});
+ var refresh=document.getElementById('refreshCloud');
+ if(refresh)refresh.addEventListener('click',function(){
+  refresh.disabled=true;refresh.textContent='同步中…';
+  window.catGameCloud.snapshot().then(function(snapshot){window.catGameSnapshot=snapshot;renderSnapshot(snapshot)}).catch(function(err){showCloudError(err.message)}).then(function(){refresh.disabled=false;refresh.textContent='刷新存档'});
+ });
  /* 等父页面脚本注册消息代理，避免 iframe 先加载导致首次请求丢失 */
  setTimeout(function(){
   window.catGameCloud.bootstrap().then(function(snapshot){
    window.catGameSnapshot=snapshot;
-   document.querySelectorAll('.pill').forEach(function(el){if(el.textContent.indexOf('云端待接入')>=0)el.textContent='云端已连接'});
    document.dispatchEvent(new CustomEvent('cat-game-cloud-ready',{detail:snapshot}));
   }).catch(function(err){
    document.dispatchEvent(new CustomEvent('cat-game-cloud-error',{detail:err.message}));
   });
  },500);
-})();
+
 
 (function(){
  var names=['home','adventure','work','bag','homecat','mine','village','forest'];
