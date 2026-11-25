@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小猫搬金条 5.4 · 已上线</title>
+<title>小猫搬金条 5.4.1 · 已上线</title>
 <meta name="theme-color" content="#fff3d6">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -24,27 +24,27 @@ li{font-size:12px;line-height:1.75;color:#5a4835;margin:0 0 8px} li:last-child{m
 </style></head>
 <body>
 <main class="box">
-  <div class="tag">5.4 已上线</div>
+  <div class="tag">5.4.1 已上线</div>
   <div class="cat">🐈</div>
-  <h1>小猫搬金条 5.4</h1>
-  <div class="h1sub">换账号不串数据，能改密码，也能清空云端账本</div>
+  <h1>小猫搬金条 5.4.1</h1>
+  <div class="h1sub">换账号旧页面自动停，删号不再假装成功</div>
   <ul>
-    <li><b>账号账本分开存</b>：换账号登录会切到那个账号自己的账本，不会把上一个账号的记录混进来，也不会把本机记录同步进别人账号；退出登录回到本机账本。</li>
-    <li><b>能改密码、可清空云端账本</b>：登录后可自己改密码；清空云端账本会删除云端记录、归档本机该账号的账本并退出登录；登录账号本身仍保留。</li>
-    <li><b>一个页面计时</b>：同一台手机上只留一个页面真计时，其余只读并可「接管计时」；关掉或刷新后另一页自动接手，不会工时翻倍。</li>
-    <li><b>5.3 的都保留</b>：账本合并、删掉不复活、跨午夜拆账、锁屏与离线 3 小时内自动补记。</li>
+    <li><b>账号身份锁</b>：页面打开时就绑定当前账号，换账号后旧页面会自己停下，不会把 A 的账继续记到 B 的账本上。</li>
+    <li><b>删号流程不再假装成功</b>：删号函数没部署时，只清云端账本并明确提示；注销账号后本机该账号的账本归档并退出登录。</li>
+    <li><b>导入有上限</b>：导入备份超过上限会被拒绝，不会把页面卡死。</li>
+    <li><b>5.4 的都保留</b>：账号账本分库存、改密码、一个页面计时、跨午夜拆账、锁屏与离线 3 小时内自动补记。</li>
   </ul>
-  <a class="go" href="v5.4.html">进入小猫搬金条 5.4 ›</a>
-  <div class="auto" id="auto">5 秒后自动进入 5.4</div>
-  <div class="tip">完整账本 <a href="ledger54.html">ledger54.html</a> · 上一版 <a href="v5.3.html">5.3</a> · 更早 <a href="v5.2.html">5.2</a> · <a href="v5.1.html">5.1</a></div>
+  <a class="go" href="v5.4.1.html">进入小猫搬金条 5.4.1 ›</a>
+  <div class="auto" id="auto">5 秒后自动进入 5.4.1</div>
+  <div class="tip">完整账本 <a href="ledger54-5.4.1.html">ledger54-5.4.1.html</a> · 上一版 <a href="v5.4.html">5.4</a> · 更早 <a href="v5.3.html">5.3</a> · <a href="v5.2.html">5.2</a> · <a href="v5.1.html">5.1</a></div>
   <div class="pwa">想把小猫放到手机桌面？iPhone：Safari 分享 →「添加到主屏幕」；Android：Chrome 右上菜单 →「安装应用」/「添加到主屏幕」。</div>
 </main>
 <script>
 (function(){
   var left=5, au=document.getElementById('auto');
   var t=setInterval(function(){
-    left--; au.textContent=left+' 秒后自动进入 5.4';
-    if(left<=0){ clearInterval(t); location.replace('v5.4.html'); }
+    left--; au.textContent=left+' 秒后自动进入 5.4.1';
+    if(left<=0){ clearInterval(t); location.replace('v5.4.1.html'); }
   },1000);
   if(location.search.indexOf('stay=1')>-1){ clearInterval(t); au.textContent='已停止自动跳转'; }
 })();
