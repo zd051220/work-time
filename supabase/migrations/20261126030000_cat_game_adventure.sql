@@ -67,7 +67,7 @@ create table if not exists public.game_monster_catalog (
   xp_reward bigint not null default 0 check (xp_reward >= 0),
   xp_per_floor bigint not null default 0 check (xp_per_floor >= 0),
   coin_min bigint not null default 0 check (coin_min >= 0),
-  coin_max bigint not null check (coin_max >= coin_min),
+  coin_max bigint not null default 0 check (coin_max >= coin_min),
   coin_per_floor bigint not null default 0 check (coin_per_floor >= 0),
   is_active boolean not null default false
 );
