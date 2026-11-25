@@ -77,7 +77,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <section class="screen active" id="home">
  <div class="hero"><div class="sun"></div><div class="cloud">☁　☁</div><div class="pixel-cat">🐈</div><div class="hero-label">喵喵村 · 新手小屋</div><div class="bubble">今天也要慢慢变强呀！</div></div>
  <div class="panel" style="margin-top:11px"><div class="panel-title">我的小猫 <button class="action secondary" id="refreshCloud" type="button">刷新存档</button></div><div style="display:flex;gap:12px;align-items:center"><div style="font-size:45px">🐈</div><div style="flex:1"><b style="font-size:12px" id="catName">小橘</b><div class="muted">一只充满好奇心的冒险猫</div><div class="muted" style="margin-top:6px">生命值 <b id="catHp">— / —</b></div><div class="progress"><i id="catHpBar" style="width:0%"></i></div><div class="muted" style="margin-top:6px">经验 <b id="catXp">—</b></div><div class="muted">攻击 <b id="catAtk">—</b> · 防御 <b id="catDef">—</b> · 幸运 <b id="catLuck">—</b> · 挖矿 <b id="catMining">—</b></div><div class="muted" id="cloudProgress" style="margin-top:4px"></div></div></div></div>
- <div class="panel"><div class="panel-title">快速前往 <span class="muted">选择你的下一步</span></div><div class="quick-grid"><button class="quick" data-go="work"><span>🧺</span>去工作</button><button class="quick" data-go="adventure"><span>🌲</span>去冒险</button><button class="quick" data-go="homecat"><span>🏡</span>回家看看</button></div></div>
+ <div class="panel"><div class="panel-title">快速前往 <span class="muted">选择你的下一步</span></div><div class="quick-grid"><button class="quick" data-go="work"><span>🧺</span>去工作</button><button class="quick" data-go="adventure"><span>🌲</span>去冒险</button><button class="quick" data-go="village"><span>🏪</span>逛商店</button><button class="quick" data-go="homecat"><span>🏡</span>回家看看</button></div></div>
  <div class="panel"><div class="panel-title">今日小目标 <span class="pill">轻松养成</span></div><div class="list"><div class="item"><div class="item-icon">🍞</div><div class="item-main"><b>认识村庄里的大家</b><small>逛逛村庄，了解工作和冒险地点</small></div><span class="pill">待探索</span></div><div class="item"><div class="item-icon">⛏️</div><div class="item-main"><b>准备第一次矿洞探索</b><small>先熟悉装备和矿洞规则</small></div><span class="pill">待探索</span></div></div></div>
 </section>
 <section class="screen" id="adventure">
@@ -91,6 +91,15 @@ button{font:inherit;color:inherit;cursor:pointer}
  <div class="panel"><div class="panel-title">可挑战区域 <span class="muted">战斗由云端判定</span></div><div class="list" id="zoneList"></div><p class="muted" id="adventureMessage" role="status" aria-live="polite" style="margin-top:10px"></p></div>
  <div class="panel" id="battleResult" style="display:none"></div>
  <div class="notice">进哪一层、伤害、暴击、掉落和经验全部由服务器判定，页面只负责显示结果。失败只扣生命值，不掉物品；生命值低于上限时会随时间自动恢复。</div>
+</section>
+<section class="screen" id="village">
+ <div class="panel"><div class="panel-title">🐾 喵喵村庄 · 杂货铺 <span class="pill">金币由云端扣款</span></div>
+ <p class="muted">用打工和冒险赚来的金币买装备。价格、等级要求和属性都由服务器给出，购买会记入云端账本；重复提交同一笔购买不会重复扣款。</p>
+ <div class="notice" id="shopBalance" style="margin-top:10px">正在读取金币…</div></div>
+ <div class="panel"><div class="panel-title">今日货架 <span class="muted" id="shopCount">—</span></div>
+ <div class="list" id="shopList"><div class="notice">正在读取云端货架…</div></div>
+ <p class="muted" id="shopMessage" role="status" aria-live="polite" style="margin-top:10px"></p></div>
+ <div class="notice">买到的装备会出现在「背包 → 我的装备」里，穿戴后属性由服务器在战斗时读取。</div>
 </section>
 <section class="screen" id="work">
  <div class="panel"><div class="panel-title">村庄工作 <span class="pill">云端订单</span></div>
@@ -128,7 +137,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 (function(){
  var pending={},seq=0,clockOffsetMs=0;
  /* 主页面桥原样转来服务器的错误内容，这里把错误码翻译成玩家能看懂的话 */
- var CLOUD_ERRORS={authentication_required:'请先登录工时账号',ACCOUNT_CONTEXT_CHANGED:'登录账号发生了变化，请回到主页面确认账号后重试',invalid_work_order_request:'工作请求参数不合法',idempotency_key_reused:'这次提交和之前的不一致，请刷新存档后重试',work_already_in_progress:'已经有一份工作进行中，完成并领取后才能开始新的',job_unavailable:'这个岗位暂时没有开放',duration_not_allowed:'这个岗位不支持所选的工作时长',job_reward_not_configured:'这个岗位的奖励还没有配置好，暂时不能开始或领取',work_order_not_found:'没有找到这笔工作订单',work_order_not_claimable:'这笔工作订单现在不能领取',work_order_not_finished:'服务器时间还没到完成时间，请稍后再领',invalid_server_reward:'服务器奖励配置异常，请联系管理员',equipment_affix_invalid:'这件装备的属性数据不合法，暂时不能穿戴',equipment_not_found:'没有找到这件装备',invalid_equipment_request:'装备请求参数不合法',invalid_explore_request:'冒险请求参数不合法',zone_unavailable:'这个区域暂时没有开放',zone_locked:'这个区域还没有解锁',floor_locked:'还不能跳层，先通过前面的层数',floor_out_of_range:'这一层超出了区域范围',floor_not_configured:'这一层的怪物还没有配置，暂时不能挑战',combat_not_configured:'战斗配置还没有完成，暂时不能挑战',cat_too_weak:'生命值不足，先回家休息一会儿',game_profile_not_initialized:'游戏存档还没有初始化，请刷新存档后重试'};
+ var CLOUD_ERRORS={authentication_required:'请先登录工时账号',ACCOUNT_CONTEXT_CHANGED:'登录账号发生了变化，请回到主页面确认账号后重试',invalid_work_order_request:'工作请求参数不合法',idempotency_key_reused:'这次提交和之前的不一致，请刷新存档后重试',work_already_in_progress:'已经有一份工作进行中，完成并领取后才能开始新的',job_unavailable:'这个岗位暂时没有开放',duration_not_allowed:'这个岗位不支持所选的工作时长',job_reward_not_configured:'这个岗位的奖励还没有配置好，暂时不能开始或领取',work_order_not_found:'没有找到这笔工作订单',work_order_not_claimable:'这笔工作订单现在不能领取',work_order_not_finished:'服务器时间还没到完成时间，请稍后再领',invalid_server_reward:'服务器奖励配置异常，请联系管理员',equipment_affix_invalid:'这件装备的属性数据不合法，暂时不能穿戴',equipment_not_found:'没有找到这件装备',invalid_equipment_request:'装备请求参数不合法',invalid_shop_request:'购买请求参数不合法',shop_item_not_available:'这件商品暂时没有出售',shop_level_required:'等级还不够，升升级再来买',shop_insufficient_coins:'金币不够，先去工作或冒险赚一些',invalid_explore_request:'冒险请求参数不合法',zone_unavailable:'这个区域暂时没有开放',zone_locked:'这个区域还没有解锁',floor_locked:'还不能跳层，先通过前面的层数',floor_out_of_range:'这一层超出了区域范围',floor_not_configured:'这一层的怪物还没有配置，暂时不能挑战',combat_not_configured:'战斗配置还没有完成，暂时不能挑战',cat_too_weak:'生命值不足，先回家休息一会儿',game_profile_not_initialized:'游戏存档还没有初始化，请刷新存档后重试'};
  function cloudText(message){
   var text=String(message||'');
   try{var parsed=JSON.parse(text);if(parsed&&typeof parsed.message==='string')text=parsed.message}catch(e){}
@@ -162,6 +171,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   startWork:function(jobCode,durationMinutes,key){return rpc('game_start_work',{p_job_code:jobCode,p_duration_minutes:durationMinutes,p_idempotency_key:key})},
   claimWork:function(orderId){return rpc('game_claim_work',{p_order_id:orderId})},
   equipItem:function(equipmentId,equipped){return rpc('game_equip_item',{p_equipment_id:equipmentId,p_equipped:equipped})},
+  buyItem:function(shopCode,key){return rpc('game_buy_item',{p_shop_code:shopCode,p_idempotency_key:key})},
   explore:function(zoneCode,floor,key){return rpc('game_start_explore',{p_zone_code:zoneCode,p_floor:floor,p_idempotency_key:key})}
  };
  function setText(id,value){var el=document.getElementById(id);if(el)el.textContent=value}
@@ -231,6 +241,7 @@ button{font:inherit;color:inherit;cursor:pointer}
    });
   }
   renderEquipment(snapshot);
+  renderShop(snapshot);
   renderWork(snapshot);
   setText('connection','云端已同步');
  }
@@ -301,12 +312,48 @@ button{font:inherit;color:inherit;cursor:pointer}
    return name&&isFinite(value)?name+' '+(value>=0?'+':'')+value:null;
   }).filter(Boolean).join('、');
  }
+ /* 村庄杂货铺：商品、价格和属性全部来自云端快照；页面只提交商品编号与幂等键 */
+ function renderShop(snapshot){
+  var box=document.getElementById('shopList');if(!box)return;
+  box.textContent='';
+  var goods=Array.isArray(snapshot.shop)?snapshot.shop:[];
+  var coins=Number((snapshot.wallet||{}).coins)||0,level=Number((snapshot.cat||{}).level)||1;
+  setText('shopBalance','持有金币 '+coins.toLocaleString('zh-CN')+' · 冒险等级 Lv.'+level);
+  setText('shopCount',goods.length+' 件商品');
+  if(!goods.length){var none=document.createElement('div');none.className='muted';none.textContent='货架还在补货，稍后再来看看。';box.appendChild(none);return}
+  goods.forEach(function(g){
+   var row=document.createElement('div');row.className='item';
+   var icon=document.createElement('div');icon.className='item-icon';icon.textContent=g.icon||'🎁';
+   var main=document.createElement('div');main.className='item-main';
+   var title=document.createElement('b');title.textContent=String(g.display_name||g.shop_code||'商品');
+   var bonus=affixText(g.affixes);
+   var sub=document.createElement('small');
+   sub.textContent=(SLOT_NAMES[g.slot]||'装备')+((g.quality&&g.quality!=='common')?' · '+g.quality:'')+(bonus?' · '+bonus:'')+(Number(g.min_level)>1?' · 需要 Lv.'+Number(g.min_level):'');
+   main.appendChild(title);main.appendChild(sub);row.appendChild(icon);row.appendChild(main);
+   var price=Number(g.price_coins)||0;
+   var buy=document.createElement('button');buy.type='button';buy.className='action';
+   buy.textContent=price.toLocaleString('zh-CN')+' 金币';
+   buy.disabled=coins<price||level<Number(g.min_level||1);
+   buy.addEventListener('click',function(){
+    if(buy.disabled||buy.dataset.submitting)return;
+    buy.dataset.submitting='1';buy.disabled=true;buy.textContent='购买中…';setText('shopMessage','');
+    window.catGameCloud.buyItem(g.shop_code,makeIdempotencyKey()).then(function(next){
+     window.catGameSnapshot=next;renderSnapshot(next);
+     setText('shopMessage','购买成功！装备已放进「背包 → 我的装备」，可以直接穿戴。');
+    }).catch(function(err){
+     setText('shopMessage',err.message||'购买失败，请刷新存档后重试');
+     buy.disabled=false;buy.textContent=price.toLocaleString('zh-CN')+' 金币';
+    }).then(function(){delete buy.dataset.submitting});
+   });
+   row.appendChild(buy);box.appendChild(row);
+  });
+ }
  /* 背包页“我的装备”：只提交装备编号和目标状态，属性加成由服务器读取 */
  function renderEquipment(snapshot){
   var box=document.getElementById('equipmentList');if(!box)return;
   box.textContent='';
   var rows=Array.isArray(snapshot.equipment)?snapshot.equipment:[];
-  if(!rows.length){var none=document.createElement('div');none.className='muted';none.textContent='还没有装备，目前没有获取装备的途径。';box.appendChild(none);return}
+  if(!rows.length){var none=document.createElement('div');none.className='muted';none.textContent='还没有装备，去「村庄 → 杂货铺」用金币买一件吧。';box.appendChild(none);return}
   rows.forEach(function(row){
    var item=document.createElement('div');item.className='item';
    var icon=document.createElement('div');icon.className='item-icon';icon.textContent=slotIcon(row.slot);
@@ -419,7 +466,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 (function(){
  var names=['home','adventure','work','bag','homecat','mine','village','forest'];
  function show(name){
-  if(name==='village'||name==='forest')name='adventure';
+  if(name==='forest')name='adventure';
   if(!document.getElementById(name))name='home';
   document.querySelectorAll('.screen').forEach(function(el){el.classList.toggle('active',el.id===name)});
   document.querySelectorAll('[data-screen]').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-screen')===name||(name==='mine'&&el.getAttribute('data-screen')==='adventure'))});
