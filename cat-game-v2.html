@@ -135,13 +135,16 @@ button{font:inherit;color:inherit;cursor:pointer}
   if(m.ok)p.resolve(m.data);else p.reject(new Error(m.error||'云端读取失败'));
  });
  window.catGameCloud={bootstrap:function(){return rpc('game_bootstrap')},snapshot:function(){return rpc('game_get_snapshot')}};
- window.catGameCloud.bootstrap().then(function(snapshot){
-  window.catGameSnapshot=snapshot;
-  document.querySelectorAll('.pill').forEach(function(el){if(el.textContent.indexOf('云端待接入')>=0)el.textContent='云端已连接'});
-  document.dispatchEvent(new CustomEvent('cat-game-cloud-ready',{detail:snapshot}));
- }).catch(function(err){
-  document.dispatchEvent(new CustomEvent('cat-game-cloud-error',{detail:err.message}));
- });
+ /* 等父页面脚本注册消息代理，避免 iframe 先加载导致首次请求丢失 */
+ setTimeout(function(){
+  window.catGameCloud.bootstrap().then(function(snapshot){
+   window.catGameSnapshot=snapshot;
+   document.querySelectorAll('.pill').forEach(function(el){if(el.textContent.indexOf('云端待接入')>=0)el.textContent='云端已连接'});
+   document.dispatchEvent(new CustomEvent('cat-game-cloud-ready',{detail:snapshot}));
+  }).catch(function(err){
+   document.dispatchEvent(new CustomEvent('cat-game-cloud-error',{detail:err.message}));
+  });
+ },500);
 })();
 
 (function(){
