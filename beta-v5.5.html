@@ -1180,7 +1180,7 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 (function(){
   var frame=document.getElementById('game-play-frame');
   if(!frame)return;
-  var allowed={game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true};
+  var allowed={game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true,game_equip_item:true,game_start_explore:true};
   window.addEventListener('message',function(ev){
     if(ev.origin!==window.location.origin||ev.source!==frame.contentWindow)return;
     var msg=ev.data||{};
@@ -1197,6 +1197,13 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
     }else if(msg.method==='game_claim_work'){
       if(typeof args.p_order_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(args.p_order_id))return;
       payload={p_order_id:args.p_order_id};
+    }else if(msg.method==='game_equip_item'){
+      if(typeof args.p_equipment_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(args.p_equipment_id)||typeof args.p_equipped!=='boolean')return;
+      payload={p_equipment_id:args.p_equipment_id,p_equipped:args.p_equipped};
+    }else if(msg.method==='game_start_explore'){
+      if(typeof args.p_zone_code!=='string'||!/^[a-z_]{1,20}$/.test(args.p_zone_code)||!Number.isInteger(args.p_floor)||args.p_floor<1||args.p_floor>99||
+         typeof args.p_idempotency_key!=='string'||args.p_idempotency_key.length<8||args.p_idempotency_key.length>120)return;
+      payload={p_zone_code:args.p_zone_code,p_floor:args.p_floor,p_idempotency_key:args.p_idempotency_key};
     }
     Promise.resolve().then(function(){
       if(!accSess())throw new Error('请先登录工时账号');
