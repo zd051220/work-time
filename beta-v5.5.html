@@ -1138,6 +1138,30 @@ $('adminRecordSubmit').onclick=function(){
 };
 var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+String(grantDate.getMonth()+1).padStart(2,'0')+'-'+String(grantDate.getDate()).padStart(2,'0');
 
+/* 游戏云端 RPC 桥：iframe 不接触 access/refresh token，只能请求白名单 RPC */
+(function(){
+  var frame=document.querySelector('#tab-game iframe');
+  if(!frame)return;
+  var allowed={game_bootstrap:true,game_get_snapshot:true};
+  window.addEventListener('message',function(ev){
+    if(ev.origin!==window.location.origin||ev.source!==frame.contentWindow)return;
+    var msg=ev.data||{};
+    if(msg.type!=='game-rpc'||typeof msg.id!=='string'||msg.id.length>80||!allowed[msg.method])return;
+    Promise.resolve().then(function(){
+      if(!accSess())throw new Error('请先登录工时账号');
+      mwAssertAccountContext();
+      return accCall('/rest/v1/rpc/'+msg.method,{method:'POST',body:'{}'});
+    }).then(function(res){
+      if(!res.ok)throw new Error('云端请求失败（HTTP '+res.status+'）');
+      return res.json();
+    }).then(function(data){
+      frame.contentWindow.postMessage({type:'game-rpc-result',id:msg.id,ok:true,data:data},window.location.origin);
+    }).catch(function(err){
+      frame.contentWindow.postMessage({type:'game-rpc-result',id:msg.id,ok:false,error:(err&&err.message)||'云端暂不可用'},window.location.origin);
+    });
+  });
+})();
+
 loadFeed(false);loadStats();
 
 })();
