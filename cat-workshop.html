@@ -56,6 +56,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .bottomnav button span{display:block;font-size:19px;margin-bottom:2px}
 .bottomnav button.active{background:#f8e8c8;color:#825b28}
 .notice{padding:10px 11px;background:#fff3d8;border:1px solid #efd9a9;border-radius:12px;color:#8b6939;font-size:10px;line-height:1.6}.work-order{background:#fffaf0;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:42px}
+.replay{max-height:190px;overflow:auto;font-size:10px;line-height:1.7;color:#7d6a52;scrollbar-width:thin}.zone-controls{display:flex;flex-direction:column;gap:5px;flex:none}
 @media(min-width:700px){body{padding:16px 0}.game-shell{height:calc(100dvh - 32px);min-height:700px;border-radius:24px;border:1px solid #dfcfb3}}
 
 .brand-tools{display:flex;align-items:center;gap:8px;flex:none}
@@ -82,13 +83,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 <section class="screen" id="adventure">
  <div class="panel"><div class="panel-title">冒险地图 <span class="pill">RPG 点击探索</span></div><p class="muted">选择地点进入场景。危险区域会在满足解锁条件后开放。</p><div class="map-grid">
  <button class="location" data-go="village"><span>🏘️</span><b>喵喵村庄</b><small>商店、协会与日常委托</small></button>
- <button class="location" data-go="forest"><span>🌳</span><b>静谧森林</b><small>采集、探索与初级怪物</small></button>
- <button class="location" data-go="mine"><span>⛏️</span><b>新手矿洞</b><small>矿石、宝箱与史莱姆</small></button>
- <button class="location" disabled><span>🏛️</span><b>地下遗迹</b><small>尚未解锁</small></button>
+ <button class="location" data-go="forest"><span>🌳</span><b>静谧森林</b><small id="zoneCardForest">采集、探索与初级怪物</small></button>
+ <button class="location" data-go="mine"><span>⛏️</span><b>新手矿洞</b><small id="zoneCardMine">矿石、宝箱与史莱姆</small></button>
+ <button class="location" disabled><span>🏛️</span><b>地下遗迹</b><small id="zoneCardRuins">尚未解锁</small></button>
  <button class="location" disabled><span>🐉</span><b>Boss 领地</b><small>尚未解锁</small></button>
  </div></div>
- <div class="panel"><div class="panel-title">探索进度 <span class="muted">来自云端存档</span></div><div class="list" id="worldProgressList"></div></div>
- <div class="notice">探索和战斗的正式奖励将在云端服务端完成后开放。当前界面不会把演示数据保存成真实游戏进度。</div>
+ <div class="panel"><div class="panel-title">可挑战区域 <span class="muted">战斗由云端判定</span></div><div class="list" id="zoneList"></div><p class="muted" id="adventureMessage" role="status" aria-live="polite" style="margin-top:10px"></p></div>
+ <div class="panel" id="battleResult" style="display:none"></div>
+ <div class="notice">进哪一层、伤害、暴击、掉落和经验全部由服务器判定，页面只负责显示结果。失败只扣生命值，不掉物品；生命值低于上限时会随时间自动恢复。</div>
 </section>
 <section class="screen" id="work">
  <div class="panel"><div class="panel-title">村庄工作 <span class="pill">云端订单</span></div>
@@ -108,6 +110,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <section class="screen" id="bag">
  <div class="panel"><div class="panel-title">背包 <span class="pill">40 格容量设计</span></div><div class="slots" id="inventorySlots"><div class="slot">☁️<small>等待云端</small></div></div><p class="muted" id="inventoryHint" style="margin-top:10px">正在读取云端背包…</p></div>
  <div class="panel"><div class="panel-title">装备栏 <span class="pill">六个位置</span></div><div class="slots" id="equipmentSlots"><div class="slot">⚔️<small>武器</small></div><div class="slot">🪖<small>头盔</small></div><div class="slot">🛡️<small>盔甲</small></div><div class="slot">🥾<small>鞋子</small></div><div class="slot">🧤<small>手套</small></div><div class="slot">💍<small>饰品</small></div></div></div>
+ <div class="panel"><div class="panel-title">我的装备 <span class="muted">来自云端存档</span></div><div class="list" id="equipmentList"></div><p class="muted" id="bagMessage" role="status" aria-live="polite" style="margin-top:10px"></p></div>
 </section>
 <section class="screen" id="homecat">
  <div class="panel"><div class="panel-title">小橘的家 <span class="pill">温馨木屋</span></div><div class="hero" style="min-height:220px;background:linear-gradient(#ead9b8,#d5b58a)"><div class="pixel-cat" style="top:65px">🐈</div><div class="hero-label">窗边的阳光刚刚好</div><div class="bubble">喵～回来啦？</div></div><div class="list" style="margin-top:10px"><div class="item"><div class="item-icon">🍲</div><div class="item-main"><b>饱食度</b><small>云端记录值；喂食功能尚未开放</small></div><span class="pill" id="catSatiety">—</span></div><div class="item"><div class="item-icon">💛</div><div class="item-main"><b>心情</b><small>云端记录值；休息功能尚未开放</small></div><span class="pill" id="catMood">—</span></div><div class="item"><div class="item-icon">🤝</div><div class="item-main"><b>亲密度</b><small>云端记录值；互动功能尚未开放</small></div><span class="pill" id="catAffection">—</span></div></div></div>
@@ -125,7 +128,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 (function(){
  var pending={},seq=0,clockOffsetMs=0;
  /* 主页面桥原样转来服务器的错误内容，这里把错误码翻译成玩家能看懂的话 */
- var CLOUD_ERRORS={authentication_required:'请先登录工时账号',ACCOUNT_CONTEXT_CHANGED:'登录账号发生了变化，请回到主页面确认账号后重试',invalid_work_order_request:'工作请求参数不合法',idempotency_key_reused:'这次提交和之前的不一致，请刷新存档后重试',work_already_in_progress:'已经有一份工作进行中，完成并领取后才能开始新的',job_unavailable:'这个岗位暂时没有开放',duration_not_allowed:'这个岗位不支持所选的工作时长',job_reward_not_configured:'这个岗位的奖励还没有配置好，暂时不能开始或领取',work_order_not_found:'没有找到这笔工作订单',work_order_not_claimable:'这笔工作订单现在不能领取',work_order_not_finished:'服务器时间还没到完成时间，请稍后再领',invalid_server_reward:'服务器奖励配置异常，请联系管理员',game_profile_not_initialized:'游戏存档还没有初始化，请刷新存档后重试'};
+ var CLOUD_ERRORS={authentication_required:'请先登录工时账号',ACCOUNT_CONTEXT_CHANGED:'登录账号发生了变化，请回到主页面确认账号后重试',invalid_work_order_request:'工作请求参数不合法',idempotency_key_reused:'这次提交和之前的不一致，请刷新存档后重试',work_already_in_progress:'已经有一份工作进行中，完成并领取后才能开始新的',job_unavailable:'这个岗位暂时没有开放',duration_not_allowed:'这个岗位不支持所选的工作时长',job_reward_not_configured:'这个岗位的奖励还没有配置好，暂时不能开始或领取',work_order_not_found:'没有找到这笔工作订单',work_order_not_claimable:'这笔工作订单现在不能领取',work_order_not_finished:'服务器时间还没到完成时间，请稍后再领',invalid_server_reward:'服务器奖励配置异常，请联系管理员',equipment_affix_invalid:'这件装备的属性数据不合法，暂时不能穿戴',equipment_not_found:'没有找到这件装备',invalid_equipment_request:'装备请求参数不合法',invalid_explore_request:'冒险请求参数不合法',zone_unavailable:'这个区域暂时没有开放',zone_locked:'这个区域还没有解锁',floor_locked:'还不能跳层，先通过前面的层数',floor_out_of_range:'这一层超出了区域范围',floor_not_configured:'这一层的怪物还没有配置，暂时不能挑战',combat_not_configured:'战斗配置还没有完成，暂时不能挑战',cat_too_weak:'生命值不足，先回家休息一会儿',game_profile_not_initialized:'游戏存档还没有初始化，请刷新存档后重试'};
  function cloudText(message){
   var text=String(message||'');
   try{var parsed=JSON.parse(text);if(parsed&&typeof parsed.message==='string')text=parsed.message}catch(e){}
@@ -157,13 +160,17 @@ button{font:inherit;color:inherit;cursor:pointer}
   bootstrap:function(){return rpc('game_bootstrap')},
   snapshot:function(){return rpc('game_get_snapshot')},
   startWork:function(jobCode,durationMinutes,key){return rpc('game_start_work',{p_job_code:jobCode,p_duration_minutes:durationMinutes,p_idempotency_key:key})},
-  claimWork:function(orderId){return rpc('game_claim_work',{p_order_id:orderId})}
+  claimWork:function(orderId){return rpc('game_claim_work',{p_order_id:orderId})},
+  equipItem:function(equipmentId,equipped){return rpc('game_equip_item',{p_equipment_id:equipmentId,p_equipped:equipped})},
+  explore:function(zoneCode,floor,key){return rpc('game_start_explore',{p_zone_code:zoneCode,p_floor:floor,p_idempotency_key:key})}
  };
  function setText(id,value){var el=document.getElementById(id);if(el)el.textContent=value}
  function itemIcon(code){var map={wood:'🪵',stone:'🪨',copper_ore:'🟤',bread:'🍞',potion:'🧪',coal:'⚫',herb:'🌿'};return map[code]||'📦'}
  function slotIcon(slot){var map={weapon:'⚔️',helmet:'🪖',armor:'🛡️',shoes:'🥾',gloves:'🧤',accessory:'💍'};return map[slot]||'🎒'}
  var JOB_NAMES={bakery:'面包店学徒',blacksmith:'铁匠学徒',foraging:'森林采集员',mining:'矿场助手',fishing:'钓鱼学徒',delivery:'村庄送货员'};
- var ZONE_NAMES={village:'喵喵村庄',forest:'静谧森林',mine:'新手矿洞'};
+ var SLOT_NAMES={weapon:'武器',helmet:'头盔',armor:'盔甲',shoes:'鞋子',gloves:'手套',accessory:'饰品'};
+ var STAT_NAMES={attack:'攻击',defense:'防御',luck:'幸运',mining_power:'挖矿'};
+ var ZONE_CARDS={forest:['zoneCardForest','采集、探索与初级怪物'],mine:['zoneCardMine','矿石、宝箱与史莱姆'],ruins:['zoneCardRuins','尚未解锁']};
  /* 通用列表：图标 + 标题 + 说明；没有数据时显示一句说明，不编造内容 */
  function renderList(id,items,emptyText){
   var box=document.getElementById(id);if(!box)return;
@@ -186,7 +193,8 @@ button{font:inherit;color:inherit;cursor:pointer}
   setText('stamina',String(Number(cat.hp)||0)+'/'+String(Number(cat.max_hp)||100));
   setText('catName',profile.public_name||'小橘');
   setText('catHp',String(Number(cat.hp)||0)+' / '+String(Number(cat.max_hp)||100));
-  setText('catXp',Number(cat.xp||0).toLocaleString('zh-CN'));
+  var xpNext=snapshot.level&&Number(snapshot.level.xp_to_next);
+  setText('catXp',Number(cat.xp||0).toLocaleString('zh-CN')+(xpNext?' / '+xpNext.toLocaleString('zh-CN'):''));
   setText('catAtk',String(Number(cat.attack)||0));setText('catDef',String(Number(cat.defense)||0));
   setText('catLuck',String(Number(cat.luck)||0));setText('catMining',String(Number(cat.mining_power)||0));
   setText('catSatiety',Number(cat.satiety||0)+' / 100');setText('catMood',Number(cat.mood||0)+' / 100');setText('catAffection',String(Number(cat.affection)||0));
@@ -195,9 +203,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   renderList('jobGrowth',(Array.isArray(snapshot.jobs)?snapshot.jobs:[]).map(function(j){
    return {icon:'🧺',title:(JOB_NAMES[j.job_code]||String(j.job_code||'职业'))+' · Lv.'+(Number(j.level)||1),sub:'职业经验 '+Number(j.xp||0).toLocaleString('zh-CN')+(j.specialization?' · 专精：'+j.specialization:' · 未选择专精')};
   }),'还没有职业成长记录，开始工作后会在这里出现。');
-  renderList('worldProgressList',(Array.isArray(snapshot.world)?snapshot.world:[]).map(function(w){
-   return {icon:'🗺️',title:(ZONE_NAMES[w.zone_code]||String(w.zone_code||'未知区域')),sub:'云端记录：最深到达第 '+Number(w.max_floor||0)+' 层'};
-  }),'还没有探索记录，冒险系统开放后这里会更新。');
+  renderZones(snapshot);
   var hp=Math.max(0,Math.min(100,(Number(cat.hp)||0)/Math.max(1,Number(cat.max_hp)||100)*100));
   var bar=document.getElementById('catHpBar');if(bar)bar.style.width=hp+'%';
   var inv=document.getElementById('inventorySlots');
@@ -207,7 +213,7 @@ button{font:inherit;color:inherit;cursor:pointer}
    rows.slice(0,12).forEach(function(row){
     var cell=document.createElement('div'),small=document.createElement('small');
     cell.className='slot';cell.appendChild(document.createTextNode(itemIcon(row.item_code)));
-    small.textContent=(row.item_code||'物品')+' × '+Number(row.quantity||0);cell.appendChild(small);inv.appendChild(cell);
+    small.textContent=itemLabel(snapshot,row.item_code)+' × '+Number(row.quantity||0);cell.appendChild(small);inv.appendChild(cell);
    });
    if(!rows.length){var empty=document.createElement('div');empty.className='notice';empty.textContent='背包还是空的，去冒险收集第一件物品吧。';inv.appendChild(empty)}
    setText('inventoryHint','云端背包 · '+rows.length+' 种物品');
@@ -224,6 +230,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     cell.appendChild(small);eq.appendChild(cell);
    });
   }
+  renderEquipment(snapshot);
   renderWork(snapshot);
   setText('connection','云端已同步');
  }
@@ -286,6 +293,105 @@ button{font:inherit;color:inherit;cursor:pointer}
    });
    controls.appendChild(select);controls.appendChild(start);row.appendChild(document.createElement('div')).className='item-icon';row.lastChild.textContent=(labels[job.job_code]||'🐾').slice(0,2);row.appendChild(main);row.appendChild(controls);catalog.appendChild(row);
   });
+ }
+ function itemLabel(snapshot,code){return (snapshot.item_names||{})[code]||String(code||'物品')}
+ function affixText(affixes){
+  return (Array.isArray(affixes)?affixes:[]).map(function(a){
+   var name=a&&STAT_NAMES[a.stat],value=Number(a&&a.value);
+   return name&&isFinite(value)?name+' '+(value>=0?'+':'')+value:null;
+  }).filter(Boolean).join('、');
+ }
+ /* 背包页“我的装备”：只提交装备编号和目标状态，属性加成由服务器读取 */
+ function renderEquipment(snapshot){
+  var box=document.getElementById('equipmentList');if(!box)return;
+  box.textContent='';
+  var rows=Array.isArray(snapshot.equipment)?snapshot.equipment:[];
+  if(!rows.length){var none=document.createElement('div');none.className='muted';none.textContent='还没有装备，目前没有获取装备的途径。';box.appendChild(none);return}
+  rows.forEach(function(row){
+   var item=document.createElement('div');item.className='item';
+   var icon=document.createElement('div');icon.className='item-icon';icon.textContent=slotIcon(row.slot);
+   var main=document.createElement('div');main.className='item-main';
+   var title=document.createElement('b');title.textContent=itemLabel(snapshot,row.item_code)+' · '+(SLOT_NAMES[row.slot]||String(row.slot||'装备'));
+   var bonus=affixText(row.affixes);
+   var sub=document.createElement('small');sub.textContent=(row.quality||'普通')+(row.level?' · 强化 +'+Number(row.level):'')+(bonus?' · '+bonus:'');
+   main.appendChild(title);main.appendChild(sub);
+   var button=document.createElement('button');button.type='button';button.className=row.is_equipped?'action secondary':'action';button.textContent=row.is_equipped?'脱下':'穿戴';
+   button.addEventListener('click',function(){
+    if(button.dataset.submitting)return;
+    button.dataset.submitting='1';button.disabled=true;button.textContent='同步中…';setText('bagMessage','');
+    window.catGameCloud.equipItem(row.equipment_id,!row.is_equipped).then(function(next){window.catGameSnapshot=next;renderSnapshot(next)})
+     .catch(function(err){setText('bagMessage',err.message||'操作失败，请刷新后重试');button.disabled=false;button.textContent=row.is_equipped?'脱下':'穿戴'})
+     .then(function(){delete button.dataset.submitting});
+   });
+   item.appendChild(icon);item.appendChild(main);item.appendChild(button);box.appendChild(item);
+  });
+ }
+ /* 冒险页：区域、解锁条件、能进哪一层、生命够不够，全部来自云端快照，页面不自己判断 */
+ function renderZones(snapshot){
+  var box=document.getElementById('zoneList');if(!box)return;
+  box.textContent='';
+  var zones=Array.isArray(snapshot.zones)?snapshot.zones:[],cat=snapshot.cat||{},hp=Number(cat.hp)||0;
+  Object.keys(ZONE_CARDS).forEach(function(code){
+   var card=document.getElementById(ZONE_CARDS[code][0]),zone=zones.find(function(z){return z.zone_code===code});
+   if(card)card.textContent=!zone?ZONE_CARDS[code][1]:!zone.unlocked?'尚未解锁':Number(zone.reached_floor)>0?'最深到达第 '+Number(zone.reached_floor)+' 层':'已解锁，还没有探索记录';
+  });
+  if(!zones.length){var none=document.createElement('div');none.className='muted';none.textContent='冒险区域还没有在云端开放。';box.appendChild(none);return}
+  zones.forEach(function(zone){
+   var row=document.createElement('div');row.className='item';
+   var icon=document.createElement('div');icon.className='item-icon';icon.textContent=zone.icon||'🗺️';
+   var main=document.createElement('div');main.className='item-main';
+   var title=document.createElement('b'),sub=document.createElement('small'),reached=Number(zone.reached_floor)||0;
+   title.textContent=(zone.display_name||String(zone.zone_code||'区域'))+' · 最深到达第 '+reached+' 层';
+   var front=zones.find(function(z){return z.zone_code===zone.unlock_zone_code});
+   sub.textContent=!zone.unlocked?'尚未解锁：需要先在「'+(front?front.display_name:String(zone.unlock_zone_code||'前置区域'))+'」到达第 '+Number(zone.unlock_floor)+' 层'
+    :(zone.description||'')+' · 进入至少需要 '+Number(zone.min_hp_to_enter)+' 生命'+(reached>=Number(zone.max_floor)?' · 已到达最深层':'');
+   main.appendChild(title);main.appendChild(sub);row.appendChild(icon);row.appendChild(main);
+   if(zone.unlocked){
+    var top=Math.min(reached+1,Number(zone.max_floor)),weak=hp<Number(zone.min_hp_to_enter);
+    var controls=document.createElement('div'),select=document.createElement('select'),go=document.createElement('button');
+    controls.className='zone-controls';
+    select.setAttribute('aria-label','选择要挑战的层数');select.style.maxWidth='95px';select.style.padding='6px';select.style.borderRadius='8px';select.style.border='1px solid #ead9b9';
+    for(var floor=top;floor>=1;floor--){var option=document.createElement('option');option.value=String(floor);option.textContent='第 '+floor+' 层'+(floor>reached?'（新）':'');select.appendChild(option)}
+    go.type='button';go.className='action';go.textContent='进入第 '+top+' 层';
+    if(weak){go.disabled=true;go.textContent='生命不足，先休息'}
+    select.addEventListener('change',function(){go.textContent='进入第 '+select.value+' 层'});
+    go.addEventListener('click',function(){
+     if(go.disabled||go.dataset.submitting)return;
+     go.dataset.submitting='1';go.disabled=true;go.textContent='战斗中…';setText('adventureMessage','');
+     window.catGameCloud.explore(zone.zone_code,Number(select.value),makeIdempotencyKey()).then(function(next){window.catGameSnapshot=next;renderSnapshot(next);if(next&&next.explore)renderBattle(next.explore,next)})
+      .catch(function(err){setText('adventureMessage',err.message||'挑战失败，请刷新后重试')})
+      .then(function(){delete go.dataset.submitting;if(go.isConnected&&!weak){go.disabled=false;go.textContent='进入第 '+select.value+' 层'}});
+    });
+    controls.appendChild(select);controls.appendChild(go);row.appendChild(controls);
+   }
+   box.appendChild(row);
+  });
+ }
+ /* 战斗结果：只显示服务器返回的回放和结算，页面里不计算任何数值 */
+ function renderBattle(result,snapshot){
+  var box=document.getElementById('battleResult');if(!box||!result)return;
+  box.textContent='';box.style.display='';
+  var win=result.outcome==='win',monster=String(result.monster_name||'怪物');
+  var title=document.createElement('div');title.className='panel-title';
+  var head=document.createElement('b');head.textContent=win?'胜利！':'挑战失败';
+  var where=document.createElement('span');where.className='muted';where.textContent='第 '+Number(result.floor)+' 层 · '+monster;
+  title.appendChild(head);title.appendChild(where);box.appendChild(title);
+  var dropsText=(Array.isArray(result.drops)?result.drops:[]).map(function(d){return itemLabel(snapshot,d.item_code)+' × '+Number(d.quantity)}).join('、');
+  var summary=document.createElement('div');summary.className='notice';
+  summary.textContent=win?'获得 经验 '+Number(result.xp)+' · 金币 '+Number(result.coins)+(dropsText?' · 掉落 '+dropsText:'')+(result.level_up?' · 升级到 Lv.'+Number(result.level_after)+'！':'')
+   :'没有获得奖励，也没有损失物品。生命值不足时先休息一会儿，血量会随时间恢复。';
+  box.appendChild(summary);
+  var hpLine=document.createElement('p');hpLine.className='muted';hpLine.textContent='战斗后生命值 '+Number(result.hp_after)+' / '+Number((snapshot&&snapshot.cat&&snapshot.cat.max_hp)||result.hp_after);box.appendChild(hpLine);
+  var replayTitle=document.createElement('div');replayTitle.className='panel-title';replayTitle.style.marginTop='12px';replayTitle.textContent='战斗回放';box.appendChild(replayTitle);
+  var replay=document.createElement('div');replay.className='replay';
+  (Array.isArray(result.turns)?result.turns:[]).forEach(function(turn){
+   var line=document.createElement('div'),t=Number(turn.turn);
+   line.textContent=turn.actor==='cat'?'第 '+t+' 回合：你对'+monster+'造成 '+Number(turn.damage)+' 点伤害'+(turn.crit?'（暴击）':'')+'，'+monster+'剩余 '+Number(turn.hp)
+    :'第 '+t+' 回合：'+monster+'对你造成 '+Number(turn.damage)+' 点伤害，你剩余 '+Number(turn.hp);
+   replay.appendChild(line);
+  });
+  box.appendChild(replay);
+  if(typeof box.scrollIntoView==='function')box.scrollIntoView({block:'nearest'});
  }
  function showCloudError(message){setText('connection','云端未连接');setText('inventoryHint',message||'暂时无法读取云端背包')}
  /* 云端时间戳可能带 6 位小数，先截成 3 位再解析，避免部分浏览器解析失败 */
