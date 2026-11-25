@@ -34,6 +34,8 @@ check(!/grant\s+(?:insert|update|delete|all)\s+on\s+(?:table\s+)?public\.game_/i
 check(code.includes('game_work_orders_one_active_per_user_idx') && code.includes("where status = 'active'"), 'database must enforce one active work order per user');
 check(code.includes('game_equipment_one_equipped_per_slot_idx') && code.includes('where is_equipped'), 'database must enforce one equipped item per slot');
 check(code.includes('check (hp <= max_hp)'), 'cat HP must not exceed max HP');
+check(/grant select \\(job_code, display_name, allowed_durations_minutes, is_active\\)\\s+on public\\.game_job_catalog to authenticated/i.test(workSql), 'job catalog reward amounts must not be directly readable by clients');
+check(!/from public\\.game_job_catalog where job_code=v_order\\.job_code and is_active/i.test(workSql), 'disabling a job must not block claiming an already-started order');
 check(code.includes("'work_orders', coalesce((select jsonb_agg"), 'snapshot must include active/completed work order state');
 if (failures) { console.error('Game migration audit failed: ' + failures + ' issue(s)'); process.exit(1); }
 console.log('Game migration audit passed: 13 RLS tables, four private privileged RPCs, invoker wrappers, server-timed idempotent work orders, no client write grants.');
