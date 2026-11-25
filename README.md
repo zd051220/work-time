@@ -31,7 +31,7 @@
 | `version.json` | 版本提示数据，5.4 启动时读取，`url` 指向 `v5.4.1.html` |
 | `manifest.json` / `icon.svg` | PWA 清单与图标 |
 | `.github/scripts/timer_check.js` | 发布前计时纯函数门禁（20 项断言） |
-| `.github/scripts/cat_game_pg_check.mjs` | 游戏迁移的 PGlite 行为检查（20 项断言，CI 内跑） |
+| `.github/scripts/cat_game_pg_check.mjs` | 游戏迁移的 PGlite 行为检查（78 项断言，CI 内跑） |
 | `.github/workflows/release-manual.yml` | 手动发布流程：下载→哈希→门禁→单文件提交 |
 | `supabase/migrations/` | 小猫游戏三份迁移，**已于 2026-11-26 在 Supabase 执行** |
 | `supabase/functions/delete-account/index.ts` | 真正删号的 Edge Function 源码，**尚未部署、前端未启用** |
