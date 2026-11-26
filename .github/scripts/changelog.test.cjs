@@ -20,6 +20,8 @@ test('uses safe GitHub-generated PR links and a cleaned description',()=>{
  const r=renderEntries([pr(5,'feat: add <script>alert(1)</script>','release:minor'.split(),'<b>Useful</b> details\n\nMore')],'owner/repo');
  assert.match(r.markdown,/\[#5\]\(https:\/\/github\.com\/owner\/repo\/pull\/5\)/);
  assert.doesNotMatch(r.markdown,/<script>/);assert.match(r.markdown,/Useful details/);
+ const injected=renderEntries([pr(6,'feat: [click](https://evil.example)','release:patch'.split())],'owner/repo').markdown;
+ assert.doesNotMatch(injected,/evil\\.example/);
 });
 test('deduplicates PR numbers and orders newest first',()=>{
  const r=renderEntries([pr(7,'fix: older',undefined,'','2026-11-25T00:00:00Z'),pr(8,'fix: newer',undefined,'','2026-11-26T00:00:00Z'),pr(8,'fix: duplicate')],'owner/repo');
