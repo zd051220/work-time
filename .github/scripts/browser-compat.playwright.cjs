@@ -144,7 +144,8 @@ async function runEngine(name, type, origin) {
       await first.goto(origin + '/v5.5.html');
       await first.waitForFunction(() => {
         var button = document.getElementById('startBtn');
-        return button && !button.disabled;
+        var lease = JSON.parse(localStorage.getItem('mw_lease_v53') || 'null');
+        return button && !button.disabled && lease && lease.tab;
       }, null, { timeout: 10000 });
       await second.goto(origin + '/v5.5.html');
       await second.waitForFunction(() => {
