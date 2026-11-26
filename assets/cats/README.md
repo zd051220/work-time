@@ -1,24 +1,38 @@
-# Cat companion assets
+# 小猫搬金条 · 四只猫咪角色素材
 
-This directory contains the first standalone illustrated character assets used by the timer and its isolated preview.
+这是网页计时器用的四只猫咪美术，扁平贴纸手绘画风（纯色平涂 + 粗棕描边 + 实心黑眼珠 + 腮红），
+白猫为比例基准，造型统一、真透明背景。
 
-## Current character artwork
+## 角色
 
-| Directory | Character | Current frame |
+| 目录 | 角色 | 造型 |
 | --- | --- | --- |
-| `soft-bell/` | White companion cat with red bell collar | `idle.png` |
-| `sport-headband/` | Red headband sports cat | `idle.png` |
-| `sleepy-nightcap/` | Blue nightcap comfort cat | `idle.png` |
-| `leader-crown/` | Crown and red cape leader cat | `idle.png` |
+| `soft-bell` | 白猫 · 日常陪伴 | 红色铃铛项圈 |
+| `sport-headband` | 运动猫 · 工作搬金条 | 无头饰，红色小领巾 |
+| `sleepy-nightcap` | 睡帽猫 · 休息睡觉 | 蓝色睡帽（白星 + 白绒边）与蓝围巾 |
+| `leader-crown` | 队长猫 · 庆祝互动 | 金色小皇冠、红披风、红铃铛项圈 |
 
-Each character has a standard PNG and a high-resolution `idle@1536.png` export. The standard artwork is a 512 × 512 RGBA PNG. The PNGs are now referenced by both `v5.5.html` and `cat-companion-preview.html`; the gold ingot is layered separately so the same prop can animate with the character.
+## 六类动作
 
-## Animation status
+`assets/cats/states/<角色>/<状态>@512.png`
 
-Only the idle illustration is currently available for each character. Work/carry, paid break, unpaid sleep, off-duty celebration, and click-interaction are not yet separate illustrated frames. Current CSS motion is a lightweight presentation effect, not frame-by-frame character animation.
+| 状态 | 网页触发 |
+| --- | --- |
+| `idle` | 未开工 / 等待核对 |
+| `work` | 正在工作 |
+| `paid` | 带薪摸鱼 |
+| `unpaid` | 不带薪摸鱼（趴睡） |
+| `off` | 下班后 9 秒内的庆祝 |
+| `interaction` | 点击猫咪（摸头）反应 |
 
-Future frame sets should keep a consistent canvas, scale, transparent background, character proportions, and gold-bar design. Keep source artwork and exported web assets separate, and document dimensions, frame order, and licensing before adding further assets.
+每条状态都有 `{状态}@512.png`：512×512、透明背景、脚底基线统一在画布 y=1310 上，
+网页端按 `mwResolveCatMode()` 的结果直接换 `src`，不需要额外动画帧。
 
-## Preview safety
+## 制作约束（供后续补图沿用）
 
-The PR preview workflow packages this directory and the isolated preview page as a short-lived GitHub Actions artifact. It does not deploy to GitHub Pages, modify the production site, or access personal timer data.
+- 每只猫单独一张，不拼图；全身完整，耳朵、尾巴、四脚不裁切。
+- 真透明：白底生成后逐像素抠除，四角 alpha 必须为 0，半透明边缘占比 < 1%。
+- 金条是带厚度与倒角的长方体，双色分层（顶面亮金 + 侧面深金）加一条边棱高光，不使用金币或元宝。
+- 同一只猫的状态之间头部大小一致：以瞳孔间距作为比例尺逐张校正，再对齐脚底基线。
+
+`assets/cats/<角色>/idle.png` 保留为旧路径兼容入口，内容与 `states/<角色>/idle@512.png` 相同。
