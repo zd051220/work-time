@@ -64,7 +64,8 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
   await resumeCase('后台 5 小时、单调钟停滞、服务器确认',5*3600000,0,5*3600000,false,false);
   await resumeCase('后台 24 小时、单调钟停滞、服务器确认',24*3600000,0,24*3600000,false,false);
   const dual=await resumeCase('后台 5 小时、双钟一致',5*3600000,5*3600000,5*3600000,false,false);
-  check('双钟一致时不请求服务器',dual.fetches,0);
+  check('双钟一致也必须请求服务器校验绝对时间',dual.fetches>=1,true);
+  await resumeCase('系统时间与单调时钟同时快进 1 小时、服务器未前进：必须冻结核对',3600000,3600000,0,true,false);
   await resumeCase('墙钟比服务器快 30 分钟',5*3600000+1800000,0,5*3600000,true,false);
   await resumeCase('双钟不一致且断网',3600000,0,3600000,true,true);
   {
