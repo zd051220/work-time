@@ -51,5 +51,7 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Real browser compatibility tests
         run: node .github/scripts/browser-compat.playwright.cjs
+      - name: Animated cat companion tests
+        run: node --test .github/scripts/cat-companion.test.cjs
       - name: Timer regression tests (formal)
         run: node .github/scripts/timer_check.js v5.5.html
