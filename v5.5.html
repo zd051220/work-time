@@ -552,7 +552,7 @@ function onShow(){
   if(lifecycleResolving)return;
   lifecycleResolving=true;
   var wallDelta=now-(Number(snap.wall)||Number(s.lastAt)||now);
-  var monoDelta=Number.isFinite(Number(snap.mono))?mono-Number(snap.mono):null;
+  var monoDelta=snap.mono!=null&&Number.isFinite(Number(snap.mono))?mono-Number(snap.mono):null;
   var preDrift=Number(snap.preDrift)||0;
   function finishReview(reason,kind){
     if(data.session&&!data.session.pendingReview){

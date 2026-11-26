@@ -137,8 +137,9 @@ async function runEngine(name, type, origin) {
           }
           return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
         });
+        const initialClockResponse = page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
         await page.goto(origin + '/v5.5.html');
-        await page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
+        await initialClockResponse;
         await page.locator('#startBtn').click();
         const cdp = await context.newCDPSession(page);
         await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
@@ -184,8 +185,9 @@ async function runEngine(name, type, origin) {
           }
           return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
         });
+        const initialClockResponse = page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
         await page.goto(origin + '/v5.5.html');
-        await page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
+        await initialClockResponse;
         await page.locator('#startBtn').click();
         const cdp = await context.newCDPSession(page);
         await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
