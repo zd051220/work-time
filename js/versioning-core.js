@@ -7,15 +7,36 @@
    (typeof self !== 'undefined' ? self : this), function () {
   'use strict';
 
-  var SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
-  var LEGACY_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+  var SEMVER_RE = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$/;
+  var LEGACY_RE = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/;
 
+  // Compare non-negative decimal strings without Number/BigInt precision loss.
+  function compareDecimalStrings(a, b) {
+    a = String(a);
+    b = String(b);
+    if (a.length !== b.length) return a.length < b.length ? -1 : 1;
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+  function incrementDecimalString(value) {
+    if (typeof value !== 'string' || !/^(0|[1-9]\\d*)$/.test(value)) {
+      throw new TypeError('版本数字必须是非负规范十进制字符串');
+    }
+    var digits = value.split('');
+    for (var i = digits.length - 1; i >= 0; i--) {
+      if (digits[i] !== '9') {
+        digits[i] = String(Number(digits[i]) + 1);
+        return digits.join('');
+      }
+      digits[i] = '0';
+    }
+    return '1' + digits.join('');
+  }
   function parseSemVer(input) {
     if (typeof input !== 'string') throw new TypeError('版本号必须是字符串');
     var m = SEMVER_RE.exec(input);
     if (!m) throw new Error('无效的 SemVer 版本号：' + input);
     return {
-      major: BigInt(m[1]), minor: BigInt(m[2]), patch: BigInt(m[3]),
+      major: m[1], minor: m[2], patch: m[3],
       prerelease: m[4] ? m[4].split('.') : [],
       build: m[5] ? m[5].split('.') : [],
       raw: input
@@ -27,11 +48,8 @@
     return Object.assign({}, parseSemVer(input), {legacy:false, sourceVersion:input});
   }
   function compareIdentifiers(a, b) {
-    var an = /^\d+$/.test(a), bn = /^\d+$/.test(b);
-    if (an && bn) {
-      var x = BigInt(a), y = BigInt(b);
-      return x < y ? -1 : x > y ? 1 : 0;
-    }
+    var an = /^\\d+$/.test(a), bn = /^\\d+$/.test(b);
+    if (an && bn) return compareDecimalStrings(a, b);
     if (an !== bn) return an ? -1 : 1;
     return a < b ? -1 : a > b ? 1 : 0;
   }
@@ -41,7 +59,8 @@
     var keys = ['major', 'minor', 'patch'];
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
-      if (a[key] !== b[key]) return a[key] < b[key] ? -1 : 1;
+      var coreComparison = compareDecimalStrings(a[key], b[key]);
+      if (coreComparison) return coreComparison;
     }
     var ap = a.prerelease || [], bp = b.prerelease || [];
     if (!ap.length && !bp.length) return 0;
@@ -68,7 +87,7 @@
     } else {
       if (config.url !== config.url.trim()) errors.push('url 不能包含首尾空白字符');
       var url = config.url;
-      if (url.charAt(0) === '/' || url.indexOf('\\') !== -1 ||
+      if (url.charAt(0) === '/' || url.indexOf('\\\\') !== -1 ||
           url.indexOf('?') !== -1 || url.indexOf('#') !== -1 ||
           /^[A-Za-z][A-Za-z0-9+.-]*:/.test(url) ||
           url.split('/').some(function (p) { return p === '..' || p === '.' || !p; })) {
@@ -81,9 +100,15 @@
     return {
       valid:errors.length === 0,
       errors:errors,
-      normalizedVersion:parsed ? parsed.major.toString()+'.'+parsed.minor.toString()+'.'+parsed.patch.toString()+(parsed.prerelease.length?'-'+parsed.prerelease.join('.'):'') : null,
+      normalizedVersion:parsed ? parsed.major+'.'+parsed.minor+'.'+parsed.patch+(parsed.prerelease.length?'-'+parsed.prerelease.join('.'):'') : null,
       legacyVersion:Boolean(parsed && parsed.legacy)
     };
   }
-  return Object.freeze({parseSemVer:parseSemVer,parseRuntimeVersion:parseRuntimeVersion,compareSemVer:compareSemVer,validateVersionConfig:validateVersionConfig});
+  return Object.freeze({
+    parseSemVer:parseSemVer,
+    parseRuntimeVersion:parseRuntimeVersion,
+    compareSemVer:compareSemVer,
+    incrementDecimalString:incrementDecimalString,
+    validateVersionConfig:validateVersionConfig
+  });
 });
