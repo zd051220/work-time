@@ -147,7 +147,7 @@ body.game-playing .tabbar{display:none!important}
 .cat-art{display:block;width:108px;height:88px;overflow:visible;transform-origin:50% 80%}.cat-art g,.cat-art #catHead{transform-box:fill-box}
 .cat:focus-visible{outline:3px solid #d99b35;outline-offset:3px;border-radius:18px}
 .cat.cat-idle .cat-art{animation:kitten-idle 2.8s ease-in-out infinite}
-.cat.cat-idle #catTail,.cat.cat-paid #catTail{transform-origin:38px 70px;animation:kitten-tail 1.4s ease-in-out infinite}
+.cat.cat-idle #catTail,.cat.cat-paid #catTail{transform-origin:38px 70px;animation:kitten-tail 1.4s ease-in-out infinite}.cat.cat-idle #closedEyes{animation:kitten-blink 3.2s infinite}
 .cat.cat-work .cat-art{animation:kitten-carry .65s ease-in-out infinite}
 .cat.cat-work #goldProp{opacity:1;animation:kitten-gold .65s ease-in-out infinite;transform-origin:122px 93px}
 .cat.cat-paid .cat-art{animation:kitten-happy 1.8s ease-in-out infinite}
@@ -161,7 +161,7 @@ body.game-playing .tabbar{display:none!important}
 .cat.cat-walk .cat-art{animation:kitten-walk .45s ease-in-out infinite}
 .cat.cat-walk #legBack{transform-origin:54px 89px;animation:kitten-leg .45s ease-in-out infinite alternate}
 .cat.cat-walk #legFront{transform-origin:88px 89px;animation:kitten-leg .45s ease-in-out infinite alternate-reverse}
-@keyframes kitten-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes kitten-blink{0%,91%,100%{opacity:0}94%,97%{opacity:1}}\n@keyframes kitten-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes kitten-tail{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(12deg)}}
 @keyframes kitten-carry{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
 @keyframes kitten-gold{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-4px) rotate(5deg)}}
