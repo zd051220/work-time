@@ -5,9 +5,19 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const html = fs.readFileSync('v5.5.html', 'utf8');
 
-test('four distinct kitten drawings and real bullion props exist', () => {
+test('four illustrated PNG characters and a separate bullion prop are wired in', () => {
+  const assets = [
+    'assets/cats/soft-bell/idle.png',
+    'assets/cats/sport-headband/idle.png',
+    'assets/cats/sleepy-nightcap/idle.png',
+    'assets/cats/leader-crown/idle.png'
+  ];
   for (let i = 0; i < 4; i++) assert.ok(html.includes('class="cat-art cat-art-' + i + '"'));
-  assert.equal((html.match(/class="gold-bar"/g) || []).length, 4);
+  for (const asset of assets) {
+    assert.ok(html.includes('src="' + asset + '"'), asset + ' must be referenced');
+    assert.ok(fs.existsSync(asset), asset + ' must exist');
+  }
+  assert.equal((html.match(/class="gold-bar"/g) || []).length, 1);
   assert.match(html, /GOLD/);
 });
 
