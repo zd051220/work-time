@@ -114,7 +114,7 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
     c.wall=T0+3600000;T.resolveReview(0);
     check('作废异常区间后整段工时为零',T.state().work,0);
     check('作废后从当前时刻重新建立计时基准',T.state().lastAt,c.wall);
-    T.accrue(c.wall+60000,'action');
+    c.wall+=60000;c.mono+=60000;T.accrue(c.wall,'action');
     check('作废后新计时正常累计',T.state().work,60000);
   }
   {
