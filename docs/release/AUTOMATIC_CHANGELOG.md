@@ -68,6 +68,6 @@ node --test .github/scripts/versioning.test.cjs
 
 `docs/release/e2e-test/CHANGELOG.test.md`
 
-生成脚本执行期间，主仓库和 fixture checkout 均设置 `persist-credentials: false`，fixture checkout 不接收 App token；App token 在脚本执行、文件暂存和提交完成后才创建。令牌只在独立的 push 步骤和创建/更新 PR 步骤按步骤提供；push 使用一次性 Git 命令级认证，不写入 `.git/config`。等待原生检查时使用只读 `GITHUB_TOKEN`。随后更新 `automation/changelog-e2e-test` 分支，并创建或更新目标为 `main` 的草稿测试 PR。工作流会检查 PR 的 head/base 分支，并在 PR 已被标记为 Ready 时将其恢复为 Draft；无法确认 Draft 状态就失败关闭。App token 触发的 `pull_request` 事件会启动默认分支中的 `code-audit.yml`，审计结果属于测试 PR 的提交；E2E job 会等待该 PR 检查完成。正式 CHANGELOG 机器人 PR 使用相同机制，审计也由对应 PR 的原生检查完成。
+生成过程与写入过程分成两个独立 job。生成 job 中主仓库和 fixture checkout 均设置 `persist-credentials: false`，不创建或接收 GitHub App token；只上传经过目录、符号链接和大小检查的单个测试文件。写入 job 在全新 runner 中下载并再次验证该文件，提交前仍不创建 App token。令牌只在独立的 push 步骤和创建/更新 PR 步骤按步骤提供；push 使用一次性 Git 命令级认证，不写入 `.git/config`。等待原生检查时使用只读 `GITHUB_TOKEN`。随后更新 `automation/changelog-e2e-test` 分支，并创建或更新目标为 `main` 的草稿测试 PR。工作流会检查 PR 的 head/base 分支，并在 PR 已被标记为 Ready 时将其恢复为 Draft；无法确认 Draft 状态就失败关闭。App token 触发的 `pull_request` 事件会启动默认分支中的 `code-audit.yml`，审计结果属于测试 PR 的提交；E2E job 会等待该 PR 检查完成。正式 CHANGELOG 机器人 PR 使用相同机制，审计也由对应 PR 的原生检查完成。
 
 此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。自动化 job 的内置 `GITHUB_TOKEN` 仅为只读；写入机器人分支和 PR 的 GitHub App token 不具备 `actions: write`。注意：`contents: write` 和 `pull_requests: write` 是仓库级权限，并非分支级限权；固定测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
