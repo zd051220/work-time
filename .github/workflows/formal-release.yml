@@ -64,6 +64,22 @@ jobs:
         run: |
           set -euo pipefail
 
+          case "$CHANNEL" in
+            stable|prerelease) ;;
+            *)
+              echo "发布渠道无效：$CHANNEL"
+              exit 1
+              ;;
+          esac
+
+          case "${{ inputs.mode }}" in
+            dry-run|publish) ;;
+            *)
+              echo "发布模式无效：${{ inputs.mode }}"
+              exit 1
+              ;;
+          esac
+
           # SemVer numeric identifiers must not contain leading zeroes.
           # This project intentionally allows only alpha.N, beta.N, and rc.N prereleases.
           VERSION_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((alpha|beta|rc)\.(0|[1-9][0-9]*)))?$'
@@ -81,7 +97,11 @@ jobs:
           fi
 
           TAG="v$VERSION"
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+          if ! TAG_REFS=$(git ls-remote --tags origin "refs/tags/$TAG"); then
+            echo "无法确认远程版本标签状态，拒绝继续发布：$TAG"
+            exit 1
+          fi
+          if [[ -n "$TAG_REFS" ]]; then
             echo "版本标签已存在：$TAG"
             exit 1
           fi
