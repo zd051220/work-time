@@ -533,15 +533,23 @@ function onHide(){
   var wall=Date.now(),mono=performance.now();
   if(isWriter&&data.session&&!data.session.pendingReview){
     var preDrift=Math.abs((wall-lastWall)-(mono-lastMono));
-    if(preDrift>CLOCK_DRIFT_LIMIT){
+    var sample=serverClockSample,serverAt=0,serverOffset=0,serverTolerance=CLOCK_DRIFT_LIMIT;
+    if(sample&&mono-sample.monoAt>=0&&mono-sample.monoAt<=120000){
+      serverAt=sample.serverAt+(mono-sample.monoAt);
+      serverOffset=wall-serverAt;
+      serverTolerance=Math.max(CLOCK_DRIFT_LIMIT,Number(sample.rtt||0)+1500);
+    }
+    if(sample&&serverAt>0&&serverOffset>serverTolerance){
+      var from=Number(data.session.lastAt)||wall;
+      data.session.pendingReview={from:from,to:wall,delta:Math.max(0,wall-from),mode:data.session.mode,reason:'本机墙钟明显快于可信服务器时间，疑似系统时间被调快',kind:'clock'};
+      data.session.lastAt=wall;jumpWarn='检测到系统时间快于服务器，已暂停计时，请核对。';save();
+    }else if(preDrift>CLOCK_DRIFT_LIMIT){
       var from=Number(data.session.lastAt)||wall;
       data.session.pendingReview={from:from,to:wall,delta:Math.max(0,wall-from),mode:data.session.mode,reason:'切出前检测到系统时间与单调时钟不一致，可能发生了调表',kind:'clock'};
       data.session.lastAt=wall;jumpWarn='检测到系统时间异常，已暂停计时，请核对后继续。';save();
     }else{
       accrue(wall,'hide');
       if(data.session&&!data.session.pendingReview){
-        var sample=serverClockSample,serverAt=0;
-        if(sample&&mono-sample.monoAt>=0&&mono-sample.monoAt<=120000)serverAt=sample.serverAt+(mono-sample.monoAt);
         lifecycleSnapshot={wall:wall,mono:mono,serverAt:serverAt,preDrift:preDrift};
         data.session.clockSnapshot={wall:wall,serverAt:serverAt,preDrift:preDrift};
         save();
@@ -591,6 +599,10 @@ function onShow(){
   return requestServerTime().then(function(server){
     var serverDelta=server.serverAt-Number(snap.serverAt);
     var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
+    if(now-server.serverAt>tolerance){
+      finishReview('本机墙钟当前时间明显快于可信服务器时间，疑似系统时间被调快','clock');
+      return;
+    }
     var verdict=classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance);
     if(verdict==='auto-server')finishAuto();
     else if(verdict==='review-fast')finishReview('墙钟流逝时间明显快于 Supabase 服务器时间，疑似人为调快系统时钟','clock');

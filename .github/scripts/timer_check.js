@@ -43,7 +43,7 @@ function makeHarness() {
     'var save=function(){clock.saves++},draw=function(){clock.draws++};'+
     'var fetch=function(url){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));var noDate=clock.healthNoDate&&String(url).indexOf(\'auth/v1/health\')>=0;return Promise.resolve({ok:true,headers:{get:function(name){return !noDate&&String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
   const runner = new Function('performance','Date','data','clock','RealDate',
-    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},hide:onHide,show:onShow,accrue:accrue,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
+    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
   const T = runner(perf,FakeDate,data,clock,RealDate);
   data.session = {sid:'test-session',date:'2026-11-24',started:T0,lastAt:T0,start:'10:00',wage:200,hours:8,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,clockSnapshot:null,days:{'2026-11-24':{work:0,paid:0,unpaid:0}}};
   T.setSample();
@@ -77,6 +77,11 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
     const T=makeHarness(),c=T.clock;c.wall+=1800000;T.hide();
     check('切出前调快时立即拦截',T.state().pending,true);
     check('切出前调表不提前计入',T.state().work,0);
+  }
+  {
+    const T=makeHarness(),c=T.clock;c.wall+=1800000;T.resetTickBaseline();T.hide();
+    check('页面启动后墙钟绝对值快于服务器时拦截',T.state().pending,true);
+    check('绝对墙钟偏差不提前计入',T.state().work,0);
   }
   {
     const T=makeHarness(),c=T.clock;c.wall+=600000;c.mono+=1000;T.accrue(c.wall,'tick');
