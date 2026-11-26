@@ -11,7 +11,7 @@ test('2D kitten uses a drawn SVG character rather than an emoji placeholder', ()
 });
 test('kitten has idle, walk, carry, happy, sleep and pet animation states', () => {
   for (const name of ['cat-idle','cat-walk','cat-work','cat-paid','cat-unpaid','cat-petted']) assert.ok(html.includes('.'+name));
-  for (const name of ['kitten-idle','kitten-tail','kitten-carry','kitten-gold','kitten-happy','kitten-sleep','kitten-pet','kitten-walk','kitten-leg']) assert.ok(html.includes('@keyframes '+name));
+  for (const name of ['kitten-blink','kitten-idle','kitten-tail','kitten-carry','kitten-gold','kitten-happy','kitten-sleep','kitten-pet','kitten-walk','kitten-leg']) assert.ok(html.includes('@keyframes '+name));
 });
 test('kitten remains touch and keyboard accessible and fits narrow phones', () => {
   assert.match(html, /id="cat" role="button" tabindex="0" aria-label="摸摸小猫"/);
