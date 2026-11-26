@@ -54,3 +54,16 @@ node --test .github/scripts/versioning.test.cjs
 ```
 
 当前阶段仅自动维护未发布区的 PR 变更摘要，不自动决定发布日期、版本号或正式发布状态。
+
+## 隔离端到端测试模式
+
+维护者审核并合并测试模式代码后，可在 GitHub Actions 中手动运行 `automatic-changelog`，并显式勾选 `test_mode=true`。默认值为 `false`；普通手动运行不会执行测试 job，正式更新日志 job 仍只响应已合并到 `main` 的 PR。
+
+测试模式使用固定模拟数据（一个带 `release:patch` 标签的 PR 和一个无标签 PR），调用同一更新日志生成器，并且只允许写入：
+
+`docs/release/e2e-test/CHANGELOG.test.md`
+
+随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），并通过 `workflow_dispatch` 显式运行 `code-audit.yml`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
+
+此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 的写权限仅限于创建专用测试分支、草稿 PR 和派发审计所需的 `contents: write`、`pull-requests: write`、`actions: write`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
+
