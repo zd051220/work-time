@@ -62,12 +62,12 @@ node --test .github/scripts/versioning.test.cjs
 
 ## 隔离端到端测试模式
 
-维护者审核并合并测试模式代码后，可在 GitHub Actions 中手动运行 `automatic-changelog`，必须选择 `main` 分支并显式勾选 `test_mode=true`。测试 job 同时校验 `workflow_dispatch`、`github.ref == 'refs/heads/main'` 和布尔输入；默认值为 `false`。从其他分支触发或未勾选测试开关均不会执行测试 job。正式更新日志 job 仍只响应已合并到 `main` 的 PR。
+测试模式支持两种受控入口：维护者可在 GitHub Actions 中手动运行 `automatic-changelog`，选择 `main` 并显式勾选 `test_mode=true`；开发期间也可仅在 `feat/changelog-e2e-test-mode` 分支修改 `.github/workflows/automatic-changelog.yml`，且提交信息必须包含 `[run-changelog-e2e]`。push 入口不会响应其他分支或其他文件路径。正式更新日志 job 仍只响应已合并到 `main` 的 PR。
 
 测试模式使用固定模拟数据（一个带 `release:patch` 标签的 PR 和一个无标签 PR），调用同一更新日志生成器，并且只允许写入：
 
 `docs/release/e2e-test/CHANGELOG.test.md`
 
-随后通过专用 GitHub App token 更新 `automation/changelog-e2e-test` 分支，并创建或更新目标为 `main` 的草稿测试 PR。工作流会检查 PR 的 head/base 分支，并在 PR 已被标记为 Ready 时将其恢复为 Draft；无法确认 Draft 状态就失败关闭。App token 触发的 `pull_request` 事件会启动默认分支中的 `code-audit.yml`，审计结果属于测试 PR 的提交；E2E job 会等待该 PR 检查完成。正式 CHANGELOG 机器人 PR 使用相同机制，审计也由对应 PR 的原生检查完成。
+生成脚本执行期间，主仓库和 fixture checkout 均设置 `persist-credentials: false`，fixture checkout 不接收 App token；App token 在脚本执行、文件暂存和提交完成后才创建。令牌只在独立的 push 步骤和创建/更新 PR 步骤按步骤提供；push 使用一次性 Git 命令级认证，不写入 `.git/config`。等待原生检查时使用只读 `GITHUB_TOKEN`。随后更新 `automation/changelog-e2e-test` 分支，并创建或更新目标为 `main` 的草稿测试 PR。工作流会检查 PR 的 head/base 分支，并在 PR 已被标记为 Ready 时将其恢复为 Draft；无法确认 Draft 状态就失败关闭。App token 触发的 `pull_request` 事件会启动默认分支中的 `code-audit.yml`，审计结果属于测试 PR 的提交；E2E job 会等待该 PR 检查完成。正式 CHANGELOG 机器人 PR 使用相同机制，审计也由对应 PR 的原生检查完成。
 
 此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。自动化 job 的内置 `GITHUB_TOKEN` 仅为只读；写入机器人分支和 PR 的 GitHub App token 不具备 `actions: write`。注意：`contents: write` 和 `pull_requests: write` 是仓库级权限，并非分支级限权；固定测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
