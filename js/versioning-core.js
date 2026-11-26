@@ -7,8 +7,8 @@
    (typeof self !== 'undefined' ? self : this), function () {
   'use strict';
 
-  var SEMVER_RE = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$/;
-  var LEGACY_RE = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/;
+  var SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+  var LEGACY_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
   // Compare non-negative decimal strings without Number/BigInt precision loss.
   function compareDecimalStrings(a, b) {
@@ -18,7 +18,7 @@
     return a < b ? -1 : a > b ? 1 : 0;
   }
   function incrementDecimalString(value) {
-    if (typeof value !== 'string' || !/^(0|[1-9]\\d*)$/.test(value)) {
+    if (typeof value !== 'string' || !/^(0|[1-9]\d*)$/.test(value)) {
       throw new TypeError('版本数字必须是非负规范十进制字符串');
     }
     var digits = value.split('');
@@ -48,7 +48,7 @@
     return Object.assign({}, parseSemVer(input), {legacy:false, sourceVersion:input});
   }
   function compareIdentifiers(a, b) {
-    var an = /^\\d+$/.test(a), bn = /^\\d+$/.test(b);
+    var an = /^\d+$/.test(a), bn = /^\d+$/.test(b);
     if (an && bn) return compareDecimalStrings(a, b);
     if (an !== bn) return an ? -1 : 1;
     return a < b ? -1 : a > b ? 1 : 0;
@@ -87,7 +87,7 @@
     } else {
       if (config.url !== config.url.trim()) errors.push('url 不能包含首尾空白字符');
       var url = config.url;
-      if (url.charAt(0) === '/' || url.indexOf('\\\\') !== -1 ||
+      if (url.charAt(0) === '/' || url.indexOf('\\') !== -1 ||
           url.indexOf('?') !== -1 || url.indexOf('#') !== -1 ||
           /^[A-Za-z][A-Za-z0-9+.-]*:/.test(url) ||
           url.split('/').some(function (p) { return p === '..' || p === '.' || !p; })) {
