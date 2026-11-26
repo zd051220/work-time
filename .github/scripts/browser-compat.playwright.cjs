@@ -117,11 +117,11 @@ async function runEngine(name, type, origin) {
           const realNow = Date.now.bind(Date);
           const realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
-          Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-          Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+          window.__testVisibility = { hidden: false };
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
           window.__setTestVisibility = hidden => {
-            Object.defineProperty(document, 'hidden', { configurable: true, value: !!hidden });
-            Object.defineProperty(document, 'visibilityState', { configurable: true, value: hidden ? 'hidden' : 'visible' });
+            window.__testVisibility.hidden = !!hidden;
             document.dispatchEvent(new Event('visibilitychange'));
           };
           Date.now = () => realNow() + window.__testClock.wall;
@@ -171,11 +171,11 @@ async function runEngine(name, type, origin) {
           const realNow = Date.now.bind(Date);
           const realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
-          Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-          Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+          window.__testVisibility = { hidden: false };
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
           window.__setTestVisibility = hidden => {
-            Object.defineProperty(document, 'hidden', { configurable: true, value: !!hidden });
-            Object.defineProperty(document, 'visibilityState', { configurable: true, value: hidden ? 'hidden' : 'visible' });
+            window.__testVisibility.hidden = !!hidden;
             document.dispatchEvent(new Event('visibilitychange'));
           };
           Date.now = () => realNow() + window.__testClock.wall;
