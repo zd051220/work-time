@@ -16,6 +16,23 @@ function cleanMarkdown(value, limit=180) {
     .replace(/\s+/g, ' ').trim().slice(0, limit);
 }
 
+// Release notes should use one concise summary, not flatten every PR template section.
+function extractReleaseSummary(body) {
+  if (typeof body !== 'string' || !body.trim()) return '';
+  const lines = body.replace(/<!--[\s\S]*?-->/g, '').replace(/\r\n?/g, '\n').split('\n');
+  const paragraph = [];
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      if (paragraph.length) break;
+      continue;
+    }
+    if (/^#{1,6}\s/.test(line) || /^[-*_]{3,}$/.test(line) || /^>/.test(line)) continue;
+    paragraph.push(line);
+  }
+  return cleanMarkdown(paragraph.join(' '), 180);
+}
+
 function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('仅允许稳定版 SemVer');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('发布日期格式无效');
@@ -23,7 +40,7 @@ function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('仓库名称无效');
   const safeTitle = cleanMarkdown(title, 140);
   if (!safeTitle) throw new Error('PR 标题为空');
-  const summary = cleanMarkdown(body, 180);
+  const summary = extractReleaseSummary(body);
   const line = '- ' + safeTitle + (summary && summary.toLowerCase() !== safeTitle.toLowerCase() ? ' — ' + summary : '') +
     ' ([#' + number + '](https://github.com/' + repository + '/pull/' + number + '))';
   return '## [' + version + '] - ' + date + '\n\n### 更新内容\n' + line + '\n';
@@ -35,7 +52,7 @@ function insertReleaseSection(changelog, section) {
   if (!match) throw new Error('无法定位未发布章节');
   const nextHeading = changelog.indexOf('\n## [', match.index + match[0].length - 1);
   if (nextHeading < 0) throw new Error('CHANGELOG 缺少历史版本章节');
-  if (new RegExp('^## \\[' + section.match(/^## \[([^\]]+)\]/)[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]', 'm').test(changelog)) {
+  if (new RegExp('^## \\[' + section.match(/^## \[([^\]]+)\]/)[1].replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&') + '\\]', 'm').test(changelog)) {
     throw new Error('该版本的 CHANGELOG 章节已存在');
   }
   return changelog.slice(0, nextHeading + 1) + section + '\n' + changelog.slice(nextHeading + 1);
@@ -71,4 +88,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = {cleanMarkdown,makeReleaseSection,insertReleaseSection,prepare};
+module.exports = {cleanMarkdown,extractReleaseSummary,makeReleaseSection,insertReleaseSection,prepare};
