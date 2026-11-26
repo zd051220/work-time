@@ -30,8 +30,8 @@ jobs:
           node-version: 20
       - name: Generate Chinese changelog
         env:
-          GITHUB_TOKEN: \${{ github.token }}
-          GITHUB_REPOSITORY: \${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/changelog.cjs CHANGELOG.md
       - name: Commit generated changelog
         run: |
