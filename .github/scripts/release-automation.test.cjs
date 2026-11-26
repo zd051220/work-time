@@ -7,9 +7,9 @@ const {makeReleaseSection,insertReleaseSection,prepare} = require('./release-aut
 
 const releaseWorkflow = fs.readFileSync(path.join(__dirname,'../workflows/automatic-formal-release.yml'),'utf8');
 // Keep the verified release-notes path connected from the validation step output to artifact upload.
-assert.match(releaseWorkflow,/NOTES="\\$RUNNER_TEMP\\/release-notes\\.md"/);
-assert.match(releaseWorkflow,/echo "notes=\\$NOTES" >> "\\$GITHUB_OUTPUT"/);
-assert.match(releaseWorkflow,/path:\\s*\\$\\{\\{\\s*steps\\.release\\.outputs\\.notes\\s*\\}\\}/);
+assert.ok(releaseWorkflow.includes('NOTES="$RUNNER_TEMP/release-notes.md"'));
+assert.ok(releaseWorkflow.includes('echo "notes=$NOTES" >> "$GITHUB_OUTPUT"'));
+assert.ok(releaseWorkflow.includes('path: ${{ steps.release.outputs.notes }}'));
 
 const section = makeReleaseSection({
   version:'5.6.0',date:'2026-11-27',title:'feat: add farming',
