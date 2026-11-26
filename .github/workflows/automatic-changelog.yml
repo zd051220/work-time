@@ -42,7 +42,7 @@ jobs:
           repositories: work-time
           permission-contents: write
           permission-pull-requests: write
-          permission-checks: read
+
       - name: Checkout main
         uses: actions/checkout@v4
         with:
@@ -217,7 +217,7 @@ jobs:
           repositories: work-time
           permission-contents: write
           permission-pull-requests: write
-          permission-checks: read
+
       - name: Push dedicated test branch with step-scoped credentials
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
