@@ -117,6 +117,13 @@ async function runEngine(name, type, origin) {
           const realNow = Date.now.bind(Date);
           const realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
+          window.__testVisibility = { hidden: false };
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
+          window.__setTestVisibility = hidden => {
+            window.__testVisibility.hidden = !!hidden;
+            document.dispatchEvent(new Event('visibilitychange'));
+          };
           Date.now = () => realNow() + window.__testClock.wall;
           Object.defineProperty(performance, 'now', {
             configurable: true,
@@ -141,14 +148,12 @@ async function runEngine(name, type, origin) {
         await page.goto(origin + '/v5.5.html');
         await initialClockResponse;
         await page.locator('#startBtn').click();
-        const otherPage = await context.newPage();
-        await otherPage.goto(origin + '/index.html');
-        await otherPage.bringToFront();
+        await page.evaluate(() => window.__setTestVisibility(true));
         await page.waitForFunction(() => document.hidden === true);
         const fiveHours = 5 * 60 * 60 * 1000;
         serverOffset = fiveHours;
         await page.evaluate(ms => { window.__testClock.wall += ms; }, fiveHours);
-        await page.bringToFront();
+        await page.evaluate(() => window.__setTestVisibility(false));
         await page.waitForFunction(() => document.hidden === false);
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
@@ -166,6 +171,13 @@ async function runEngine(name, type, origin) {
           const realNow = Date.now.bind(Date);
           const realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
+          window.__testVisibility = { hidden: false };
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
+          window.__setTestVisibility = hidden => {
+            window.__testVisibility.hidden = !!hidden;
+            document.dispatchEvent(new Event('visibilitychange'));
+          };
           Date.now = () => realNow() + window.__testClock.wall;
           Object.defineProperty(performance, 'now', {
             configurable: true,
@@ -190,14 +202,12 @@ async function runEngine(name, type, origin) {
         await page.goto(origin + '/v5.5.html');
         await initialClockResponse;
         await page.locator('#startBtn').click();
-        const otherPage = await context.newPage();
-        await otherPage.goto(origin + '/index.html');
-        await otherPage.bringToFront();
+        await page.evaluate(() => window.__setTestVisibility(true));
         await page.waitForFunction(() => document.hidden === true);
         const fiveHours = 5 * 60 * 60 * 1000;
         serverOffset = fiveHours;
         await page.evaluate(ms => { window.__testClock.wall += ms + 30 * 60 * 1000; }, fiveHours);
-        await page.bringToFront();
+        await page.evaluate(() => window.__setTestVisibility(false));
         await page.waitForFunction(() => document.hidden === false);
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
