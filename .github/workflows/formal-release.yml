@@ -117,10 +117,12 @@ jobs:
 
           for attempt in $(seq 1 30); do
             gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=100" > "$RUNNER_TEMP/pages-runs.json"
-            RUN=$(jq -r --arg sha "$GITHUB_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .name == "pages build and deployment")] | first | if . == null then empty else [.status, (.conclusion // ""), .html_url] | @tsv end' "$RUNNER_TEMP/pages-runs.json")
+            MATCH=$(jq -c --arg sha "$GITHUB_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .name == "pages build and deployment")] | first // empty' "$RUNNER_TEMP/pages-runs.json")
 
-            if [[ -n "$RUN" ]]; then
-              IFS=
+            if [[ -n "$MATCH" ]]; then
+              STATUS=$(jq -r '.status' <<< "$MATCH")
+              CONCLUSION=$(jq -r '.conclusion // ""' <<< "$MATCH")
+              URL=$(jq -r '.html_url' <<< "$MATCH")
               echo "Pages 状态：$STATUS / $CONCLUSION"
               if [[ "$STATUS" == "completed" && "$CONCLUSION" == "success" ]]; then
                 echo "网页部署已成功：$URL"
