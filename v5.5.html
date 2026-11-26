@@ -502,13 +502,20 @@ function captureServerClock(response,sentMono,receivedMono){
 }
 function requestServerTime(){
   if(serverClockPromise)return serverClockPromise;
+  function readClockResponse(r,sentMono){
+    var receivedMono=performance.now();
+    if(!r.ok)throw new Error('服务器时间请求失败');
+    if(!captureServerClock(r,sentMono,receivedMono))throw new Error('响应没有可读取的服务器时间戳');
+    return {serverAt:serverClockSample.serverAt,rtt:serverClockSample.rtt};
+  }
   var sentMono=performance.now();
   serverClockPromise=fetch(SB+'/auth/v1/health',{method:'GET',headers:{apikey:SBK},cache:'no-store'})
-    .then(function(r){
-      var receivedMono=performance.now();
-      if(!r.ok)throw new Error('服务器时间请求失败');
-      if(!captureServerClock(r,sentMono,receivedMono))throw new Error('服务器未返回可验证的时间戳');
-      return {serverAt:serverClockSample.serverAt,rtt:serverClockSample.rtt};
+    .then(function(r){return readClockResponse(r,sentMono)})
+    .catch(function(){
+      /* Supabase 未暴露 Date 响应头时，回退到同源静态资源的 HTTP Date；断网时两路都会失败。 */
+      var fallbackMono=performance.now();
+      return fetch('version.json?clock='+Date.now(),{method:'GET',cache:'no-store',credentials:'same-origin'})
+        .then(function(r){return readClockResponse(r,fallbackMono)});
     })
     .finally(function(){serverClockPromise=null});
   return serverClockPromise;

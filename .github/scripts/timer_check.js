@@ -29,7 +29,7 @@ const body = ['pad2','day','dayBucket','addSeg','accrue','captureServerClock','r
 const RealDate = Date;
 const T0 = RealDate.parse('2026-11-24T10:00:00+08:00');
 function makeHarness() {
-  const clock = {wall:T0,mono:0,serverNow:T0,offline:false,fetches:0,saves:0,draws:0};
+  const clock = {wall:T0,mono:0,serverNow:T0,offline:false,healthNoDate:false,fetches:0,saves:0,draws:0};
   const FakeDate = class extends RealDate {
     constructor(...args) { if (!args.length) super(clock.wall); else super(...args); }
     static now() { return clock.wall; }
@@ -41,7 +41,7 @@ function makeHarness() {
     "var SB='https://example.supabase.co',SBK='test-key',isWriter=true,visible=true;"+
     'var lastWall=Date.now(),lastMono=performance.now(),jumpWarn=\'\';'+
     'var save=function(){clock.saves++},draw=function(){clock.draws++};'+
-    'var fetch=function(){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));return Promise.resolve({ok:true,headers:{get:function(name){return String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
+    'var fetch=function(url){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));var noDate=clock.healthNoDate&&String(url).indexOf(\'auth/v1/health\')>=0;return Promise.resolve({ok:true,headers:{get:function(name){return !noDate&&String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
   const runner = new Function('performance','Date','data','clock','RealDate',
     consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},hide:onHide,show:onShow,accrue:accrue,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
   const T = runner(perf,FakeDate,data,clock,RealDate);
@@ -67,6 +67,12 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
   check('双钟一致时不请求服务器',dual.fetches,0);
   await resumeCase('墙钟比服务器快 30 分钟',5*3600000+1800000,0,5*3600000,true,false);
   await resumeCase('双钟不一致且断网',3600000,0,3600000,true,true);
+  {
+    const T=makeHarness(),c=T.clock;T.hide();c.wall+=2*3600000;c.serverNow+=2*3600000;c.healthNoDate=true;await T.show();
+    check('Supabase 未暴露 Date 时回退同源服务器时间',T.state().pending,false);
+    check('同源服务器确认后全额累计',T.state().work,2*3600000);
+    check('同源服务器回退至少请求两次',T.state().fetches>=2,true);
+  }
   {
     const T=makeHarness(),c=T.clock;c.wall+=1800000;T.hide();
     check('切出前调快时立即拦截',T.state().pending,true);
