@@ -181,6 +181,7 @@ async function runEngine(name, type, origin) {
       const page = await context.newPage();
       await page.route('**/version.json*', route => route.abort());
       await page.goto(origin + '/v5.5.html');
+      await dismissFirstRunNotice(page);
       await page.locator('[data-t="tab-game"]').click();
       await page.locator('#gameStartBtn').click();
       const iframe = page.locator('#game-play-frame');
