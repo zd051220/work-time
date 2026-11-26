@@ -4,7 +4,8 @@ const remarkParse = require('remark-parse');
 const processor = unified().use(remarkParse);
 function inlineText(node) {
   if (!node || typeof node !== 'object') return '';
-  if (node.type === 'text' || node.type === 'inlineCode') return node.value || '';
+  if (node.type === 'text') return node.value || '';
+  if (node.type === 'inlineCode') return '';
   if (node.type === 'image') return node.alt || '';
   if (['link','linkReference','emphasis','strong','delete','paragraph','heading'].includes(node.type))
     return (node.children || []).map(inlineText).join('');

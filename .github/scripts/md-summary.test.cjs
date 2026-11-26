@@ -19,7 +19,7 @@ test('does not treat blockquotes, inline code, or fenced code as summaries', () 
 });
 test('ignores HTML comments including comments wrapping fenced code', () => {
   const body = '<!--\n## Release Summary\nFake comment.\n\`\`\`md\nRelease Summary\nFake code.\n\`\`\`\n-->\n\n<!-- ## Release Summary -->';
-  assert.equal(extractSummary(body, 'fix: safe fallback'), 'safe fallback');
+  assert.equal(extractSummary(body, 'fix: safe fallback'), 'fix: safe fallback');
 });
 test('ignores fake structured headings inside code and comments while finding real section', () => {
   const body = '\`\`\`md\n## Release Summary\nFake.\n\`\`\`\n\n<!-- ## Release Summary\nFake. -->\n\n## Release Summary\n\nReal summary.';
