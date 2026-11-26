@@ -91,7 +91,7 @@ test('点击立即更新跳转到经过验证的站内页面', async () => {
   await settle();
   ids.updateNow.click();
   assert.equal(assigned.length, 1);
-  assert.match(assigned[0], /^https:\/\/example\.test\/work-time\/v5\.6\.0\.html\?update=/);
+  assert.match(assigned[0], /^v5\.6\.0\.html\?update=/);
   assert.equal(ids.updateNow.disabled, true);
 });
 
@@ -159,6 +159,6 @@ test('首页共享核心加载失败时回退进入 v5.5', async () => {
   vm.runInNewContext(inlineScript(indexHtml,'var done=false'), context);
   await settle();
   assert.equal(cleared, true);
-  assert.deepEqual(assigned, ['v5.5.html']);
+  assert.deepEqual(assigned, ['https://example.test/work-time/v5.5.html?release=5.5']);
   assert.equal(typeof timerCallback, 'function');
 });
