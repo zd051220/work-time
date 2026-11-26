@@ -96,17 +96,14 @@ jobs:
             echo "Updated existing changelog PR #${existing_pr}."
           fi
 
-  isolated-e2e-test:
+  isolated-e2e-generate:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true) ||
       (github.event_name == 'push' && github.ref == 'refs/heads/feat/changelog-e2e-test-mode' && contains(github.event.head_commit.message, '[run-changelog-e2e]'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      checks: read
     steps:
-      # Create no write-capable credential until the fixture code has finished.
       - name: Checkout main without persisted credentials
         uses: actions/checkout@v4
         with:
@@ -124,6 +121,74 @@ jobs:
           node-version: 20
       - name: Generate isolated test CHANGELOG
         run: node e2e-source/.github/scripts/changelog-e2e-test.cjs
+      - name: Validate and stage fixture artifact
+        run: |
+          set -euo pipefail
+          for directory in docs docs/release docs/release/e2e-test; do
+            test -d "$directory"
+            test ! -L "$directory"
+          done
+          target="docs/release/e2e-test/CHANGELOG.test.md"
+          test -f "$target"
+          test ! -L "$target"
+          size="$(wc -c < "$target")"
+          if [ "$size" -gt 1048576 ]; then
+            echo "Isolated fixture exceeds the 1 MiB safety limit."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/changelog-e2e-artifact"
+          cp -- "$target" "$RUNNER_TEMP/changelog-e2e-artifact/CHANGELOG.test.md"
+      - name: Upload only the isolated fixture file
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-e2e-fixture
+          path: ${{ runner.temp }}/changelog-e2e-artifact/CHANGELOG.test.md
+          if-no-files-found: error
+          retention-days: 1
+
+  isolated-e2e-publish:
+    needs: isolated-e2e-generate
+    if: needs.isolated-e2e-generate.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    steps:
+      - name: Checkout main without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Download isolated fixture artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog-e2e-fixture
+          path: generated-output
+      - name: Validate artifact and stage the exact allowed file
+        run: |
+          set -euo pipefail
+          test -d generated-output
+          test ! -L generated-output
+          unexpected="$(find generated-output -mindepth 1 ! -type f -print)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected non-file artifact entries:"
+            printf '%s\\n' "$unexpected"
+            exit 1
+          fi
+          files="$(find generated-output -type f -printf '%P\\n')"
+          if [ "$files" != "CHANGELOG.test.md" ]; then
+            echo "Artifact must contain exactly CHANGELOG.test.md."
+            exit 1
+          fi
+          test ! -L generated-output/CHANGELOG.test.md
+          size="$(wc -c < generated-output/CHANGELOG.test.md)"
+          if [ "$size" -gt 1048576 ]; then
+            echo "Isolated fixture exceeds the 1 MiB safety limit."
+            exit 1
+          fi
+          mkdir -p docs/release/e2e-test
+          install -m 0644 generated-output/CHANGELOG.test.md docs/release/e2e-test/CHANGELOG.test.md
       - name: Prepare dedicated test bot branch
         run: |
           set -euo pipefail
@@ -179,8 +244,8 @@ jobs:
           set -euo pipefail
           existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number // empty')"
           if [ -z "$existing_pr" ]; then
-            gh pr create --draft --base main --head automation/changelog-e2e-test \\
-              --title "test: isolated automatic changelog end-to-end test" \\
+            gh pr create --draft --base main --head automation/changelog-e2e-test \
+              --title "test: isolated automatic changelog end-to-end test" \
               --body "这是隔离测试 PR。只新增 docs/release/e2e-test/CHANGELOG.test.md，不修改正式 CHANGELOG.md、version.json，不创建 Tag/Release。请勿合并。"
             existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number')"
           else
