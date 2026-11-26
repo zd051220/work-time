@@ -12,6 +12,10 @@
 - 统一 DEV 与正式预发布版本的边界，明确正式发布入口支持的版本后缀。
 - 扩大 CI 触发范围，使 Markdown 文档和全部 GitHub Actions 工作流变更也触发审计。
 
+<!-- BEGIN AUTO-GENERATED PR CHANGELOG -->
+（暂无带有效版本标签的已合并 PR）
+<!-- END AUTO-GENERATED PR CHANGELOG -->
+
 ## [5.5.0] - 过渡基线，历史版本号为 5.5
 
 > 这是对现有 v5.5 生产基线的文档化映射，不代表本次创建了 v5.5.0 Git Tag，也不代表运行时 `version.json` 已改为三段式版本号。正式发布时间与发布资产以实际 GitHub Release 记录为准。
