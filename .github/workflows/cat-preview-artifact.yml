@@ -1,0 +1,44 @@
+name: cat-preview-artifact
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "cat-companion-preview.html"
+      - "assets/cats/**"
+      - ".github/workflows/cat-preview-artifact.yml"
+
+# PR checks only: no deployment, no secrets, no write permissions.
+permissions:
+  contents: read
+
+jobs:
+  package-preview:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate isolated preview inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s cat-companion-preview.html
+          test -s assets/cats/README.md
+          mkdir -p "$RUNNER_TEMP/cat-preview"
+          cp cat-companion-preview.html "$RUNNER_TEMP/cat-preview/"
+          cp -R assets/cats "$RUNNER_TEMP/cat-preview/assets-cats"
+          tar -czf "$RUNNER_TEMP/cat-preview.tar.gz" -C "$RUNNER_TEMP" cat-preview
+          test -s "$RUNNER_TEMP/cat-preview.tar.gz"
+
+      - name: Upload preview artifact (no Pages deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cat-companion-preview
+          path: ${{ runner.temp }}/cat-preview.tar.gz
+          if-no-files-found: error
+          retention-days: 3
