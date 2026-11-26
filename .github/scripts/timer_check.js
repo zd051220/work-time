@@ -103,7 +103,7 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
     check('系统时间回退触发人工核对',T.state().pending,true);
   }
   {
-    const T=makeHarness(),c=T.clock;T.hide();c.wall+=3600000;c.mono+=3600000;await T.show();
+    const T=makeHarness(),c=T.clock;T.hide();c.wall+=3600000;c.mono+=3600000;c.serverNow+=3600000;await T.show();
     check('双钟一致的长时间后台不弹窗',T.state().pending,false);
   }
   console.log('\n通过 '+pass+' 项，失败 '+fail+' 项');
