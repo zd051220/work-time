@@ -184,10 +184,10 @@ async function runEngine(name, type, origin) {
       await frame.waitForFunction(() => window.__browserCompatMessages.some(message =>
         message.type === 'game-rpc-result' && message.fromParent && message.origin === location.origin
       ), null, { timeout: 10000 });
-      await frame.locator('#connection').waitFor();
-      if (!(await frame.locator('#connection').textContent()).includes('云端未连接')) {
-        throw new Error('未登录的模拟环境没有显示预期的云端未连接状态');
-      }
+      await frame.waitForFunction(() => {
+        var connection = document.getElementById('connection');
+        return connection && connection.textContent.includes('云端未连接');
+      }, null, { timeout: 10000 });
       await context.close();
     });
   } finally {
