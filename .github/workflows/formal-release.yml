@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: formal-release
@@ -109,6 +110,70 @@ jobs:
 
       - name: Timer regression tests
         run: node .github/scripts/timer_check.js v5.5.html
+
+      - name: Wait for successful GitHub Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          echo "等待当前代码版本对应的 GitHub Pages 部署成功：$GITHUB_SHA"
+          for attempt in $(seq 1 30); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=100" > "$RUNNER_TEMP/pages-runs.json"
+            RUN=$(jq -r --arg sha "$GITHUB_SHA" \
+              '[.workflow_runs[] | select(.head_sha == $sha and .name == "pages build and deployment")] | first | if . == null then empty else [.status, (.conclusion // ""), .html_url] | @tsv end' \
+              "$RUNNER_TEMP/pages-runs.json")
+
+            if [[ -n "$RUN" ]]; then
+              IFS=        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          NOTES_FILE: ${{ steps.release.outputs.notes_file }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+          ARGS=("$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES_FILE")
+          if [[ "$CHANNEL" == "prerelease" ]]; then
+            ARGS+=(--prerelease)
+          fi
+          gh release create "${ARGS[@]}"
+
+      - name: Release summary
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          {
+            echo "## 发布完成"
+            echo
+            echo "- 版本：`$TAG`"
+            echo "- 渠道：`$CHANNEL`"
+            echo "- 代码：`$GITHUB_SHA`"
+            echo "- 完整审计：通过"
+            echo
+            echo "注意：本流程创建 Git 标签和 GitHub Release；不会修改 version.json，也不会单独触发网页版本号切换。"
+          } >> "$GITHUB_STEP_SUMMARY"
+\t' read -r STATUS CONCLUSION URL <<< "$RUN"
+              echo "Pages 状态：$STATUS / $CONCLUSION"
+              if [[ "$STATUS" == "completed" && "$CONCLUSION" == "success" ]]; then
+                echo "网页部署已成功：$URL"
+                exit 0
+              fi
+              if [[ "$STATUS" == "completed" && "$CONCLUSION" != "success" ]]; then
+                echo "网页部署失败，拒绝创建正式版本：$URL"
+                exit 1
+              fi
+            else
+              echo "尚未找到当前提交对应的 Pages 部署记录。"
+            fi
+
+            if [[ "$attempt" -lt 30 ]]; then
+              sleep 20
+            fi
+          done
+
+          echo "等待 10 分钟仍未确认网页部署成功，拒绝创建正式版本。"
+          exit 1
 
       - name: Create GitHub Release
         env:
