@@ -142,22 +142,64 @@ body.game-playing .tabbar{display:none!important}
 .sheet .close{width:100%;margin-top:10px;border:0;border-radius:14px;padding:13px;font-size:12px;font-weight:900;
   background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
 
-/* Animated cat companion: decorative only */
-.cat{position:relative;overflow:visible;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent;transform-origin:50% 78%;will-change:transform}
-.cat:focus-visible{outline:3px solid #d99b35;outline-offset:3px}
-.cat.cat-idle{animation:cat-idle 2.8s ease-in-out infinite}.cat.cat-work{animation:cat-carry .72s ease-in-out infinite}.cat.cat-paid{animation:cat-purr 1.8s ease-in-out infinite}.cat.cat-unpaid{animation:cat-sleep 3.2s ease-in-out infinite}.cat.cat-petted{animation:cat-petted .62s cubic-bezier(.2,.8,.2,1) 2}
-.cat.cat-work:after{content:"🪙";position:absolute;right:-5px;bottom:2px;font-size:20px;animation:cat-gold .72s ease-in-out infinite}.cat.cat-unpaid:after{content:"z z";position:absolute;right:-8px;top:2px;font-size:11px;font-weight:900;color:#987b9f;letter-spacing:1px;animation:cat-zzz 2.4s ease-in-out infinite}.cat.cat-paid:after{content:"♡";position:absolute;right:-4px;top:0;font-size:17px;color:#df8f91;animation:cat-heart 1.8s ease-in-out infinite}
-@keyframes cat-idle{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-3px) rotate(-3deg)}50%{transform:translateY(0) rotate(0)}75%{transform:translateY(-2px) rotate(3deg)}}
-@keyframes cat-carry{0%,100%{transform:translate(0,0) rotate(-3deg)}50%{transform:translate(3px,-4px) rotate(3deg)}}@keyframes cat-purr{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2px) scale(1.035)}}@keyframes cat-sleep{0%,100%{transform:translateY(1px) rotate(-2deg) scale(.98)}50%{transform:translateY(3px) rotate(2deg) scale(.96)}}@keyframes cat-petted{0%,100%{transform:scale(1) rotate(0)}35%{transform:scale(1.13) rotate(-9deg)}70%{transform:scale(1.08) rotate(9deg)}}@keyframes cat-gold{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-5px) rotate(8deg)}}@keyframes cat-zzz{0%,100%{opacity:.35;transform:translate(0,3px)}50%{opacity:1;transform:translate(3px,-4px)}}@keyframes cat-heart{0%,100%{opacity:.45;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
-@media(max-width:380px){.hero{padding:15px 13px}.heroRow{gap:10px}.cat{width:66px;height:66px;font-size:42px;flex:0 0 66px}.bubble{font-size:14px}.bubble small{font-size:10.5px}}
-@media(prefers-reduced-motion:reduce){.cat,.cat:before,.cat:after{animation:none!important;transition:none!important}}
+/* 2D kitten companion */
+.cat{width:88px;height:88px;flex:0 0 88px;border:0;border-radius:0;background:transparent;box-shadow:none;display:grid;place-items:center;position:relative;overflow:visible;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent;transform-origin:50% 78%}
+.cat-art{display:block;width:108px;height:88px;overflow:visible;transform-origin:50% 80%}
+.cat:focus-visible{outline:3px solid #d99b35;outline-offset:3px;border-radius:18px}
+.cat.cat-idle .cat-art{animation:kitten-idle 2.8s ease-in-out infinite}
+.cat.cat-idle #catTail,.cat.cat-paid #catTail{transform-origin:38px 70px;animation:kitten-tail 1.4s ease-in-out infinite}
+.cat.cat-work .cat-art{animation:kitten-carry .65s ease-in-out infinite}
+.cat.cat-work #goldProp{opacity:1;animation:kitten-gold .65s ease-in-out infinite;transform-origin:122px 93px}
+.cat.cat-paid .cat-art{animation:kitten-happy 1.8s ease-in-out infinite}
+.cat.cat-paid #happyMarks{opacity:1;animation:kitten-spark 1.3s ease-in-out infinite}
+.cat.cat-unpaid .cat-art{animation:kitten-sleep 3s ease-in-out infinite}
+.cat.cat-unpaid #closedEyes,.cat.cat-petted #closedEyes{opacity:1}
+.cat.cat-unpaid #catHead{transform:translateY(7px) rotate(-5deg);transform-origin:90px 70px}
+.cat.cat-unpaid #sleepMarks{opacity:1;animation:kitten-zzz 2s ease-in-out infinite}
+.cat.cat-petted .cat-art{animation:kitten-pet .55s ease-in-out 2}
+.cat.cat-petted #happyMarks{opacity:1}
+.cat.cat-walk .cat-art{animation:kitten-walk .45s ease-in-out infinite}
+.cat.cat-walk #legBack{transform-origin:54px 89px;animation:kitten-leg .45s ease-in-out infinite alternate}
+.cat.cat-walk #legFront{transform-origin:88px 89px;animation:kitten-leg .45s ease-in-out infinite alternate-reverse}
+@keyframes kitten-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes kitten-tail{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(12deg)}}
+@keyframes kitten-carry{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+@keyframes kitten-gold{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-4px) rotate(5deg)}}
+@keyframes kitten-happy{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025)}}
+@keyframes kitten-spark{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes kitten-sleep{0%,100%{transform:translateY(1px) scale(.98)}50%{transform:translateY(3px) scale(.96)}}
+@keyframes kitten-zzz{0%,100%{opacity:.3;transform:translateY(3px)}50%{opacity:1;transform:translateY(-3px)}}
+@keyframes kitten-pet{0%,100%{transform:scale(1) rotate(0)}35%{transform:scale(1.08) rotate(-6deg)}70%{transform:scale(1.06) rotate(6deg)}}
+@keyframes kitten-walk{0%,100%{transform:translate(0,0)}50%{transform:translate(3px,-2px)}}
+@keyframes kitten-leg{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
+@media(max-width:380px){.hero{padding:15px 13px}.heroRow{gap:10px}.cat{width:76px;height:76px;flex:0 0 76px}.cat-art{width:94px;height:76px}.bubble{font-size:14px}.bubble small{font-size:10.5px}}
+@media(prefers-reduced-motion:reduce){.cat,.cat-art,.cat #catTail,.cat #goldProp,.cat #sleepMarks,.cat #happyMarks,.cat #legBack,.cat #legFront{animation:none!important;transition:none!important}}
 </style></head>
 <body><main class="app">
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 正式版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 正式版更新</b>：查看本次版本更新内容与功能说明</span><span class="arrow">›</span></div>
 <div class="update-banner" id="updateBanner" role="status" aria-live="polite"><div class="update-copy"><b id="updateTitle">发现新版本</b><span id="updateNote">有新版本可以更新了</span></div><button class="update-btn" id="updateNow" type="button">立即更新</button><button class="update-dismiss" id="updateLater" type="button" aria-label="稍后更新">×</button></div>
-<section class="hero"><div class="heroRow"><div class="cat cat-idle" id="cat" role="button" tabindex="0" aria-label="摸摸小猫" title="点一下摸摸小猫">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
+<section class="hero"><div class="heroRow"><div class="cat cat-idle" id="cat" role="button" tabindex="0" aria-label="摸摸小猫" title="点一下摸摸小猫"><svg class="cat-art" viewBox="0 0 160 120" role="img" aria-label="白色卡通小猫">
+<g id="catTail" fill="none" stroke="#413d39" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><path d="M37 78 C14 77 9 59 16 42 C21 31 31 37 31 49 C30 62 39 63 48 65"/></g>
+<g id="catLegs" fill="#fff" stroke="#413d39" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+<path id="legBack" d="M49 83 Q39 91 40 105 Q42 113 54 111 L65 108 L68 88Z"/>
+<path id="legFront" d="M91 82 Q102 91 99 106 Q97 114 86 112 L77 108 L76 88Z"/>
+</g>
+<path id="catBody" d="M35 72 Q36 55 56 54 Q70 45 93 55 Q111 60 116 78 Q119 98 102 104 Q80 110 53 103 Q33 99 35 72Z" fill="#fff" stroke="#413d39" stroke-width="7" stroke-linejoin="round"/>
+<g id="catHead">
+<path d="M47 54 L48 20 Q49 9 60 18 L76 31 Q88 25 100 29 L116 15 Q126 8 129 22 L132 54 Q135 77 112 83 Q83 93 58 79 Q43 71 47 54Z" fill="#fff" stroke="#413d39" stroke-width="7" stroke-linejoin="round"/>
+<path d="M56 25 L59 43 L72 34Z M113 34 L124 23 L125 46Z" fill="#f5bfc4"/>
+<ellipse cx="70" cy="58" rx="5.5" ry="8" fill="#353535"/><ellipse cx="108" cy="58" rx="5.5" ry="8" fill="#353535"/>
+<circle cx="72" cy="55" r="1.8" fill="#fff"/><circle cx="110" cy="55" r="1.8" fill="#fff"/>
+<ellipse cx="58" cy="70" rx="8" ry="4.5" fill="#f7c7c5" opacity=".8"/><ellipse cx="119" cy="70" rx="8" ry="4.5" fill="#f7c7c5" opacity=".8"/>
+<path d="M84 67 Q89 72 94 67 Q92 78 87 76 Q83 74 84 67Z" fill="#e88e93" stroke="#413d39" stroke-width="2.5"/>
+<path id="closedEyes" d="M62 59 Q69 66 76 59 M100 59 Q107 66 114 59" fill="none" stroke="#413d39" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+</g>
+<g id="goldProp" opacity="0"><path d="M106 84 Q121 75 137 84 L133 101 Q120 109 107 100Z" fill="#f5bd32" stroke="#9c681d" stroke-width="3"/><path d="M110 85 Q121 79 133 85 Q122 92 110 85Z" fill="#ffe38b" stroke="#9c681d" stroke-width="2"/><path d="M117 91 L127 91" stroke="#fff4c4" stroke-width="2" stroke-linecap="round"/></g>
+<g id="sleepMarks" opacity="0" fill="#8d7ba4" font-family="sans-serif" font-weight="900"><text x="121" y="23" font-size="16">z</text><text x="135" y="12" font-size="12">z</text></g>
+<g id="happyMarks" opacity="0" fill="#e9a52d"><path d="M132 37 l7 -10 l3 2 l-6 11Z M141 49 l13 -3 l1 4 l-13 3Z"/></g>
+</svg></div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
 <div class="progress"><div class="fill" id="fill"></div></div><div class="progressmeta"><span>计薪时长进度</span><span id="pct">0%</span></div>
@@ -440,10 +482,10 @@ function draw(){var s=data.session,t=todayTotals(),r=rate(),payMs=t.work+t.paid,
   var days=s&&s.days?Object.keys(s.days).length:0;
   var dn=$('dayNote');
   if(s&&!s.pendingReview&&days>1){dn.style.display='';dn.textContent='本次已跨 '+days+' 天，上面只算今天；下班时会按天拆成 '+days+' 条记录。'}else{dn.style.display='none';dn.textContent=''}
-  var cat=$('cat');cat.className='cat '+(Date.now()<catPetUntil?'cat-petted':!s?'cat-idle':s.pendingReview?'cat-idle':s.mode==='work'?'cat-work':s.mode==='paid'?'cat-paid':'cat-unpaid');cat.textContent=!s?'🐈':s.pendingReview?'🐾':s.mode==='work'?'🐈‍⬛':s.mode==='paid'?'😺':'😴';if(Date.now()<catPetUntil){$('catLine').textContent=catPetLine}else{$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.pendingReview?'小猫发现时间需要核对～<small>确认后就会继续计时。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>'};$('startBtn').disabled=!isWriter||!!s;$('stopBtn').disabled=!isWriter||!s||!!s.pendingReview;/* mwFix53h：带薪/不带薪之间允许直接互切（原来必须先进“继续工作”再切，休息切换要多一步） */$('paidBtn').disabled=!isWriter||!s||s.mode==='paid'||!!s.pendingReview;$('unpaidBtn').disabled=!isWriter||!s||s.mode==='unpaid'||!!s.pendingReview;$('resumeBtn').disabled=!isWriter||!s||s.mode==='work'||!!s.pendingReview;$('wage').disabled=!!s;$('hours').disabled=!!s;$('lockTag').textContent=s?'本次已锁定':'开工前设置';$('cat').textContent=!s?'🐈':s.pendingReview?'🐾':s.mode==='work'?'🐈‍⬛':s.mode==='paid'?'😺':'😴';$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.pendingReview?'小猫发现时间需要核对～<small>确认后就会继续计时。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>';
+  var cat=$('cat');var catMode=Date.now()<catPetUntil?'petted':!s||s.pendingReview?'idle':s.mode==='work'?'work':s.mode==='paid'?'paid':'unpaid';cat.className='cat cat-'+catMode;if(Date.now()<catPetUntil){$('catLine').textContent=catPetLine}else{$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.pendingReview?'小猫发现时间需要核对～<small>确认后就会继续计时。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>'};$('startBtn').disabled=!isWriter||!!s;$('stopBtn').disabled=!isWriter||!s||!!s.pendingReview;/* mwFix53h：带薪/不带薪之间允许直接互切（原来必须先进“继续工作”再切，休息切换要多一步） */$('paidBtn').disabled=!isWriter||!s||s.mode==='paid'||!!s.pendingReview;$('unpaidBtn').disabled=!isWriter||!s||s.mode==='unpaid'||!!s.pendingReview;$('resumeBtn').disabled=!isWriter||!s||s.mode==='work'||!!s.pendingReview;$('wage').disabled=!!s;$('hours').disabled=!!s;$('lockTag').textContent=s?'本次已锁定':'开工前设置';$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.pendingReview?'小猫发现时间需要核对～<small>确认后就会继续计时。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>';
   $('breakStatus').classList.toggle('show',!!s&&s.mode!=='work');$('breakStatus').textContent=s&&s.mode!=='work'?(s.mode==='paid'?'当前状态：带薪摸鱼，计薪仍在继续。':'当前状态：不带薪摸鱼，工资暂时停止累计。'):'';var wb=$('warnBox');if(jumpWarn){wb.classList.add('show');wb.textContent='⚠ '+jumpWarn}else{wb.classList.remove('show');wb.textContent=''}setReviewUI();drawRecords();mwTxt={};}
 var catEl=$('cat');
-function petCat(){catPetUntil=Date.now()+2600;catPetLine='呼噜呼噜！被你摸到啦～';catEl.classList.remove('cat-petted');void catEl.offsetWidth;catEl.classList.add('cat-petted');$('catLine').textContent=catPetLine;setTimeout(function(){catEl.classList.remove('cat-petted')},1350)}
+function petCat(){catPetUntil=Date.now()+1350;catPetLine='呼噜呼噜！被你摸到啦～';catEl.className='cat cat-petted';$('catLine').textContent=catPetLine;setTimeout(function(){draw()},1350)}
 catEl.addEventListener('click',petCat);
 catEl.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();petCat()}});
 var recordsPage=1,RECORDS_PER_PAGE=8;
