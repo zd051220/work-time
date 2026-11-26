@@ -3,12 +3,13 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {parseSemVer,parseRuntimeVersion,compareSemVer,getReleaseBump,calculateNextVersion,validateVersionConfig}=require('./versioning.cjs');
 
-test('parses SemVer prerelease and build metadata',()=>{const v=parseSemVer('2.4.0-rc.12+build.7');assert.equal(v.major,2n);assert.deepEqual(v.prerelease,['rc','12']);assert.deepEqual(v.build,['build','7']);});
+test('parses SemVer prerelease and build metadata',()=>{const v=parseSemVer('2.4.0-rc.12+build.7');assert.equal(v.major,'2');assert.deepEqual(v.prerelease,['rc','12']);assert.deepEqual(v.build,['build','7']);});
 test('rejects invalid SemVer and numeric leading zeroes',()=>{for(const v of ['01.2.3','1.02.3','1.2.03','1.2','1.2.3-01','1.2.3-','v1.2.3'])assert.throws(()=>parseSemVer(v));});
 test('maps legacy 5.5 to 5.5.0 without a tag side effect',()=>{const v=parseRuntimeVersion('5.5');assert.equal(v.legacy,true);assert.equal(v.sourceVersion,'5.5');assert.equal(compareSemVer('5.5','5.5.0'),0);});
 test('follows SemVer prerelease precedence',()=>{const a=['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0'];for(let i=0;i<a.length-1;i++)assert.equal(compareSemVer(a[i],a[i+1]),-1);});
 test('ignores build metadata for precedence',()=>assert.equal(compareSemVer('1.2.3+one','1.2.3+two'),0));
 test('compares huge numeric prerelease identifiers exactly',()=>assert.equal(compareSemVer('1.0.0-999999999999999999999','1.0.0-1000000000000000000000'),-1));
+test('decimal string increment carries across arbitrarily large values',()=>{const {incrementDecimalString}=require('../../js/versioning-core.js');assert.equal(incrementDecimalString('0'),'1');assert.equal(incrementDecimalString('999'),'1000');assert.equal(incrementDecimalString('999999999999999999999'),'1000000000000000000000');});
 test('compares arbitrarily large core numbers without precision loss',()=>assert.equal(compareSemVer('999999999999999999999.0.0','1000000000000000000000.0.0'),-1));
 test('increments arbitrarily large core numbers without precision loss',()=>assert.equal(calculateNextVersion('999999999999999999999.0.0',['release:major']),'1000000000000000000000.0.0'));
 test('reads release labels as strings or GitHub label objects',()=>{assert.equal(getReleaseBump([{name:'bug'},{name:'release:minor'}]),'minor');assert.equal(getReleaseBump(['release:patch']),'patch');assert.equal(getReleaseBump(['release:none']),null);});
@@ -23,3 +24,29 @@ test('rejects leading and trailing whitespace in URL without normalizing it away
 test('rejects malformed prerelease identifiers',()=>{for(const v of ['1.2.3-alpha..1','1.2.3-.alpha','1.2.3-alpha.','1.2.3-01','1.2.3-00.beta'])assert.throws(()=>parseSemVer(v),undefined,v);});
 test('validates build metadata boundaries while allowing numeric leading zeroes',()=>{for(const v of ['1.2.3+','1.2.3+meta..data','1.2.3+meta.','1.2.3+white space'])assert.throws(()=>parseSemVer(v),undefined,v);assert.equal(parseSemVer('1.2.3+001.000').build.join('.'),'001.000');});
 test('requires a relative HTML page path',()=>{assert.equal(validateVersionConfig({version:'5.6.0',url:'releases/v5.6.0.html',note:''}).valid,true);assert.equal(validateVersionConfig({version:'5.6.0',url:'assets/app.js',note:''}).valid,false);});
+
+test('shared core compares prerelease identifiers by SemVer precedence',()=>{
+  const ordered=['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0'];
+  for(let i=0;i<ordered.length-1;i++)assert.equal(compareSemVer(ordered[i],ordered[i+1]),-1);
+});
+test('runtime comparison treats final release as newer than prerelease',()=>{
+  assert.equal(compareSemVer('5.6.0-rc.1','5.6.0'),-1);
+  assert.equal(compareSemVer('5.6.0','5.6.0-rc.1'),1);
+});
+test('runtime comparison ignores build metadata and supports legacy versions',()=>{
+  assert.equal(compareSemVer('5.5','5.5.0'),0);
+  assert.equal(compareSemVer('5.6.0+build.1','5.6.0+build.2'),0);
+});
+test('shared comparison preserves arbitrary precision for core and prerelease numbers',()=>{
+  assert.equal(compareSemVer('999999999999999999999.0.0','1000000000000000000000.0.0'),-1);
+  assert.equal(compareSemVer('1.0.0-999999999999999999999','1.0.0-1000000000000000000000'),-1);
+});
+
+test('versioning CLI keeps the existing next command output',()=>{
+  const {execFileSync}=require('node:child_process');
+  const script=require.resolve('./versioning.cjs');
+  const patch=execFileSync(process.execPath,[script,'next','5.5','release:patch'],{encoding:'utf8'}).trim();
+  const none=execFileSync(process.execPath,[script,'next','5.5','bugfix'],{encoding:'utf8'}).trim();
+  assert.equal(patch,'5.5.1');
+  assert.equal(none,'不发布版本（缺少版本标签或标记为 release:none）');
+});
