@@ -38,6 +38,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install Markdown parser dependencies
+        run: npm install --no-audit --no-fund
+
       - name: Validate release label and prepare version candidate
         id: candidate
         env:
@@ -134,6 +137,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Install Markdown parser dependencies
+        run: npm install --no-audit --no-fund
 
       - name: Validate release candidate and run full project checks
         id: release

@@ -1,5 +1,5 @@
 'use strict';
-const { unified } = require('unified');
+const unified = require('unified');
 const remarkParse = require('remark-parse');
 const processor = unified().use(remarkParse);
 function inlineText(node) {

@@ -28,6 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install Markdown parser dependencies
+        run: npm install --no-audit --no-fund
       - name: Automatic versioning tests
         run: node --test .github/scripts/versioning*.test.cjs
       - name: Automatic changelog tests
