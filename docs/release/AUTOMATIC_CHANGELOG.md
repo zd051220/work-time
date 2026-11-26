@@ -57,7 +57,7 @@ node --test .github/scripts/versioning.test.cjs
 
 ## 隔离端到端测试模式
 
-维护者审核并合并测试模式代码后，可在 GitHub Actions 中手动运行 `automatic-changelog`，并显式勾选 `test_mode=true`。默认值为 `false`；普通手动运行不会执行测试 job，正式更新日志 job 仍只响应已合并到 `main` 的 PR。
+维护者审核并合并测试模式代码后，可在 GitHub Actions 中手动运行 `automatic-changelog`，必须选择 `main` 分支并显式勾选 `test_mode=true`。测试 job 同时校验 `workflow_dispatch`、`github.ref == 'refs/heads/main'` 和布尔输入；默认值为 `false`。从其他分支触发或未勾选测试开关均不会执行测试 job。正式更新日志 job 仍只响应已合并到 `main` 的 PR。
 
 测试模式使用固定模拟数据（一个带 `release:patch` 标签的 PR 和一个无标签 PR），调用同一更新日志生成器，并且只允许写入：
 
