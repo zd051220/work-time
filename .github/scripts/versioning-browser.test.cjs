@@ -31,7 +31,7 @@ test('CommonJS and browser globals return identical comparison results', () => {
   assert.equal(context.BigInt, undefined);
 });
 test('shared core source does not depend on BigInt syntax or runtime globals', () => {
-  assert.doesNotMatch(source, /\\bBigInt\\b|[0-9]n\\b/);
+  assert.doesNotMatch(source, /\bBigInt\b|[0-9]n\b/);
 });
 test('shared config validation rejects invalid versions and unsafe URLs', () => {
   const core = require('../../js/versioning-core.js');
@@ -39,7 +39,7 @@ test('shared config validation rejects invalid versions and unsafe URLs', () => 
   for (const version of ['5.6.abc','05.6.0','5.6.0-01']) {
     assert.equal(core.validateVersionConfig({version,url:'v5.6.0.html',note:''}).valid,false);
   }
-  for (const url of ['/v5.6.0.html','../v5.6.0.html','https://example.com/v5.6.0.html']) {
+  for (const url of ['/v5.6.0.html','../v5.6.0.html','https://example.com/v5.6.0.html','folder\\v5.6.0.html']) {
     assert.equal(core.validateVersionConfig({version:'5.6.0',url,note:''}).valid,false);
   }
 });
