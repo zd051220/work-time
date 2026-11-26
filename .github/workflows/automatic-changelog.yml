@@ -278,8 +278,9 @@ jobs:
           failed_names=""
           for attempt in $(seq 1 60); do
             summary="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs" --jq '[.total_count, ([.check_runs[] | select(.status != "completed")] | length), ([.check_runs[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out" or .conclusion == "action_required") | .name] | join(","))] | @tsv')"
-            IFS=
-\t' read -r check_count pending_count failed_names <<< "$summary"
+            check_count="$(printf '%s\n' "$summary" | cut -f1)"
+            pending_count="$(printf '%s\n' "$summary" | cut -f2)"
+            failed_names="$(printf '%s\n' "$summary" | cut -f3-)"
             if [ -n "$failed_names" ]; then
               echo "Native checks failed for exact test PR commit ${head_sha}: ${failed_names}"
               exit 1
