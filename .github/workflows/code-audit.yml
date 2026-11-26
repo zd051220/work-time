@@ -16,6 +16,8 @@ on:
       - "supabase/migrations/**"
       - ".github/scripts/**"
       - ".github/workflows/code-audit.yml"
+      - ".github/workflows/formal-release.yml"
+      - "CHANGELOG.md"
 
 permissions:
   contents: read
