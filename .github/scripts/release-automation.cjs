@@ -64,6 +64,8 @@ function extractReleaseSummary(body) {
     if (!inHtmlComment) {
       const fenceOpen = /^ {0,3}(\x60{3,}|~{3,})/.exec(visible);
       if (fenceOpen) {
+        // A fenced code block is a block boundary: never append later prose to an earlier paragraph.
+        if (paragraph.length) break;
         fenceChar = fenceOpen[1][0];
         fenceLength = fenceOpen[1].length;
         continue;
