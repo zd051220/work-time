@@ -7,15 +7,15 @@ const RELEASE_LABELS = new Set(['release:major','release:minor','release:patch',
 const MAX_PAGES = 20;
 const PAGE_SIZE = 100;
 const CATEGORY_RULES = [
-  [/^(feat|feature)(\\(.+\\))?:/i,'新功能'],[/^(fix|bugfix)(\\(.+\\))?:/i,'问题修复'],
-  [/^(perf)(\\(.+\\))?:/i,'性能优化'],[/^(security|sec)(\\(.+\\))?:/i,'安全改进'],
-  [/^(docs?)(\\(.+\\))?:/i,'文档更新'],[/^(refactor|test|ci|build|chore)(\\(.+\\))?:/i,'工程优化']
+  [/^(feat|feature)(\(.+\))?:/i,'新功能'],[/^(fix|bugfix)(\(.+\))?:/i,'问题修复'],
+  [/^(perf)(\(.+\))?:/i,'性能优化'],[/^(security|sec)(\(.+\))?:/i,'安全改进'],
+  [/^(docs?)(\(.+\))?:/i,'文档更新'],[/^(refactor|test|ci|build|chore)(\(.+\))?:/i,'工程优化']
 ];
 function cleanText(value,limit=180){
   if(typeof value!=='string')return '';
-  return value.replace(/<[^>]*>/g,' ').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,' ')
-    .replace(/\\[([^\\]]+)\\]\\([^)]*\\)/g,'$1').replace(/[\\x60*_>#~]/g,' ').replace(/[\\[\\]()|\\\\]/g,' ')
-    .replace(/https?:\\/\\/\\S+/g,'').replace(/[\\r\\n\\t]+/g,' ').replace(/\\s+/g,' ').trim().slice(0,limit);
+  return value.replace(/<[^>]*>/g,' ').replace(/!\[[^\]]*\]\([^)]*\)/g,' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[\x60*_>#~]/g,' ').replace(/[\[\]()|\\]/g,' ')
+    .replace(/https?:\/\/\S+/g,'').replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().slice(0,limit);
 }
 function getReleaseKind(pr){
   if(!Array.isArray(pr.labels))throw new Error('PR #'+pr.number+' 的 labels 必须是数组');
@@ -31,11 +31,11 @@ function getCategory(title){
 }
 function getSummary(body){
   if(typeof body!=='string')return '';
-  const paragraph=body.split(/\\n\\s*\\n/).map(value => cleanText(value)).find(Boolean);
+  const paragraph=body.split(/\n\s*\n/).map(value => cleanText(value)).find(Boolean);
   return paragraph?paragraph.slice(0,180):'';
 }
 function validRepository(repository){
-  return typeof repository==='string'&&/^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(repository);
+  return typeof repository==='string'&&/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository);
 }
 function renderEntries(pulls,repository){
   if(!Array.isArray(pulls))throw new TypeError('PR 数据必须是数组');
@@ -60,8 +60,8 @@ function renderEntries(pulls,repository){
   }
   const order=['新功能','问题修复','性能优化','安全改进','其他更新','工程优化','文档更新'];
   const sections=[];
-  for(const category of order){const entries=groups.get(category);if(entries&&entries.length)sections.push('### '+category+'\\n'+entries.map(x=>x.line).join('\\n'));}
-  return {markdown:sections.length?sections.join('\\n\\n'):'（暂无带有效版本标签的已合并 PR）',included:[...unique.values()].sort((a,b)=>Date.parse(b.pr.merged_at)-Date.parse(a.pr.merged_at)||b.pr.number-a.pr.number).map(x=>x.pr.number),unlabeled};
+  for(const category of order){const entries=groups.get(category);if(entries&&entries.length)sections.push('### '+category+'\n'+entries.map(x=>x.line).join('\n'));}
+  return {markdown:sections.length?sections.join('\n\n'):'（暂无带有效版本标签的已合并 PR）',included:[...unique.values()].sort((a,b)=>Date.parse(b.pr.merged_at)-Date.parse(a.pr.merged_at)||b.pr.number-a.pr.number).map(x=>x.pr.number),unlabeled};
 }
 function updateChangelog(existing,pulls,repository){
   if(typeof existing!=='string'||!existing.includes('## [未发布]'))throw new Error('CHANGELOG.md 缺少「## [未发布]」章节');
@@ -71,15 +71,15 @@ function updateChangelog(existing,pulls,repository){
     const startIndex=existing.indexOf(START),endIndex=existing.indexOf(END);
     if(startIndex<0||endIndex<0||endIndex<=startIndex)throw new Error('CHANGELOG 自动生成标记顺序错误或区块为空');
   }
-  const generated=renderEntries(pulls,repository),block=START+'\\n'+generated.markdown+'\\n'+END;
+  const generated=renderEntries(pulls,repository),block=START+'\n'+generated.markdown+'\n'+END;
   let output;
   if(startCount===1){
     const a=existing.indexOf(START),b=existing.indexOf(END)+END.length;
     output=existing.slice(0,a)+block+existing.slice(b);
   }else{
-    const next=existing.indexOf('\\n## ',existing.indexOf('## [未发布]')+1);
-    if(next<0)output=existing.trimEnd()+'\\n\\n'+block+'\\n';
-    else output=existing.slice(0,next).trimEnd()+'\\n\\n'+block+'\\n'+existing.slice(next).replace(/^\\n+/,'\\n');
+    const next=existing.indexOf('\n## ',existing.indexOf('## [未发布]')+1);
+    if(next<0)output=existing.trimEnd()+'\n\n'+block+'\n';
+    else output=existing.slice(0,next).trimEnd()+'\n\n'+block+'\n'+existing.slice(next).replace(/^\n+/,'\n');
   }
   return {content:output,included:generated.included,unlabeled:generated.unlabeled};
 }
