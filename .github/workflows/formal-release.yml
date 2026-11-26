@@ -16,6 +16,14 @@ on:
         options:
           - stable
           - prerelease
+      mode:
+        description: "dry-run 只检查不发布；publish 才创建版本标签和 Release"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - publish
 
 permissions:
   contents: write
@@ -145,6 +153,7 @@ jobs:
           exit 1
 
       - name: Create GitHub Release
+        if: inputs.mode == 'publish'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
@@ -162,14 +171,23 @@ jobs:
         env:
           TAG: ${{ steps.release.outputs.tag }}
           CHANNEL: ${{ inputs.channel }}
+          MODE: ${{ inputs.mode }}
         run: |
           {
-            echo "## 发布完成"
+            echo "## 发布流程检查完成"
             echo
             echo "- 版本：$TAG"
             echo "- 渠道：$CHANNEL"
+            echo "- 模式：$MODE"
             echo "- 代码：$GITHUB_SHA"
-            echo "- 完整审计：通过"
-            echo
-            echo "注意：本流程创建 Git 标签和 GitHub Release；不会修改 version.json，也不会单独触发网页版本号切换。"
+            echo "- 代码审计与计时测试：通过"
+            echo "- GitHub Pages 部署：成功"
+            if [[ "$MODE" == "dry-run" ]]; then
+              echo
+              echo "这是安全演练：未创建 Git 标签，也未创建 GitHub Release。"
+            else
+              echo
+              echo "已创建 Git 标签和 GitHub Release。"
+              echo "注意：本流程不会修改 version.json 或切换网页正式版本。"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
