@@ -29,7 +29,7 @@ function getCategory(title){
 }
 function getSummary(body){
   if(typeof body!=='string')return '';
-  const paragraph=body.split(/\n\s*\n/).map(cleanText).find(Boolean);
+  const paragraph=body.split(/\n\s*\n/).map(value => cleanText(value)).find(Boolean);
   return paragraph?paragraph.slice(0,180):'';
 }
 function renderEntries(pulls,repository){
