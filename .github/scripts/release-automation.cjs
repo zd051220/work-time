@@ -19,17 +19,68 @@ function cleanMarkdown(value, limit=180) {
 // Release notes should use one concise summary, not flatten every PR template section.
 function extractReleaseSummary(body) {
   if (typeof body !== 'string' || !body.trim()) return '';
-  const lines = body.replace(/<!--[\s\S]*?-->/g, ' ').replace(/\r\n?/g, '\n').split('\n');
+  const lines = body.replace(/\r\n?/g, '\n').split('\n');
   const paragraph = [];
   let sectionLevel = null;
+  let fenceChar = null;
+  let fenceLength = 0;
+  let inHtmlComment = false;
+
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index].trim();
+    const rawLine = lines[index];
+
+    // Ignore fenced code blocks; closing fence must match marker and length.
+    if (fenceChar) {
+      const closePattern = new RegExp('^ {0,3}' + fenceChar + '{' + fenceLength + ',}\\s*$');
+      if (closePattern.test(rawLine)) {
+        fenceChar = null;
+        fenceLength = 0;
+      }
+      continue;
+    }
+    const fenceOpen = /^ {0,3}(\x60{3,}|~{3,})/.exec(rawLine);
+    if (fenceOpen) {
+      fenceChar = fenceOpen[1][0];
+      fenceLength = fenceOpen[1].length;
+      continue;
+    }
+
+    // Strip complete comments; an unclosed comment hides all remaining input.
+    let visible = '';
+    let cursor = 0;
+    while (cursor < rawLine.length) {
+      if (inHtmlComment) {
+        const close = rawLine.indexOf('-->', cursor);
+        if (close < 0) break;
+        inHtmlComment = false;
+        cursor = close + 3;
+        continue;
+      }
+      const open = rawLine.indexOf('<!--', cursor);
+      if (open < 0) {
+        visible += rawLine.slice(cursor);
+        break;
+      }
+      visible += rawLine.slice(cursor, open);
+      inHtmlComment = true;
+      cursor = open + 4;
+    }
+    const line = visible.trim();
     if (!line) {
       if (paragraph.length) break;
       continue;
     }
 
     const atxHeading = /^(#{1,6})\s+/.exec(line);
+    if (atxHeading) {
+      const level = atxHeading[1].length;
+      if (paragraph.length) break;
+      if (sectionLevel !== null && level <= sectionLevel) return '';
+      if (sectionLevel === null) sectionLevel = level;
+      continue;
+    }
+
+    // Setext underline applies to the preceding ordinary text line.
     const setextNext = /^(=+|-+)\s*$/.exec((lines[index + 1] || '').trim());
     if (setextNext) {
       const level = setextNext[1][0] === '=' ? 1 : 2;
@@ -39,23 +90,21 @@ function extractReleaseSummary(body) {
       index += 1;
       continue;
     }
-    if (atxHeading) {
-      const level = atxHeading[1].length;
-      if (paragraph.length) break;
-      if (sectionLevel !== null && level <= sectionLevel) return '';
-      if (sectionLevel === null) sectionLevel = level;
-      continue;
-    }
+
     if (/^>/.test(line)) {
       if (paragraph.length) break;
       return '';
     }
-    if (/^[-*_]{3,}$/.test(line)) continue;
+
+    // CommonMark horizontal rules allow whitespace between marker characters.
+    if (/^ {0,3}(?:(?:\*\s*){3,}|(?:-\s*){3,}|(?:_\s*){3,})$/.test(rawLine)) {
+      if (paragraph.length) break;
+      continue;
+    }
     paragraph.push(line.replace(/^(?:[-*+]\s+|\d+[.)]\s+)/, ''));
   }
   return cleanMarkdown(paragraph.join(' '), 180);
 }
-
 function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('仅允许稳定版 SemVer');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('发布日期格式无效');
