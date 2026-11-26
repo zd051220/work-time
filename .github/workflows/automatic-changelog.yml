@@ -35,8 +35,10 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/changelog.cjs CHANGELOG.md
       - name: Prepare bot branch
+        id: changelog
         run: |
           if git diff --quiet -- CHANGELOG.md; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "CHANGELOG has no changes."
             exit 0
           fi
@@ -45,12 +47,10 @@ jobs:
           git switch -C automation/changelog
           git add CHANGELOG.md
           git commit -m "docs: update changelog from merged PRs"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
       - name: Push bot branch only
+        if: steps.changelog.outputs.changed == 'true'
         run: |
-          if git diff --quiet HEAD^ HEAD -- CHANGELOG.md; then
-            echo "No generated CHANGELOG change to publish."
-            exit 0
-          fi
           if git ls-remote --exit-code --heads origin automation/changelog >/dev/null 2>&1; then
             git fetch origin refs/heads/automation/changelog:refs/remotes/origin/automation/changelog
             expected="$(git rev-parse refs/remotes/origin/automation/changelog)"
@@ -59,6 +59,7 @@ jobs:
             git push origin HEAD:refs/heads/automation/changelog
           fi
       - name: Create or update changelog pull request
+        if: steps.changelog.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -71,6 +72,7 @@ jobs:
             echo "Updated existing changelog PR #${existing_pr}."
           fi
       - name: Dispatch audit for bot branch
+        if: steps.changelog.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run code-audit.yml --ref automation/changelog
