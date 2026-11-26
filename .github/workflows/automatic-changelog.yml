@@ -37,6 +37,7 @@ jobs:
           repositories: work-time
           permission-contents: write
           permission-pull-requests: write
+          permission-checks: read
       - name: Checkout main
         uses: actions/checkout@v4
         with:
