@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 // Behavioural check for the cat game work-order UI (cat-workshop.html) and the
-// parent RPC bridge error mapping (beta-v5.5.html). Runs the real inline scripts
+// parent RPC bridge error mapping (v5.5.html). Runs the real inline scripts
 // against a minimal DOM stub; no network, no Supabase.
 const fs = require('fs');
 const path = require('path');
@@ -351,7 +351,7 @@ new Function('window', 'document', 'CustomEvent', 'setTimeout', 'setInterval', '
   check(ids.inventoryHint.textContent === '生命值不足，先回家休息一会儿', 'battle refusals must be translated, got ' + ids.inventoryHint.textContent);
 
   /* ---------- main app bridge must stay token-free and whitelist-only ---------- */
-  const beta = fs.readFileSync(path.join(__dirname, '..', '..', 'beta-v5.5.html'), 'utf8');
+  const beta = fs.readFileSync(path.join(__dirname, '..', '..', 'v5.5.html'), 'utf8');
   const bridge = beta.slice(beta.indexOf('/* 游戏云端 RPC 桥'), beta.indexOf('loadFeed(false);loadStats();'));
   check(bridge.length > 500 && /allowed=\{game_bootstrap:true,game_get_snapshot:true,game_start_work:true,game_claim_work:true,game_equip_item:true,game_start_explore:true,game_buy_item:true\}/.test(bridge), 'bridge whitelist must cover exactly the seven game RPCs');
   check(bridge.indexOf("msg.method==='game_buy_item'") > 0 && bridge.indexOf("payload={p_shop_code:args.p_shop_code,p_idempotency_key:args.p_idempotency_key}") > 0 &&
