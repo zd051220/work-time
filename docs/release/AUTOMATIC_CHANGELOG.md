@@ -17,7 +17,7 @@
 - App token 推送机器人分支、创建或更新 PR；这些由 App token 触发的 push / pull_request 事件会启动仓库原生的 `code-audit.yml`。
 - 原生 `pull_request` 审计运行在机器人 PR 的事件上下文中，检查记录关联到该 PR 的提交；E2E job 会等待测试 PR 的检查完成。
 - 不再使用 reusable workflow 冒充机器人 PR 的审计结果，也不使用 `workflow_dispatch` 作为 PR 必需检查。
-- 工作流的 `GITHUB_TOKEN` 仍保持只读 `contents: read`；自动更新日志 job 和隔离测试 job 均不授予 `actions: write`。
+- 工作流各 job 的内置 `GITHUB_TOKEN` 仅使用只读权限，具体权限按 job 职责分别设置（见下文）；自动更新日志 job 和隔离测试 job 均不授予 `actions: write`。
 
 **一次性仓库配置：**需要创建并安装一个专用于此仓库的 GitHub App，仅授予 `Contents: read and write` 与 `Pull requests: read and write`，并在仓库 Actions secrets 中配置：
 - `CHANGELOG_APP_ID`：GitHub App ID。
