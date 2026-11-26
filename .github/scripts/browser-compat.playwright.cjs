@@ -79,12 +79,16 @@ async function makeContext(browser, origin, options) {
 }
 
 async function dismissFirstRunNotice(page) {
-  const mask = page.locator('#mask');
   await page.waitForFunction(() => {
     var element = document.getElementById('mask');
-    return element && element.classList.contains('show');
+    var last = Number(localStorage.getItem('mw_notice_55') || 0);
+    return (element && element.classList.contains('show')) ||
+      (last > 0 && Date.now() - last < 24 * 3600 * 1000);
   }, null, { timeout: 3000 });
-  if (await mask.isVisible()) await page.locator('#closeNotice').click();
+  const maskIsOpen = await page.locator('#mask').evaluate(element =>
+    element.classList.contains('show')
+  );
+  if (maskIsOpen) await page.locator('#closeNotice').click();
   await page.waitForFunction(() => {
     var element = document.getElementById('mask');
     return !element || !element.classList.contains('show');
