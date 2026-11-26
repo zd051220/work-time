@@ -141,13 +141,14 @@ async function runEngine(name, type, origin) {
         await page.goto(origin + '/v5.5.html');
         await initialClockResponse;
         await page.locator('#startBtn').click();
-        const cdp = await context.newCDPSession(page);
-        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
+        const otherPage = await context.newPage();
+        await otherPage.goto(origin + '/index.html');
+        await otherPage.bringToFront();
         await page.waitForFunction(() => document.hidden === true);
         const fiveHours = 5 * 60 * 60 * 1000;
         serverOffset = fiveHours;
         await page.evaluate(ms => { window.__testClock.wall += ms; }, fiveHours);
-        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'active' });
+        await page.bringToFront();
         await page.waitForFunction(() => document.hidden === false);
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
@@ -189,13 +190,14 @@ async function runEngine(name, type, origin) {
         await page.goto(origin + '/v5.5.html');
         await initialClockResponse;
         await page.locator('#startBtn').click();
-        const cdp = await context.newCDPSession(page);
-        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
+        const otherPage = await context.newPage();
+        await otherPage.goto(origin + '/index.html');
+        await otherPage.bringToFront();
         await page.waitForFunction(() => document.hidden === true);
         const fiveHours = 5 * 60 * 60 * 1000;
         serverOffset = fiveHours;
         await page.evaluate(ms => { window.__testClock.wall += ms + 30 * 60 * 1000; }, fiveHours);
-        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'active' });
+        await page.bringToFront();
         await page.waitForFunction(() => document.hidden === false);
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');

@@ -581,7 +581,7 @@ function onShow(){
     finishReview('设备休眠导致双钟不一致，且没有可用的可信服务器时间','clock');
     return;
   }
-  requestServerTime().then(function(server){
+  return requestServerTime().then(function(server){
     var serverDelta=server.serverAt-Number(snap.serverAt);
     var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
     var verdict=classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance);
