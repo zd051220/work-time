@@ -29,9 +29,9 @@ jobs:
           set -euo pipefail
           test -s cat-companion-preview.html
           test -s assets/cats/README.md
-          mkdir -p "$RUNNER_TEMP/cat-preview"
+          mkdir -p "$RUNNER_TEMP/cat-preview/assets"
           cp cat-companion-preview.html "$RUNNER_TEMP/cat-preview/"
-          cp -R assets/cats "$RUNNER_TEMP/cat-preview/assets-cats"
+          cp -R assets/cats "$RUNNER_TEMP/cat-preview/assets/cats"
           tar -czf "$RUNNER_TEMP/cat-preview.tar.gz" -C "$RUNNER_TEMP" cat-preview
           test -s "$RUNNER_TEMP/cat-preview.tar.gz"
 
