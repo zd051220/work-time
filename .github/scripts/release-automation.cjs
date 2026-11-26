@@ -16,6 +16,124 @@ function cleanMarkdown(value, limit=180) {
     .replace(/\s+/g, ' ').trim().slice(0, limit);
 }
 
+// Release notes should use one concise summary, not flatten every PR template section.
+function extractReleaseSummary(body) {
+  if (typeof body !== 'string' || !body.trim()) return '';
+  const lines = body.replace(/\r\n?/g, '\n').split('\n');
+  const paragraph = [];
+  let sectionLevel = null;
+  let fenceChar = null;
+  let fenceLength = 0;
+  let inHtmlComment = false;
+  let inIndentedCode = false;
+  // At the beginning of a document, or after a blank line, an indented block may start.
+  let previousBlank = true;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
+
+    // Indented code blocks continue through indented and blank lines.
+    if (inIndentedCode) {
+      if (!rawLine.trim() || /^(?: {4,}|\t)/.test(rawLine)) {
+        previousBlank = !rawLine.trim();
+        continue;
+      }
+      inIndentedCode = false;
+    }
+
+    // Fenced code owns its contents; comment markers inside it are inert.
+    if (fenceChar) {
+      const closePattern = new RegExp('^ {0,3}' + fenceChar + '{' + fenceLength + ',}\\s*$');
+      if (closePattern.test(rawLine)) {
+        fenceChar = null;
+        fenceLength = 0;
+      }
+      continue;
+    }
+
+    // Remove HTML comments first, so fence-like text inside comments stays invisible.
+    let visible = '';
+    let cursor = 0;
+    while (cursor < rawLine.length) {
+      if (inHtmlComment) {
+        const close = rawLine.indexOf('-->', cursor);
+        if (close < 0) break;
+        inHtmlComment = false;
+        cursor = close + 3;
+        continue;
+      }
+      const open = rawLine.indexOf('<!--', cursor);
+      if (open < 0) {
+        visible += rawLine.slice(cursor);
+        break;
+      }
+      visible += rawLine.slice(cursor, open);
+      inHtmlComment = true;
+      cursor = open + 4;
+    }
+
+    // Only visible text outside an open comment may start a fenced code block.
+    if (!inHtmlComment) {
+      const fenceOpen = /^ {0,3}(\x60{3,}|~{3,})/.exec(visible);
+      if (fenceOpen) {
+        // A fenced code block is a block boundary: never append later prose to an earlier paragraph.
+        if (paragraph.length) break;
+        fenceChar = fenceOpen[1][0];
+        fenceLength = fenceOpen[1].length;
+        continue;
+      }
+    }
+    // Four-space or tab indentation starts a Markdown indented code block only
+    // at a block boundary; indentation within an existing paragraph remains text.
+    if (/^(?: {4,}|\t)/.test(visible) && previousBlank) {
+      if (paragraph.length) break;
+      inIndentedCode = true;
+      previousBlank = false;
+      continue;
+    }
+
+    const line = visible.trim();
+    if (!line) {
+      if (paragraph.length) break;
+      previousBlank = true;
+      continue;
+    }
+    previousBlank = false;
+
+    const atxHeading = /^(#{1,6})\s+/.exec(line);
+    if (atxHeading) {
+      const level = atxHeading[1].length;
+      if (paragraph.length) break;
+      if (sectionLevel !== null && level <= sectionLevel) return '';
+      if (sectionLevel === null) sectionLevel = level;
+      continue;
+    }
+
+    // Setext underline applies to the preceding ordinary text line.
+    const setextNext = /^(=+|-+)\s*$/.exec((lines[index + 1] || '').trim());
+    if (setextNext) {
+      const level = setextNext[1][0] === '=' ? 1 : 2;
+      if (paragraph.length) break;
+      if (sectionLevel !== null && level <= sectionLevel) return '';
+      if (sectionLevel === null) sectionLevel = level;
+      index += 1;
+      continue;
+    }
+
+    if (/^>/.test(line)) {
+      if (paragraph.length) break;
+      return '';
+    }
+
+    // CommonMark horizontal rules allow whitespace between marker characters.
+    if (/^ {0,3}(?:(?:\*\s*){3,}|(?:-\s*){3,}|(?:_\s*){3,})$/.test(rawLine)) {
+      if (paragraph.length) break;
+      continue;
+    }
+    paragraph.push(line.replace(/^(?:[-*+]\s+|\d+[.)]\s+)/, ''));
+  }
+  return cleanMarkdown(paragraph.join(' '), 180);
+}
 function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('仅允许稳定版 SemVer');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('发布日期格式无效');
@@ -23,7 +141,7 @@ function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('仓库名称无效');
   const safeTitle = cleanMarkdown(title, 140);
   if (!safeTitle) throw new Error('PR 标题为空');
-  const summary = cleanMarkdown(body, 180);
+  const summary = extractReleaseSummary(body);
   const line = '- ' + safeTitle + (summary && summary.toLowerCase() !== safeTitle.toLowerCase() ? ' — ' + summary : '') +
     ' ([#' + number + '](https://github.com/' + repository + '/pull/' + number + '))';
   return '## [' + version + '] - ' + date + '\n\n### 更新内容\n' + line + '\n';
@@ -71,4 +189,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = {cleanMarkdown,makeReleaseSection,insertReleaseSection,prepare};
+module.exports = {cleanMarkdown,extractReleaseSummary,makeReleaseSection,insertReleaseSection,prepare};
