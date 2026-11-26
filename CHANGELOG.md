@@ -16,6 +16,11 @@
 （暂无带有效版本标签的已合并 PR）
 <!-- END AUTO-GENERATED PR CHANGELOG -->
 
+## [5.5.1] - 2026-11-26
+
+### 更新内容
+- test: verify guarded automatic release candidate trigger — 测试目的 验证普通 PR 合并到 main 后，唯一 release:patch 标签能否触发自动版本候选分支与候选 PR 创建。 变更范围 仅新增 docs/release/AUTOMATION TRIGGER ACCEPTANCE.md ，不改产品代码、版本文件或 CHANGELOG。 安全边界 本 PR 合并后只验证候选 PR 生成。自动生成的候选 P ([#28](https://github.com/zd051220/work-time/pull/28))
+
 ## [5.5.0] - 过渡基线，历史版本号为 5.5
 
 > 这是对现有 v5.5 生产基线的文档化映射，不代表本次创建了 v5.5.0 Git Tag，也不代表运行时 `version.json` 已改为三段式版本号。正式发布时间与发布资产以实际 GitHub Release 记录为准。
