@@ -42,12 +42,12 @@ jobs:
       contents: read
       actions: read
     outputs:
-      tag: \${{ steps.release.outputs.tag }}
+      tag: ${{ steps.release.outputs.tag }}
     steps:
       - name: Checkout exact main commit
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -59,8 +59,8 @@ jobs:
       - name: Validate release input and changelog
         id: release
         env:
-          VERSION: \${{ inputs.version }}
-          CHANNEL: \${{ inputs.channel }}
+          VERSION: ${{ inputs.version }}
+          CHANNEL: ${{ inputs.channel }}
         run: |
           set -euo pipefail
 
@@ -128,7 +128,7 @@ jobs:
 
       - name: Wait for successful GitHub Pages deployment
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           echo "等待当前提交对应的 GitHub Pages 部署成功：$GITHUB_SHA"
@@ -167,15 +167,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-notes
-          path: \${{ steps.release.outputs.notes_file }}
+          path: ${{ steps.release.outputs.notes_file }}
           if-no-files-found: error
           retention-days: 1
 
       - name: Verification summary
         env:
-          TAG: \${{ steps.release.outputs.tag }}
-          CHANNEL: \${{ inputs.channel }}
-          MODE: \${{ inputs.mode }}
+          TAG: ${{ steps.release.outputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
+          MODE: ${{ inputs.mode }}
         run: |
           {
             echo "## 发布前验证完成"
@@ -210,21 +210,21 @@ jobs:
 
       - name: Create GitHub Release
         env:
-          GH_TOKEN: \${{ github.token }}
-          TAG: \${{ needs.verify.outputs.tag }}
-          CHANNEL: \${{ inputs.channel }}
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verify.outputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
         run: |
           set -euo pipefail
           ARGS=("$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "release-notes/release-notes.md")
           if [[ "$CHANNEL" == "prerelease" ]]; then
             ARGS+=(--prerelease)
           fi
-          gh release create "\${ARGS[@]}"
+          gh release create "${ARGS[@]}"
 
       - name: Release summary
         env:
-          TAG: \${{ needs.verify.outputs.tag }}
-          CHANNEL: \${{ inputs.channel }}
+          TAG: ${{ needs.verify.outputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
         run: |
           {
             echo "## 发布完成"
