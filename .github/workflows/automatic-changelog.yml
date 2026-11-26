@@ -107,6 +107,7 @@ jobs:
           repositories: work-time
           permission-contents: write
           permission-pull-requests: write
+          permission-checks: read
       - name: Checkout main
         uses: actions/checkout@v4
         with:
@@ -131,7 +132,10 @@ jobs:
             printf '%s\\n' "$changed_files"
             exit 1
           fi
-          git diff --cached --quiet && { echo "Test fixture unchanged."; exit 0; }
+          if git diff --cached --quiet; then
+            echo "The isolated fixture has no diff from main; refusing to create an empty test PR."
+            exit 1
+          fi
           git commit -m "test: exercise isolated changelog automation"
       - name: Push dedicated test branch
         run: |
