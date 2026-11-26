@@ -35,7 +35,9 @@ function getSummary(body){
   return paragraph?paragraph.slice(0,180):'';
 }
 function validRepository(repository){
-  return typeof repository==='string'&&/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository);
+  if(typeof repository!=='string')return false;
+  const parts=repository.split('/');
+  return parts.length===2&&parts.every(part=>/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(part)&&part!=='.'&&part!=='..');
 }
 function renderEntries(pulls,repository){
   if(!Array.isArray(pulls))throw new TypeError('PR 数据必须是数组');
@@ -101,7 +103,6 @@ async function fetchMergedPullRequests(repository,token,fetchImpl=fetch){
     all.push(...items.filter(pr=>pr&&pr.merged_at));
     if(items.length<PAGE_SIZE)return all;
   }
-  // 第 21 页只取 1 条作边界探测；若存在更多记录则失败关闭，不截断生成日志。
   const overflow=await getPage(MAX_PAGES+1,1);
   if(overflow.length>0)throw new Error('PR 数量超过安全分页上限 '+(MAX_PAGES*PAGE_SIZE)+'，请人工检查后再运行');
   return all;
