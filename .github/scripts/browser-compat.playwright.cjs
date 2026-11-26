@@ -141,14 +141,12 @@ async function runEngine(name, type, origin) {
       const context = await makeContext(browser, origin, { forceStorageFallback: true });
       const first = await context.newPage();
       const second = await context.newPage();
-      await Promise.all([
-        first.goto(origin + '/v5.5.html'),
-        second.goto(origin + '/v5.5.html')
-      ]);
+      await first.goto(origin + '/v5.5.html');
       await first.waitForFunction(() => {
         var button = document.getElementById('startBtn');
         return button && !button.disabled;
       }, null, { timeout: 10000 });
+      await second.goto(origin + '/v5.5.html');
       await second.waitForFunction(() => {
         var bar = document.getElementById('writerBar');
         return bar && /只读/.test(bar.textContent);
