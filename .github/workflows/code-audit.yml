@@ -5,19 +5,12 @@ on:
     branches: ["**"]
     paths:
       - "*.html"
+      - "**.md"
+      - "docs/**"
       - "supabase/migrations/**"
       - ".github/scripts/**"
-      - ".github/workflows/code-audit.yml"
-      - ".github/workflows/formal-release.yml"
-      - "CHANGELOG.md"
+      - ".github/workflows/**"
   pull_request:
-    paths:
-      - "*.html"
-      - "supabase/migrations/**"
-      - ".github/scripts/**"
-      - ".github/workflows/code-audit.yml"
-      - ".github/workflows/formal-release.yml"
-      - "CHANGELOG.md"
 
 permissions:
   contents: read

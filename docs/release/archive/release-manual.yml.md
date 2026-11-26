@@ -1,3 +1,8 @@
+# 已停用的历史工作流
+
+> 此文件仅用于审计和追溯。它已从 `.github/workflows/` 移出，不会被 GitHub Actions 识别或执行。请勿将其恢复为活动发布入口。新的发布流程以 `.github/workflows/formal-release.yml` 为准。
+
+```yaml
 name: release-manual
 
 # 手动发布：只在你点“Run workflow”时执行。
@@ -108,3 +113,4 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat /tmp/sha.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+```
