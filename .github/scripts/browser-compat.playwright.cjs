@@ -55,6 +55,9 @@ async function makeContext(browser, origin, options) {
     });
   }
   await context.addInitScript(() => {
+    try { localStorage.setItem('mw_notice_55', String(Date.now())); } catch (e) {}
+  });
+  await context.addInitScript(() => {
     window.__browserCompatMessages = [];
     window.addEventListener('message', function (event) {
       var data = event && event.data;
@@ -122,7 +125,6 @@ async function runEngine(name, type, origin) {
       const page = await context.newPage();
       await expectVersionInfo(page, { version: '5.6.0', url: 'v5.5.html', note: '浏览器测试更新' });
       await page.goto(origin + '/v5.5.html');
-      await dismissFirstRunNotice(page);
       const banner = page.locator('#updateBanner');
       await banner.waitFor({ state: 'visible' });
       await page.waitForFunction(() => document.getElementById('updateBanner').classList.contains('show'));
@@ -156,14 +158,12 @@ async function runEngine(name, type, origin) {
       const first = await context.newPage();
       const second = await context.newPage();
       await first.goto(origin + '/v5.5.html');
-      await dismissFirstRunNotice(first);
       await first.waitForFunction(() => {
         var button = document.getElementById('startBtn');
         var lease = JSON.parse(localStorage.getItem('mw_lease_v53') || 'null');
         return button && !button.disabled && lease && lease.tab;
       }, null, { timeout: 10000 });
       await second.goto(origin + '/v5.5.html');
-      await dismissFirstRunNotice(second);
       await second.waitForFunction(() => {
         var bar = document.getElementById('writerBar');
         return bar && /只读/.test(bar.textContent);
