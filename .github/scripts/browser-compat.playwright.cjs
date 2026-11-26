@@ -76,8 +76,16 @@ async function makeContext(browser, origin, options) {
 }
 
 async function dismissFirstRunNotice(page) {
-  const closeButton = page.locator('#closeNotice');
-  if (await closeButton.isVisible()) await closeButton.click();
+  const mask = page.locator('#mask');
+  await page.waitForFunction(() => {
+    var element = document.getElementById('mask');
+    return element && element.classList.contains('show');
+  }, null, { timeout: 3000 });
+  if (await mask.isVisible()) await page.locator('#closeNotice').click();
+  await page.waitForFunction(() => {
+    var element = document.getElementById('mask');
+    return !element || !element.classList.contains('show');
+  }, null, { timeout: 3000 });
 }
 
 async function expectVersionInfo(page, info) {
