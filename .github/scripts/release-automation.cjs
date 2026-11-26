@@ -52,7 +52,7 @@ function insertReleaseSection(changelog, section) {
   if (!match) throw new Error('无法定位未发布章节');
   const nextHeading = changelog.indexOf('\n## [', match.index + match[0].length - 1);
   if (nextHeading < 0) throw new Error('CHANGELOG 缺少历史版本章节');
-  if (new RegExp('^## \\[' + section.match(/^## \[([^\]]+)\]/)[1].replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&') + '\\]', 'm').test(changelog)) {
+  if (new RegExp('^## \\[' + section.match(/^## \[([^\]]+)\]/)[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]', 'm').test(changelog)) {
     throw new Error('该版本的 CHANGELOG 章节已存在');
   }
   return changelog.slice(0, nextHeading + 1) + section + '\n' + changelog.slice(nextHeading + 1);
