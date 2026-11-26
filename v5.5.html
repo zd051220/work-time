@@ -625,7 +625,7 @@ function onShow(){
       return;
     }
     var verdict=classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance);
-    if(verdict==='auto-server')finishAuto();
+    if(verdict==='auto-server'||verdict==='auto-dual')finishAuto();
     else if(verdict==='review-fast')finishReview('墙钟流逝时间明显快于 Supabase 服务器时间，疑似人为调快系统时钟','clock');
     else if(verdict==='review-clock')finishReview('检测到系统时间异常，无法安全自动补计','clock');
     else if(verdict==='review-unverified')finishReview('服务器时间无法验证这段休眠时间，请人工核对','clock');
