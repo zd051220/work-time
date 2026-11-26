@@ -19,7 +19,7 @@
 - 正式 CHANGELOG 生成 job 和隔离 E2E 测试 job 都不再申请 `actions: write`；两个审计 job 只申请 `contents: read`，checkout 不保留凭据。
 - 因此 `automatic-changelog` 的写入任务均不再拥有“启动任意 workflow”的能力，不能借此启动 `formal-release.yml`。
 
-`workflow_dispatch` 工作流必须存在于默认分支。因此，这套机器人 CI 派发机制会在本 PR 合并、审计工作流进入 `main` 后启用。当前 PR 本身仍由正常的 PR 检查验证。
+新增的 E2E 手动测试入口必须等本 PR 合并到默认分支后才能启动；合并前，当前 PR 本身由正常的 PR 检查验证。机器人审计在正式流程触发时通过同仓库的可复用工作流执行，不再依赖 Actions API 派发。
 
 ## 分类与版本标签
 
