@@ -822,8 +822,7 @@ function applyCloudSession(row){
       if(remote.dev!==DEV){
         var gap=Date.now()-(Number(remote.lastAt)||Date.now());
         if(gap<0){
-          remote.pendingReview={from:Number(remote.lastAt)||Date.now(),to:Date.now(),delta:0,mode:remote.mode,reason:'系统时间早于云端最近一次记录时间，请核对',kind:'clock'};
-          remote.lastAt=Date.now();jumpWarn='检测到系统时间异常，请先核对。';
+          remote.lastAt=Date.now();jumpWarn='检测到系统时间回退，已重新校准计时基准。';
         }
       }
       data.session=remote;save();draw();return true;
@@ -1249,7 +1248,7 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 })();
 
 loadFeed(false);loadStats();
-if(data.session&&lifecycleSnapshot&&!data.session.pendingReview)setTimeout(function(){onShow()},0);
+if(data.session&&lifecycleSnapshot)setTimeout(function(){onShow()},0);
 
 })();
 
