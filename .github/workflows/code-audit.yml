@@ -6,6 +6,7 @@ on:
     paths:
       - "*.html"
       - "**.md"
+      - "version.json"
       - "docs/**"
       - "supabase/migrations/**"
       - ".github/scripts/**"
@@ -20,9 +21,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Automatic versioning tests
+        run: node --test .github/scripts/versioning.test.cjs
+      - name: Runtime version configuration validation
+        run: node .github/scripts/versioning.cjs check-config version.json
       - name: Static code audit
         run: node .github/scripts/code_audit.js
       - name: Cat game migration security audit

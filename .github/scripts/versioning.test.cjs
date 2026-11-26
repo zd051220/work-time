@@ -1,0 +1,25 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {parseSemVer,parseRuntimeVersion,compareSemVer,getReleaseBump,calculateNextVersion,validateVersionConfig}=require('./versioning.cjs');
+
+test('parses SemVer prerelease and build metadata',()=>{const v=parseSemVer('2.4.0-rc.12+build.7');assert.equal(v.major,2n);assert.deepEqual(v.prerelease,['rc','12']);assert.deepEqual(v.build,['build','7']);});
+test('rejects invalid SemVer and numeric leading zeroes',()=>{for(const v of ['01.2.3','1.02.3','1.2.03','1.2','1.2.3-01','1.2.3-','v1.2.3'])assert.throws(()=>parseSemVer(v));});
+test('maps legacy 5.5 to 5.5.0 without a tag side effect',()=>{const v=parseRuntimeVersion('5.5');assert.equal(v.legacy,true);assert.equal(v.sourceVersion,'5.5');assert.equal(compareSemVer('5.5','5.5.0'),0);});
+test('follows SemVer prerelease precedence',()=>{const a=['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0'];for(let i=0;i<a.length-1;i++)assert.equal(compareSemVer(a[i],a[i+1]),-1);});
+test('ignores build metadata for precedence',()=>assert.equal(compareSemVer('1.2.3+one','1.2.3+two'),0));
+test('compares huge numeric prerelease identifiers exactly',()=>assert.equal(compareSemVer('1.0.0-999999999999999999999','1.0.0-1000000000000000000000'),-1));
+test('compares arbitrarily large core numbers without precision loss',()=>assert.equal(compareSemVer('999999999999999999999.0.0','1000000000000000000000.0.0'),-1));
+test('increments arbitrarily large core numbers without precision loss',()=>assert.equal(calculateNextVersion('999999999999999999999.0.0',['release:major']),'1000000000000000000000.0.0'));
+test('reads release labels as strings or GitHub label objects',()=>{assert.equal(getReleaseBump([{name:'bug'},{name:'release:minor'}]),'minor');assert.equal(getReleaseBump(['release:patch']),'patch');assert.equal(getReleaseBump(['release:none']),null);});
+test('rejects conflicting release labels',()=>assert.throws(()=>getReleaseBump(['release:patch','release:minor']),/只能设置一个/));
+test('calculates major minor patch from legacy production baseline',()=>{assert.equal(calculateNextVersion('5.5',['release:patch']),'5.5.1');assert.equal(calculateNextVersion('5.5',['release:minor']),'5.6.0');assert.equal(calculateNextVersion('5.5',['release:major']),'6.0.0');assert.equal(calculateNextVersion('5.6.4',['release:minor']),'5.7.0');});
+test('does not infer a release without a release label',()=>assert.equal(calculateNextVersion('5.5',['bugfix']),null));
+test('rejects prerelease baseline for automatic stable increments',()=>assert.throws(()=>calculateNextVersion('5.6.0-rc.1',['release:patch']),/预发布基线/));
+test('validates existing legacy version.json without modifying it',()=>{const r=validateVersionConfig({version:'5.5',url:'v5.5.html',note:'当前正式版'});assert.equal(r.valid,true);assert.equal(r.normalizedVersion,'5.5.0');assert.equal(r.legacyVersion,true);});
+test('validates future stable config',()=>assert.equal(validateVersionConfig({version:'5.6.0',url:'v5.6.0.html',note:'新增功能'}).valid,true));
+test('rejects unsafe URLs and invalid fields',()=>{for(const url of ['/v5.html','../v5.html','https://example.com/v5.html','v5.html?x=1','v5.html#top','javascript:alert(1)','a//b.html'])assert.equal(validateVersionConfig({version:'5.6.0',url,note:'ok'}).valid,false,url);assert.equal(validateVersionConfig({version:'5.6.0',url:'v5.6.0.html',note:12}).valid,false);});
+test('rejects leading and trailing whitespace in URL without normalizing it away',()=>{for(const url of [' v5.6.0.html','v5.6.0.html ','\tv5.6.0.html','v5.6.0.html\\n'])assert.equal(validateVersionConfig({version:'5.6.0',url,note:'ok'}).valid,false,JSON.stringify(url));assert.equal(validateVersionConfig({version:'5.6.0',url:'v5.6.0.html',note:'ok'}).valid,true);});
+test('rejects malformed prerelease identifiers',()=>{for(const v of ['1.2.3-alpha..1','1.2.3-.alpha','1.2.3-alpha.','1.2.3-01','1.2.3-00.beta'])assert.throws(()=>parseSemVer(v),undefined,v);});
+test('validates build metadata boundaries while allowing numeric leading zeroes',()=>{for(const v of ['1.2.3+','1.2.3+meta..data','1.2.3+meta.','1.2.3+white space'])assert.throws(()=>parseSemVer(v),undefined,v);assert.equal(parseSemVer('1.2.3+001.000').build.join('.'),'001.000');});
+test('requires a relative HTML page path',()=>{assert.equal(validateVersionConfig({version:'5.6.0',url:'releases/v5.6.0.html',note:''}).valid,true);assert.equal(validateVersionConfig({version:'5.6.0',url:'assets/app.js',note:''}).valid,false);});
