@@ -19,16 +19,39 @@ function cleanMarkdown(value, limit=180) {
 // Release notes should use one concise summary, not flatten every PR template section.
 function extractReleaseSummary(body) {
   if (typeof body !== 'string' || !body.trim()) return '';
-  const lines = body.replace(/<!--[\s\S]*?-->/g, '').replace(/\r\n?/g, '\n').split('\n');
+  const lines = body.replace(/<!--[\s\S]*?-->/g, ' ').replace(/\r\n?/g, '\n').split('\n');
   const paragraph = [];
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
+  let sectionLevel = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
     if (!line) {
       if (paragraph.length) break;
       continue;
     }
-    if (/^#{1,6}\s/.test(line) || /^[-*_]{3,}$/.test(line) || /^>/.test(line)) continue;
-    paragraph.push(line);
+
+    const atxHeading = /^(#{1,6})\s+/.exec(line);
+    const setextNext = /^(=+|-+)\s*$/.exec((lines[index + 1] || '').trim());
+    if (setextNext) {
+      const level = setextNext[1][0] === '=' ? 1 : 2;
+      if (paragraph.length) break;
+      if (sectionLevel !== null && level <= sectionLevel) return '';
+      if (sectionLevel === null) sectionLevel = level;
+      index += 1;
+      continue;
+    }
+    if (atxHeading) {
+      const level = atxHeading[1].length;
+      if (paragraph.length) break;
+      if (sectionLevel !== null && level <= sectionLevel) return '';
+      if (sectionLevel === null) sectionLevel = level;
+      continue;
+    }
+    if (/^>/.test(line)) {
+      if (paragraph.length) break;
+      return '';
+    }
+    if (/^[-*_]{3,}$/.test(line)) continue;
+    paragraph.push(line.replace(/^(?:[-*+]\s+|\d+[.)]\s+)/, ''));
   }
   return cleanMarkdown(paragraph.join(' '), 180);
 }
