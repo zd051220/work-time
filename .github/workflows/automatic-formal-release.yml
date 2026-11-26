@@ -113,7 +113,8 @@ jobs:
     if: >-
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'main' &&
-      startsWith(github.event.pull_request.head.ref, 'automation/release/')
+      startsWith(github.event.pull_request.head.ref, 'automation/release/') &&
+      vars.AUTO_FORMAL_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
