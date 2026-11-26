@@ -287,7 +287,7 @@ jobs:
           success_count=0
           for attempt in $(seq 1 60); do
             check_runs_json="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs?per_page=100")"
-            summary="$(printf '%s' "$check_runs_json" | jq --argjson pr "$pr_number" --arg sha "$head_sha" '
+            summary="$(printf '%s' "$check_runs_json" | jq -r --argjson pr "$pr_number" --arg sha "$head_sha" '
               [.check_runs[]
                 | select(
                     .name == "audit"
