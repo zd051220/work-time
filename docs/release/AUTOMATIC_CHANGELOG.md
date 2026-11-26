@@ -10,16 +10,20 @@
 
 ## CI 如何可靠启动
 
-机器人使用仓库自带的 `GITHUB_TOKEN` 创建或更新 PR。GitHub 对这类 PR 产生的 `pull_request` 检查可能要求有写权限的维护者手动批准，因此工作流**不把该事件当作唯一 CI 入口**。
+机器人分支需要获得**属于机器人 PR 自身提交**的 GitHub Actions 检查。单纯在原工作流里调用 reusable workflow，只会把检查记录在调用方的事件和提交上下文中；即使 checkout 了机器人分支代码，也不能把该检查变成机器人 PR head SHA 的检查。
 
-为避免检查静默不运行：
-- `.github/workflows/code-audit.yml` 支持 `workflow_dispatch`，也支持作为可复用工作流被其他工作流调用。
-- 正式 CHANGELOG 机器人流程也改为调用可复用的 `code-audit.yml`，并将审计目标明确设为 `automation/changelog`。
-- 隔离 E2E 测试不再调用 Actions API 派发审计，而是在同一工作流中调用可复用的 `code-audit.yml`，并将审计目标明确设为 `automation/changelog-e2e-test`。
-- 正式 CHANGELOG 生成 job 和隔离 E2E 测试 job 都不再申请 `actions: write`；两个审计 job 只申请 `contents: read`，checkout 不保留凭据。
-- 因此 `automatic-changelog` 的写入任务均不再拥有“启动任意 workflow”的能力，不能借此启动 `formal-release.yml`。
+因此，创建或更新机器人分支及 PR 使用专用 GitHub App installation token，而不是 `GITHUB_TOKEN`：
+- App token 对 `work-time` 仓库仅申请 `contents: write`、`pull_requests: write` 和 `checks: read`。
+- App token 推送机器人分支、创建或更新 PR；这些由 App token 触发的 push / pull_request 事件会启动仓库原生的 `code-audit.yml`。
+- 原生 `pull_request` 审计运行在机器人 PR 的事件上下文中，检查记录关联到该 PR 的提交；E2E job 会等待测试 PR 的检查完成。
+- 不再使用 reusable workflow 冒充机器人 PR 的审计结果，也不使用 `workflow_dispatch` 作为 PR 必需检查。
+- 工作流的 `GITHUB_TOKEN` 仍保持只读 `contents: read`；自动更新日志 job 和隔离测试 job 均不授予 `actions: write`。
 
-新增的 E2E 手动测试入口必须等本 PR 合并到默认分支后才能启动；合并前，当前 PR 本身由正常的 PR 检查验证。机器人审计在正式流程触发时通过同仓库的可复用工作流执行，不再依赖 Actions API 派发。
+**一次性仓库配置：**需要创建并安装一个专用于此仓库的 GitHub App，授予上述三项最小权限，并在仓库 Actions secrets 中配置：
+- `CHANGELOG_APP_ID`：GitHub App ID。
+- `CHANGELOG_APP_PRIVATE_KEY`：该 App 的私钥 PEM。
+
+App installation 必须覆盖 `zd051220/work-time`。如果缺少密钥或 App 权限不足，工作流会在写入机器人分支之前失败关闭，不会退回到无法触发 PR 检查的 `GITHUB_TOKEN` 方案。无需个人 PAT。该 App 不需要 `Actions: write` 权限。
 
 ## 分类与版本标签
 
@@ -42,10 +46,10 @@
 
 ## 权限与发布边界
 
-- 顶层工作流权限为空。正式 CHANGELOG 生成 job 和隔离 E2E 测试 job 只授予 `contents: write`、`pull-requests: write`，均不拥有启动其他工作流的权限。
-- `code-audit` 作为独立运行或可复用工作流时均只需要 `contents: read`，checkout 不保留凭据。
+- 顶层工作流权限为空；自动化 job 的内置 `GITHUB_TOKEN` 只授予 `contents: read`。用于机器人分支和 PR 的专用 GitHub App token 仅授予 `contents: write`、`pull_requests: write`、`checks: read)，不授予 `actions: write`。
+- `code-audit` 只需要 `contents: read`，checkout 不保留凭据。
 - 自动流程不写入 `main`，不修改 `version.json`，不创建 Tag 或 GitHub Release，也不触发正式发布。
-- 不需要预先配置个人 PAT 或 GitHub App 私钥。
+- 不使用个人 PAT；需要按上文配置专用 GitHub App ID 和私钥仓库密钥。
 
 ## 本地测试
 
@@ -64,7 +68,6 @@ node --test .github/scripts/versioning.test.cjs
 
 `docs/release/e2e-test/CHANGELOG.test.md`
 
-随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），再调用可复用的 `code-audit.yml` 对该测试分支执行完整审计。正式 CHANGELOG 机器人也以相同方式审计其专用分支。两条自动化路径都不通过 `workflow_dispatch` 派发另一个工作流，因此不需要 `actions: write`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
+随后通过专用 GitHub App token 更新 `automation/changelog-e2e-test` 分支，并创建或更新目标为 `main` 的草稿测试 PR。工作流会检查 PR 的 head/base 分支，并在 PR 已被标记为 Ready 时将其恢复为 Draft；无法确认 Draft 状态就失败关闭。App token 触发的 `pull_request` 事件会启动默认分支中的 `code-audit.yml`，审计结果属于测试 PR 的提交；E2E job 会等待该 PR 检查完成。正式 CHANGELOG 机器人 PR 使用相同机制，审计也由对应 PR 的原生检查完成。
 
-此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 仅申请 `contents: write` 和 `pull-requests: write`；审计 job 只读。注意：GitHub 的这两项权限是仓库级权限，并非只对测试分支生效；固定的测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。两个自动化写入 job 均不拥有 `actions: write`，因此不能通过 Actions API 派发 `formal-release.yml`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
-
+此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。自动化 job 的内置 `GITHUB_TOKEN` 仅为只读；写入机器人分支和 PR 的 GitHub App token 不具备 `actions: write`。注意：`contents: write` 和 `pull_requests: write` 是仓库级权限，并非分支级限权；固定测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
