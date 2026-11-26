@@ -173,10 +173,10 @@ jobs:
           unexpected="$(find generated-output -mindepth 1 ! -type f -print)"
           if [ -n "$unexpected" ]; then
             echo "Unexpected non-file artifact entries:"
-            printf '%s\\n' "$unexpected"
+            printf '%s\n' "$unexpected"
             exit 1
           fi
-          files="$(find generated-output -type f -printf '%P\\n')"
+          files="$(find generated-output -type f -printf '%P\n')"
           if [ "$files" != "CHANGELOG.test.md" ]; then
             echo "Artifact must contain exactly CHANGELOG.test.md."
             exit 1
@@ -199,7 +199,7 @@ jobs:
           changed_files="$(git diff --cached --name-only)"
           if [ "$changed_files" != "docs/release/e2e-test/CHANGELOG.test.md" ]; then
             echo "Unexpected files staged for isolated test PR:"
-            printf '%s\\n' "$changed_files"
+            printf '%s\n' "$changed_files"
             exit 1
           fi
           if git diff --cached --quiet; then
@@ -232,7 +232,7 @@ jobs:
           else
             git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" push origin HEAD:refs/heads/automation/changelog-e2e-test
           fi
-          if git config --local --get-regexp '^http\\..*extraheader$' >/dev/null 2>&1; then
+          if git config --local --get-regexp '^http\..*extraheader$' >/dev/null 2>&1; then
             echo "Unexpected persisted Git authentication configuration."
             exit 1
           fi
