@@ -272,18 +272,24 @@ jobs:
         run: |
           set -euo pipefail
           pr_number="${{ steps.test-pr.outputs.number }}"
-          head_sha="$(gh pr view "$pr_number" --json headRefOid --jq '.headRefOid')"
+          head_sha="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq '.head.sha')"
           check_count=0
+          pending_count=0
+          failed_names=""
           for attempt in $(seq 1 60); do
-            check_count="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs" --jq '.total_count')"
-            if [ "$check_count" -gt 0 ]; then
-              break
+            summary="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs" --jq '[.total_count, ([.check_runs[] | select(.status != "completed")] | length), ([.check_runs[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out" or .conclusion == "action_required") | .name] | join(","))] | @tsv')"
+            IFS=
+\t' read -r check_count pending_count failed_names <<< "$summary"
+            if [ -n "$failed_names" ]; then
+              echo "Native checks failed for exact test PR commit ${head_sha}: ${failed_names}"
+              exit 1
             fi
-            echo "Waiting for GitHub to register native checks for ${head_sha} (attempt ${attempt}/60)."
+            if [ "$check_count" -ge 2 ] && [ "$pending_count" -eq 0 ]; then
+              echo "All ${check_count} native check runs completed for exact test PR commit ${head_sha}."
+              exit 0
+            fi
+            echo "Waiting for native checks on ${head_sha}: total=${check_count}, pending=${pending_count} (attempt ${attempt}/60)."
             sleep 10
           done
-          if [ "$check_count" -eq 0 ]; then
-            echo "No native checks were registered for the exact test PR commit within 10 minutes."
-            exit 1
-          fi
-          gh pr checks "$pr_number" --watch --interval 10
+          echo "Native PR checks did not complete within 10 minutes for ${head_sha}."
+          exit 1
