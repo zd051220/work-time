@@ -20,4 +20,22 @@
 <a class="go" href="v5.5.html">进入小猫搬金条 ›</a>
 <div class="auto" id="auto">正在为你打开正式版…</div>
 <div class="pwa">添加到手机桌面：iPhone 使用 Safari 分享 →「添加到主屏幕」；Android 使用 Chrome 菜单 →「安装应用」或「添加到主屏幕」。</div>
-</main><script>setTimeout(function(){location.replace('v5.5.html')},700);</script></body></html>
+</main><script>(function(){
+  var done=false;
+  function go(path,version){
+    if(done)return;done=true;
+    try{
+      var target=new URL(path,location.href);
+      if(target.origin!==location.origin||!/^https?:$/.test(target.protocol))throw new Error('invalid update url');
+      if(version)target.searchParams.set('release',version);
+      location.replace(target.href);
+    }catch(e){location.replace('v5.5.html')}
+  }
+  var fallback=setTimeout(function(){go('v5.5.html','5.5')},1800);
+  fetch('version.json?check='+Date.now(),{cache:'no-store',credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('version unavailable');return r.json()})
+    .then(function(info){
+      if(!info||typeof info.url!=='string'||typeof info.version!=='string')throw new Error('invalid version metadata');
+      clearTimeout(fallback);go(info.url,info.version);
+    }).catch(function(){clearTimeout(fallback);go('v5.5.html','5.5')});
+})();</script></body></html>
