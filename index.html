@@ -1,52 +1,23 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8">
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小猫搬金条 5.4.1 · 已上线</title>
 <meta name="theme-color" content="#fff3d6">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>小猫搬金条 v5.5</title>
 <style>
-*{box-sizing:border-box} body{margin:0;min-height:100vh;background:linear-gradient(160deg,#fff1d2,#fffaf2 45%,#f8f1e8);color:#49382c;
-font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;padding:22px 20px 30px}
-.box{max-width:360px;margin:0 auto;text-align:center}
-.tag{display:inline-block;font-size:11px;font-weight:900;color:#8a6a2c;background:#fff4d9;border:1px solid #f0dcae;border-radius:999px;padding:5px 12px;letter-spacing:.5px}
-.cat{font-size:50px;line-height:1;margin:16px 0 8px}
-h1{font-size:20px;margin:0;font-weight:900;letter-spacing:.5px}
-.h1sub{font-size:11px;color:#a6917a;margin-top:6px;line-height:1.6}
-ul{text-align:left;margin:16px 0 0;padding:14px 16px;background:#fffdf8;border:1px solid #f1e3cc;border-radius:14px;box-shadow:0 2px 10px #c9a76a1a;list-style:none}
-li{font-size:12px;line-height:1.75;color:#5a4835;margin:0 0 8px} li:last-child{margin-bottom:0} li b{color:#3f2f20}
-.go{display:block;margin-top:16px;font-size:14px;font-weight:900;color:#5b3f12;text-decoration:none;background:linear-gradient(#f9d780,#e9ae3f);padding:15px;border-radius:16px;box-shadow:0 4px 0 #d49b35}
-.go:active{transform:translateY(1px)}
-.auto{font-size:11px;color:#a6917a;margin-top:10px}
-.tip{font-size:11px;color:#a6917a;margin-top:14px}
-.tip a{color:#8a6a2c}
-.pwa{font-size:11px;color:#a6917a;line-height:1.7;margin-top:14px;background:#fffdf8;border:1px dashed #eddfc8;border-radius:12px;padding:10px 12px}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#fff1d2,#fffaf2 45%,#f8f1e8);color:#49382c;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;padding:22px 20px 30px}
+.box{max-width:360px;margin:0 auto;text-align:center}.tag{display:inline-block;font-size:11px;font-weight:900;color:#8a6a2c;background:#fff4d9;border:1px solid #f0dcae;border-radius:999px;padding:5px 12px;letter-spacing:.5px}
+.cat{font-size:50px;line-height:1;margin:16px 0 8px}h1{font-size:20px;margin:0;font-weight:900;letter-spacing:.5px}.sub{font-size:11px;color:#a6917a;margin-top:6px;line-height:1.6}
+.go{display:block;margin-top:18px;font-size:14px;font-weight:900;color:#5b3f12;text-decoration:none;background:linear-gradient(#f9d780,#e9ae3f);padding:15px;border-radius:16px;box-shadow:0 4px 0 #d49b35}.auto{font-size:11px;color:#a6917a;margin-top:10px}
+.pwa{font-size:11px;color:#a6917a;line-height:1.7;margin-top:18px;background:#fffdf8;border:1px dashed #eddfc8;border-radius:12px;padding:10px 12px}
 </style></head>
-<body>
-<main class="box">
-  <div class="tag">5.4.1 已上线</div>
-  <div class="cat">🐈</div>
-  <h1>小猫搬金条 5.4.1</h1>
-  <div class="h1sub">换账号旧页面自动停，删号不再假装成功</div>
-  <ul>
-    <li><b>账号身份锁</b>：页面打开时就绑定当前账号，换账号后旧页面会自己停下，不会把 A 的账继续记到 B 的账本上。</li>
-    <li><b>删号流程不再假装成功</b>：删号函数没部署时，只清云端账本并明确提示；注销账号后本机该账号的账本归档并退出登录。</li>
-    <li><b>导入有上限</b>：导入备份超过上限会被拒绝，不会把页面卡死。</li>
-    <li><b>5.4 的都保留</b>：账号账本分库存、改密码、一个页面计时、跨午夜拆账、锁屏与离线 3 小时内自动补记。</li>
-  </ul>
-  <a class="go" href="v5.4.1.html">进入小猫搬金条 5.4.1 ›</a>
-  <div class="auto" id="auto">5 秒后自动进入 5.4.1</div>
-  <div class="tip"><b>新游戏内测</b> <a href="beta-v5.5.html">v5.5 内测版（含猫咪冒险工坊）</a> · 完整账本 <a href="ledger54-5.4.1.html">ledger54-5.4.1.html</a> · 上一版 <a href="v5.4.html">5.4</a> · 更早 <a href="v5.3.html">5.3</a> · <a href="v5.2.html">5.2</a> · <a href="v5.1.html">5.1</a></div>
-  <div class="pwa">想把小猫放到手机桌面？iPhone：Safari 分享 →「添加到主屏幕」；Android：Chrome 右上菜单 →「安装应用」/「添加到主屏幕」。</div>
-</main>
-<script>
-(function(){
-  var left=5, au=document.getElementById('auto');
-  var t=setInterval(function(){
-    left--; au.textContent=left+' 秒后自动进入 5.4.1';
-    if(left<=0){ clearInterval(t); location.replace('v5.4.1.html'); }
-  },1000);
-  if(location.search.indexOf('stay=1')>-1){ clearInterval(t); au.textContent='已停止自动跳转'; }
-})();
-</script>
-</body></html>
+<body><main class="box">
+<div class="tag">v5.5 正式版</div><div class="cat">🐈</div><h1>小猫搬金条</h1>
+<div class="sub">工作计时、工资账本与猫咪养成</div>
+<a class="go" href="v5.5.html">进入小猫搬金条 ›</a>
+<div class="auto" id="auto">正在为你打开正式版…</div>
+<div class="pwa">添加到手机桌面：iPhone 使用 Safari 分享 →「添加到主屏幕」；Android 使用 Chrome 菜单 →「安装应用」或「添加到主屏幕」。</div>
+</main><script>setTimeout(function(){location.replace('v5.5.html')},700);</script></body></html>
