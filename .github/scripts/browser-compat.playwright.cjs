@@ -108,6 +108,101 @@ async function runEngine(name, type, origin) {
       await context.close();
     });
 
+    if (name === 'Chromium') {
+      await test('手机休眠 5 小时：墙钟与服务器一致时静默补计', async () => {
+        const context = await makeContext(browser, origin);
+        const page = await context.newPage();
+        let serverOffset = 0;
+        await page.addInitScript(() => {
+          const realNow = Date.now.bind(Date);
+          const realPerf = performance.now.bind(performance);
+          window.__testClock = { wall: 0, mono: 0 };
+          Date.now = () => realNow() + window.__testClock.wall;
+          Object.defineProperty(performance, 'now', {
+            configurable: true,
+            value: () => realPerf() + window.__testClock.mono
+          });
+        });
+        await page.route('https://zemrafvmhfxqdeqauejt.supabase.co/auth/v1/health', async route => {
+          const headers = {
+            'access-control-allow-origin': origin,
+            'access-control-allow-methods': 'GET, OPTIONS',
+            'access-control-allow-headers': 'apikey',
+            'access-control-expose-headers': 'Date',
+            'content-type': 'application/json',
+            'date': new Date(Date.now() + serverOffset).toUTCString()
+          };
+          if (route.request().method() === 'OPTIONS') {
+            return route.fulfill({ status: 204, headers });
+          }
+          return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
+        });
+        await page.goto(origin + '/v5.5.html');
+        await page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
+        await page.locator('#startBtn').click();
+        const cdp = await context.newCDPSession(page);
+        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
+        await page.waitForFunction(() => document.hidden === true);
+        const fiveHours = 5 * 60 * 60 * 1000;
+        serverOffset = fiveHours;
+        await page.evaluate(ms => { window.__testClock.wall += ms; }, fiveHours);
+        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'active' });
+        await page.waitForFunction(() => document.hidden === false);
+        await page.waitForFunction(() => {
+          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
+          return saved && saved.session && !saved.session.pendingReview &&
+            saved.session.workMs >= 5 * 60 * 60 * 1000;
+        }, null, { timeout: 10000 });
+        await context.close();
+      });
+
+      await test('系统时间比服务器快 30 分钟：强制人工核对', async () => {
+        const context = await makeContext(browser, origin);
+        const page = await context.newPage();
+        let serverOffset = 0;
+        await page.addInitScript(() => {
+          const realNow = Date.now.bind(Date);
+          const realPerf = performance.now.bind(performance);
+          window.__testClock = { wall: 0, mono: 0 };
+          Date.now = () => realNow() + window.__testClock.wall;
+          Object.defineProperty(performance, 'now', {
+            configurable: true,
+            value: () => realPerf() + window.__testClock.mono
+          });
+        });
+        await page.route('https://zemrafvmhfxqdeqauejt.supabase.co/auth/v1/health', async route => {
+          const headers = {
+            'access-control-allow-origin': origin,
+            'access-control-allow-methods': 'GET, OPTIONS',
+            'access-control-allow-headers': 'apikey',
+            'access-control-expose-headers': 'Date',
+            'content-type': 'application/json',
+            'date': new Date(Date.now() + serverOffset).toUTCString()
+          };
+          if (route.request().method() === 'OPTIONS') {
+            return route.fulfill({ status: 204, headers });
+          }
+          return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
+        });
+        await page.goto(origin + '/v5.5.html');
+        await page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
+        await page.locator('#startBtn').click();
+        const cdp = await context.newCDPSession(page);
+        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
+        await page.waitForFunction(() => document.hidden === true);
+        const fiveHours = 5 * 60 * 60 * 1000;
+        serverOffset = fiveHours;
+        await page.evaluate(ms => { window.__testClock.wall += ms + 30 * 60 * 1000; }, fiveHours);
+        await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'active' });
+        await page.waitForFunction(() => document.hidden === false);
+        await page.waitForFunction(() => {
+          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
+          return saved && saved.session && !!saved.session.pendingReview;
+        }, null, { timeout: 10000 });
+        await context.close();
+      });
+    }
+
     await test('SemVer 新版本提示、稍后关闭和立即更新跳转', async () => {
       const context = await makeContext(browser, origin);
       const page = await context.newPage();
