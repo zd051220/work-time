@@ -593,8 +593,14 @@ function onShow(){
   }
   if(monoDelta!==null&&Math.abs(wallDelta-monoDelta)<CLOCK_DRIFT_LIMIT){finishAuto();return}
   if(!(Number(snap.serverAt)>0)){
-    finishReview('设备休眠导致双钟不一致，且没有可用的可信服务器时间','clock');
-    return;
+    return requestServerTime().then(function(server){
+      var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500),offset=now-server.serverAt;
+      if(offset>tolerance)finishReview('本机墙钟当前时间明显快于可信服务器时间，疑似系统时间被调快','clock');
+      else if(offset< -tolerance)finishReview('本机墙钟当前时间明显慢于可信服务器时间，系统时间可能异常','clock');
+      else finishAuto();
+    }).catch(function(){
+      finishReview('设备休眠导致双钟不一致，且当前无法连接服务器验证时间','clock');
+    });
   }
   return requestServerTime().then(function(server){
     var serverDelta=server.serverAt-Number(snap.serverAt);

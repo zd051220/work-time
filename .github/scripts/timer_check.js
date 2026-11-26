@@ -43,7 +43,7 @@ function makeHarness() {
     'var save=function(){clock.saves++},draw=function(){clock.draws++};'+
     'var fetch=function(url){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));var noDate=clock.healthNoDate&&String(url).indexOf(\'auth/v1/health\')>=0;return Promise.resolve({ok:true,headers:{get:function(name){return !noDate&&String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
   const runner = new Function('performance','Date','data','clock','RealDate',
-    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
+    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},clearSample:function(){serverClockSample=null},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
   const T = runner(perf,FakeDate,data,clock,RealDate);
   data.session = {sid:'test-session',date:'2026-11-24',started:T0,lastAt:T0,start:'10:00',wage:200,hours:8,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,clockSnapshot:null,days:{'2026-11-24':{work:0,paid:0,unpaid:0}}};
   T.setSample();
@@ -67,6 +67,15 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
   check('双钟一致时不请求服务器',dual.fetches,0);
   await resumeCase('墙钟比服务器快 30 分钟',5*3600000+1800000,0,5*3600000,true,false);
   await resumeCase('双钟不一致且断网',3600000,0,3600000,true,true);
+  {
+    const T=makeHarness(),c=T.clock;T.clearSample();T.hide();c.wall+=3*3600000;c.serverNow+=3*3600000;await T.show();
+    check('没有隐藏前心跳但恢复时服务器可用，仍静默恢复',T.state().pending,false);
+    check('服务器当前时间确认后全额累计',T.state().work,3*3600000);
+  }
+  {
+    const T=makeHarness(),c=T.clock;T.clearSample();T.hide();c.wall+=3600000;c.offline=true;await T.show();
+    check('没有隐藏前心跳且恢复时断网，进入人工核对',T.state().pending,true);
+  }
   {
     const T=makeHarness(),c=T.clock;T.hide();c.wall+=2*3600000;c.serverNow+=2*3600000;c.healthNoDate=true;await T.show();
     check('Supabase 未暴露 Date 时回退同源服务器时间',T.state().pending,false);
