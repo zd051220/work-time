@@ -1,0 +1,241 @@
+name: automatic-formal-release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: automatic-formal-release
+  cancel-in-progress: false
+
+jobs:
+  prepare-release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      !startsWith(github.event.pull_request.head.ref, 'automation/release/') &&
+      vars.AUTO_FORMAL_RELEASE_ENABLED == 'true' &&
+      (contains(github.event.pull_request.labels.*.name, 'release:patch') ||
+       contains(github.event.pull_request.labels.*.name, 'release:minor') ||
+       contains(github.event.pull_request.labels.*.name, 'release:major'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout merged main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate release label and prepare version candidate
+        id: candidate
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_DATE: ${{ github.event.pull_request.merged_at }}
+        run: |
+          set -euo pipefail
+          mapfile -t labels < <(node -e 'const x=JSON.parse(process.env.PR_LABELS); for(const v of x) if(["release:patch","release:minor","release:major"].includes(v)) console.log(v)')
+          if [ "${#labels[@]}" -ne 1 ]; then
+            echo "必须且只能有一个 release:patch/minor/major 标签。"
+            exit 1
+          fi
+          bump="${labels[0]#release:}"
+          date="${RELEASE_DATE%%T*}"
+          node .github/scripts/release-automation.cjs prepare "$bump" "$PR_TITLE" "${PR_BODY:-}" "$PR_NUMBER" "$REPOSITORY" "$date"
+          version="$(node -p "require('./version.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "branch=automation/release/v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create narrowly scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Commit release candidate on dedicated branch
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_BRANCH: ${{ steps.candidate.outputs.branch }}
+          RELEASE_VERSION: ${{ steps.candidate.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$RELEASE_BRANCH"
+          git add version.json CHANGELOG.md
+          changed="$(git diff --cached --name-only | sort)"
+          if [ "$changed" != "$(printf 'CHANGELOG.md\nversion.json')" ]; then
+            echo "候选发布只能修改 CHANGELOG.md 和 version.json。"
+            exit 1
+          fi
+          git commit -m "release: prepare v$RELEASE_VERSION"
+          set +x
+          auth_header="$(printf 'x-access-token:%s' "$APP_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" push origin "HEAD:refs/heads/$RELEASE_BRANCH"
+
+      - name: Open release candidate pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_BRANCH: ${{ steps.candidate.outputs.branch }}
+          RELEASE_VERSION: ${{ steps.candidate.outputs.version }}
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --state open --base main --head "$RELEASE_BRANCH" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "同版本发布候选 PR 已存在：#$existing"
+            exit 1
+          fi
+          gh pr create --base main --head "$RELEASE_BRANCH" \
+            --title "release: v$RELEASE_VERSION" \
+            --body "自动生成的正式发布候选。请审查版本号、CHANGELOG 和 CI。合并此 PR 后，系统会等待对应 GitHub Pages 部署成功，再创建正式 Git Tag 与 GitHub Release。若要停止自动发布，请关闭仓库变量 AUTO_FORMAL_RELEASE_ENABLED。"
+
+  verify-release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      startsWith(github.event.pull_request.head.ref, 'automation/release/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Checkout exact release merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate release candidate and run full project checks
+        id: release
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./version.json').version")"
+          if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "version.json 不是稳定版 SemVer。"
+            exit 1
+          fi
+          if [ "${GITHUB_HEAD_REF}" != "automation/release/v$VERSION" ]; then
+            echo "发布分支与 version.json 不一致。"
+            exit 1
+          fi
+          node .github/scripts/versioning.cjs check-config version.json
+          node .github/scripts/release-automation.test.cjs
+          node .github/scripts/code_audit.js
+          node .github/scripts/cat_game_migration_check.js
+          node .github/scripts/cat_work_order_check.js
+          npm init -y > /dev/null 2>&1
+          npm install --no-audit --no-fund @electric-sql/pglite@0.6.0
+          node .github/scripts/cat_game_pg_check.mjs .
+          node .github/scripts/timer_check.js v5.5.html
+          TAG="v$VERSION"
+          if ! refs="$(git ls-remote --tags origin "refs/tags/$TAG")"; then
+            echo "无法确认远程 Tag 状态，拒绝发布。"
+            exit 1
+          fi
+          if [ -n "$refs" ]; then
+            echo "Tag 已存在：$TAG"
+            exit 1
+          fi
+          NOTES="$RUNNER_TEMP/release-notes.md"
+          awk -v heading="## [$VERSION]" '
+            index($0, heading) == 1 {
+              rest = substr($0, length(heading) + 1)
+              if (rest == "" || rest ~ /^[[:space:]]/) { found = 1; next }
+            }
+            found && /^## / { exit }
+            found { print }
+            END { if (!found) exit 2 }
+          ' CHANGELOG.md > "$NOTES"
+          if [ ! -s "$NOTES" ]; then
+            echo "对应版本的 CHANGELOG 章节为空。"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "notes=$NOTES" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for successful Pages deployment of the exact merge commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=100" > "$RUNNER_TEMP/runs.json"
+            match="$(jq -c --arg sha "$EXPECTED_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .name == "pages build and deployment")] | first // empty' "$RUNNER_TEMP/runs.json")"
+            if [ -n "$match" ]; then
+              status="$(jq -r '.status' <<< "$match")"
+              conclusion="$(jq -r '.conclusion // ""' <<< "$match")"
+              if [ "$status" = "completed" ]; then
+                [ "$conclusion" = "success" ] || { echo "Pages 部署失败，停止发布。"; exit 1; }
+                exit 0
+              fi
+            fi
+            sleep 20
+          done
+          echo "未能在 10 分钟内确认对应提交的 Pages 部署成功。"
+          exit 1
+
+      - name: Upload verified release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: automatic-release-notes
+          path: ${{ steps.release.outputs.notes }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-release:
+    needs: verify-release
+    if: needs.verify-release.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: automatic-release-notes
+          path: release-notes
+
+      - name: Create formal GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verify-release.outputs.tag }}
+          VERSION: ${{ needs.verify-release.outputs.version }}
+          TARGET_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          test -s release-notes/release-notes.md
+          gh release create "$TAG" --target "$TARGET_SHA" --title "$TAG" \
+            --notes-file release-notes/release-notes.md
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,url
+          echo "已创建正式发布：$TAG（$TARGET_SHA）" >> "$GITHUB_STEP_SUMMARY"
