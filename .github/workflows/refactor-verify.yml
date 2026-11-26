@@ -1,0 +1,30 @@
+name: refactor-verify
+
+on:
+  push:
+    branches: [test-refactor-verify]
+  pull_request:
+    branches: [test-refactor-verify]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refactor-verify-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run AST and automation tests
+        run: npm test

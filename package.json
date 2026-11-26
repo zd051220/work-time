@@ -1,0 +1,12 @@
+{
+  "name": "work-time",
+  "private": true,
+  "version": "1.0.0",
+  "description": "小猫搬金条",
+  "scripts": {
+    "test": "node --test .github/scripts/md-summary.test.cjs .github/scripts/changelog.test.cjs .github/scripts/release-automation.test.cjs"
+  },
+  "dependencies": {
+    "markdown-it": "^13.0.2"
+  }
+}

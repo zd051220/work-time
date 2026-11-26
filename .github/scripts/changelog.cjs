@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 const fs = require('node:fs');
+const { cleanMarkdownText, extractSummary } = require('./md-summary.cjs');
 const START = '<!-- BEGIN AUTO-GENERATED PR CHANGELOG -->';
 const END = '<!-- END AUTO-GENERATED PR CHANGELOG -->';
 const RELEASE_LABELS = new Set(['release:major','release:minor','release:patch','release:none']);
@@ -11,12 +12,7 @@ const CATEGORY_RULES = [
   [/^(perf)(\(.+\))?:/i,'性能优化'],[/^(security|sec)(\(.+\))?:/i,'安全改进'],
   [/^(docs?)(\(.+\))?:/i,'文档更新'],[/^(refactor|test|ci|build|chore)(\(.+\))?:/i,'工程优化']
 ];
-function cleanText(value,limit=180){
-  if(typeof value!=='string')return '';
-  return value.replace(/<[^>]*>/g,' ').replace(/!\[[^\]]*\]\([^)]*\)/g,' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[\x60*_>#~]/g,' ').replace(/[\[\]()|\\]/g,' ')
-    .replace(/https?:\/\/\S+/g,'').replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().slice(0,limit);
-}
+function cleanText(value,limit=180){ return cleanMarkdownText(value,limit); }
 function getReleaseKind(pr){
   if(!Array.isArray(pr.labels))throw new Error('PR #'+pr.number+' 的 labels 必须是数组');
   const names=pr.labels.map(x=>typeof x==='string'?x:x&&typeof x.name==='string'?x.name:null).filter(Boolean);
@@ -29,11 +25,7 @@ function getCategory(title){
   for(const [pattern,category] of CATEGORY_RULES)if(pattern.test(title))return category;
   return '其他更新';
 }
-function getSummary(body){
-  if(typeof body!=='string')return '';
-  const paragraph=body.split(/\n\s*\n/).map(value => cleanText(value)).find(Boolean);
-  return paragraph?paragraph.slice(0,180):'';
-}
+function getSummary(body,title=''){ return extractSummary(body,title,180); }
 function validRepository(repository){
   if(typeof repository!=='string')return false;
   const parts=repository.split('/');
@@ -55,7 +47,7 @@ function renderEntries(pulls,repository){
   for(const {pr,kind} of [...unique.values()].sort((a,b)=>Date.parse(b.pr.merged_at)-Date.parse(a.pr.merged_at)||b.pr.number-a.pr.number)){
     const category=getCategory(pr.title);
     if(!groups.has(category))groups.set(category,[]);
-    const title=cleanText(pr.title,120),summary=getSummary(pr.body);
+    const title=cleanText(pr.title,120),summary=getSummary(pr.body,pr.title);
     const line='- '+title+(summary&&summary.toLowerCase()!==title.toLowerCase()?' — '+summary:'')+
       ' ([#'+pr.number+'](https://github.com/'+repository+'/pull/'+pr.number+'))';
     groups.get(category).push({line,number:pr.number,kind});
