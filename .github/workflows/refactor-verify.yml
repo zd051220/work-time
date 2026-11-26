@@ -26,5 +26,11 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Export generated lockfile for repository commit
+        run: |
+          echo 'LOCKFILE_BASE64_BEGIN'
+          base64 -w0 package-lock.json
+          echo
+          echo 'LOCKFILE_BASE64_END'
       - name: Run AST and automation tests
         run: npm test
