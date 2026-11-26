@@ -119,9 +119,10 @@ jobs:
 
           echo "等待当前代码版本对应的 GitHub Pages 部署成功：$GITHUB_SHA"
           for attempt in $(seq 1 30); do
-            RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=100" \
-              --jq '[.workflow_runs[] | select(.head_sha == env.SHA and .name == "pages build and deployment")] | first | if . == null then empty else [.status, (.conclusion // ""), .html_url] | @tsv end' \
-              -F SHA="$GITHUB_SHA" 2>/dev/null || true)
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=100" > "$RUNNER_TEMP/pages-runs.json"
+            RUN=$(jq -r --arg sha "$GITHUB_SHA" \
+              '[.workflow_runs[] | select(.head_sha == $sha and .name == "pages build and deployment")] | first | if . == null then empty else [.status, (.conclusion // ""), .html_url] | @tsv end' \
+              "$RUNNER_TEMP/pages-runs.json")
 
             if [[ -n "$RUN" ]]; then
               IFS=        env:
