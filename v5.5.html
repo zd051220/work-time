@@ -1335,6 +1335,7 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 })();
 
 loadFeed(false);loadStats();
+requestServerTime().catch(function(){});
 if(data.session&&lifecycleSnapshot&&!data.session.pendingReview)setTimeout(function(){onShow()},0);
 
 })();
