@@ -174,9 +174,10 @@ async function runEngine(name, type, origin) {
         if (saved.workMs < before + sixHours - 1000) throw new Error('后台经过时间没有正常计入');
         await page.locator('#clockReviewInclude').click();
         await page.waitForFunction(() => !document.getElementById('clockReviewBanner').classList.contains('show'));
-        await page.waitForTimeout(1200);
-        const after = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session.workMs);
-        if (after <= saved.workMs) throw new Error('确认提示后计时没有继续增长');
+        const visibleBefore = await page.locator('#workTime').textContent();
+        await page.waitForTimeout(1500);
+        const visibleAfter = await page.locator('#workTime').textContent();
+        if (visibleAfter === visibleBefore) throw new Error('确认提示后计时没有继续增长');
         await context.close();
       });
 
