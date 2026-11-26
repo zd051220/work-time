@@ -173,24 +173,3 @@ jobs:
             echo
             echo "注意：本流程创建 Git 标签和 GitHub Release；不会修改 version.json，也不会单独触发网页版本号切换。"
           } >> "$GITHUB_STEP_SUMMARY"
-\t' read -r STATUS CONCLUSION URL <<< "$RUN"
-              echo "Pages 状态：$STATUS / $CONCLUSION"
-              if [[ "$STATUS" == "completed" && "$CONCLUSION" == "success" ]]; then
-                echo "网页部署已成功：$URL"
-                exit 0
-              fi
-              if [[ "$STATUS" == "completed" && "$CONCLUSION" != "success" ]]; then
-                echo "网页部署失败，拒绝创建正式版本：$URL"
-                exit 1
-              fi
-            else
-              echo "尚未找到当前提交对应的 Pages 部署记录。"
-            fi
-
-            if [[ "$attempt" -lt 30 ]]; then
-              sleep 20
-            fi
-          done
-
-          echo "等待 10 分钟仍未确认网页部署成功，拒绝创建正式版本。"
-          exit 1
