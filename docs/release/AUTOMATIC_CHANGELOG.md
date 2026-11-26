@@ -13,10 +13,11 @@
 机器人使用仓库自带的 `GITHUB_TOKEN` 创建或更新 PR。GitHub 对这类 PR 产生的 `pull_request` 检查可能要求有写权限的维护者手动批准，因此工作流**不把该事件当作唯一 CI 入口**。
 
 为避免检查静默不运行：
-- `.github/workflows/code-audit.yml` 同时支持 `workflow_dispatch`。
-- 机器人 PR 创建或更新后，自动更新日志工作流通过 `gh workflow run code-audit.yml --ref automation/changelog` 显式派发完整审计。
-- GitHub 允许由 `GITHUB_TOKEN` 触发的 `workflow_dispatch` 创建工作流运行；这项权限只授予自动更新日志 job。
-- 派发失败会使自动更新日志工作流失败，不会把“未执行检查”伪装成成功。合并前仍须看到 PR 对应提交的必需审计检查成功。
+- `.github/workflows/code-audit.yml` 支持 `workflow_dispatch`，也支持作为可复用工作流被其他工作流调用。
+- 正式 CHANGELOG 机器人流程仍通过 `workflow_dispatch` 显式启动审计，因此该 job 保留 `actions: write`。
+- 隔离 E2E 测试不再调用 Actions API 派发审计，而是在同一工作流中调用可复用的 `code-audit.yml`，并将审计目标明确设为 `automation/changelog-e2e-test`。
+- 隔离测试 job 不再申请 `actions: write`；审计 job 只申请 `contents: read`，checkout 不保留凭据。
+- 这样测试 job 的仓库级写权限不再包含“启动任意 workflow”的能力，避免它能借此启动 `formal-release.yml`。
 
 `workflow_dispatch` 工作流必须存在于默认分支。因此，这套机器人 CI 派发机制会在本 PR 合并、审计工作流进入 `main` 后启用。当前 PR 本身仍由正常的 PR 检查验证。
 
@@ -41,8 +42,8 @@
 
 ## 权限与发布边界
 
-- 顶层工作流权限为空；job 仅授予创建机器人分支所需的 `contents: write`、创建 PR 所需的 `pull-requests: write`，以及显式派发审计所需的 `actions: write`。
-- `code-audit` 本身只有 `contents: read`，checkout 不保留凭据。
+- 顶层工作流权限为空。正式 CHANGELOG 机器人 job 仅因需要显式派发审计而授予 `actions: write`；隔离 E2E 测试 job 只授予 `contents: write` 和 `pull-requests: write`，不拥有启动其他工作流的权限。
+- `code-audit` 作为独立运行或可复用工作流时均只需要 `contents: read`，checkout 不保留凭据。
 - 自动流程不写入 `main`，不修改 `version.json`，不创建 Tag 或 GitHub Release，也不触发正式发布。
 - 不需要预先配置个人 PAT 或 GitHub App 私钥。
 
@@ -63,7 +64,7 @@ node --test .github/scripts/versioning.test.cjs
 
 `docs/release/e2e-test/CHANGELOG.test.md`
 
-随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），并通过 `workflow_dispatch` 显式运行 `code-audit.yml`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
+随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），再调用可复用的 `code-audit.yml` 对该测试分支执行完整审计。这里不通过 `workflow_dispatch` 派发另一个工作流，因此测试 job 不需要 `actions: write`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
 
 此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 的写权限仅限于创建专用测试分支、草稿 PR 和派发审计所需的 `contents: write`、`pull-requests: write`、`actions: write`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
 
