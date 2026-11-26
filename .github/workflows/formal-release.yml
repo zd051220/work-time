@@ -194,33 +194,3 @@ jobs:
 
           echo "等待 10 分钟仍未确认网页部署成功，拒绝创建正式版本。"
           exit 1
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag }}
-          NOTES_FILE: ${{ steps.release.outputs.notes_file }}
-          CHANNEL: ${{ inputs.channel }}
-        run: |
-          set -euo pipefail
-          ARGS=("$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES_FILE")
-          if [[ "$CHANNEL" == "prerelease" ]]; then
-            ARGS+=(--prerelease)
-          fi
-          gh release create "${ARGS[@]}"
-
-      - name: Release summary
-        env:
-          TAG: ${{ steps.release.outputs.tag }}
-          CHANNEL: ${{ inputs.channel }}
-        run: |
-          {
-            echo "## 发布完成"
-            echo
-            echo "- 版本：$TAG"
-            echo "- 渠道：$CHANNEL"
-            echo "- 代码：$GITHUB_SHA"
-            echo "- 完整审计：通过"
-            echo
-            echo "注意：本流程创建 Git 标签和 GitHub Release；不会修改 version.json，也不会单独触发网页版本号切换。"
-          } >> "$GITHUB_STEP_SUMMARY"
