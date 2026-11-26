@@ -22,21 +22,21 @@
 ```text
 work-time/
 ├── apps/
-│   ├── web/                    # 当前 GitHub Pages 网页应用
-│   │   ├── pages/               # 主页、账本、游戏等页面源文件
-│   │   ├── assets/              # 图片、图标、字体等静态资源
-│   │   └── styles/              # 可复用样式
-│   └── wechat-miniprogram/      # 未来微信原生小程序（独立工程）
+│   ├── web/
+│   │   ├── pages/
+│   │   ├── assets/
+│   │   └── styles/
+│   └── wechat-miniprogram/
 │       ├── pages/
 │       ├── components/
 │       ├── services/
 │       └── utils/
 ├── packages/
-│   ├── domain/                  # 计时、工资、账本、游戏纯业务规则
-│   ├── application/             # 用例与业务流程编排
-│   └── contracts/               # API、数据结构与校验契约
+│   ├── domain/
+│   ├── application/
+│   └── contracts/
 ├── infrastructure/
-│   └── supabase/                # Supabase 配置、Edge Functions、migrations
+│   └── supabase/
 ├── tests/
 │   ├── unit/
 │   ├── integration/
@@ -45,24 +45,35 @@ work-time/
 │   ├── architecture/
 │   ├── operations/
 │   ├── product/
-│   └── database/
-├── scripts/                     # 本地开发、构建、检查脚本
+│   ├── database/
+│   └── release/
+├── scripts/
 ├── .github/
-│   └── workflows/               # CI/CD 流程
-├── index.html                   # GitHub Pages 兼容入口（迁移期间保留）
+│   └── workflows/
+├── index.html
+├── CHANGELOG.md
 └── README.md
 ```
 
-## 4. 当前版本分类
+## 4. 当前版本与发布状态
 
-- 当前正式网页：`v5.4.1.html` 与 `ledger54-5.4.1.html`。
-- 内测网页：`beta-v5.5.html`，不得自动替换正式入口。
-- 游戏页面：`cat-workshop.html`，当前依赖父页面提供 RPC bridge，不应被描述为独立可运行页面。
-- 历史页面：`v5.1.html`、`v5.2.html`、`v5.3.html`、`v5.4.html` 及旧账本页面。
-- 自动化脚本和工作流属于工程基础设施，不属于应用运行时代码。
-- Supabase migrations 是数据库变更历史，必须保持时间顺序与实际生产数据库状态一致。
+- 当前生产网页显示的正式版本标识为 **v5.5**。
+- 版本规范正在从历史两段式标识迁移到 SemVer 三段式；当前生产基线在规范文档中暂按 **5.5.0 过渡基线**管理。
+- 该映射不代表已创建 `v5.5.0` Git Tag，也不代表运行时 `version.json` 已完成格式升级。
+- 下一次发布按实际变更类型决定版本：补丁修复使用 `5.5.1`，向后兼容的新功能使用 `5.6.0`，重大不兼容升级使用 `6.0.0`。
+- 猫咪游戏模块可以独立标注 Alpha/Beta 测试状态；不能因此把工作计时和工资账本主产品的 Stable 状态一并改为测试版。
+- 正式发布渠道、Tag、GitHub Release、公告及回滚规则见 [版本规范](../release/VERSIONING.md) 和 [发布流程](../release/RELEASE_PROCESS.md)。
 
-## 5. 路径迁移规则
+## 5. 当前页面与运行关系
+
+- `index.html`：GitHub Pages 站点入口。
+- `v5.5.html`：当前正式主页。
+- `ledger-v5.5.html`：正式账本页面，与主页共享本地数据和登录态。
+- `beta-v5.5.html`：历史兼容入口，当前用于转入正式主页。
+- `cat-workshop.html`：猫咪游戏页面，依赖正式主页提供 RPC bridge，不应被描述为独立可运行页面。
+- `version.json`：网页运行时版本检查配置；其字段和格式在兼容性审查前不得随意变更。
+
+## 6. 路径迁移规则
 
 GitHub Pages 当前通过仓库根目录提供静态站点。移动页面前必须：
 
@@ -74,7 +85,7 @@ GitHub Pages 当前通过仓库根目录提供静态站点。移动页面前必�
 
 不允许只移动文件而不处理上述依赖。
 
-## 6. 代码分层约定
+## 7. 代码分层约定
 
 - **pages**：页面结构、事件绑定、视图状态；不重复实现核心业务规则。
 - **components**：可复用 UI 单元，不直接拥有跨页面业务状态。
@@ -84,7 +95,7 @@ GitHub Pages 当前通过仓库根目录提供静态站点。移动页面前必�
 - **contracts**：请求/响应结构、字段校验和版本化数据契约。
 - **tests**：单元、集成、回归和端到端测试分别归类。
 
-## 7. 质量门禁
+## 8. 质量门禁
 
 每次重构至少执行：
 
@@ -97,10 +108,17 @@ GitHub Pages 当前通过仓库根目录提供静态站点。移动页面前必�
 
 CI 通过不等于真实微信环境或生产端到端测试通过；发布说明必须明确测试范围。
 
-## 8. 禁止事项
+## 9. 发布与回滚
+
+正式发布必须经过 PR 审核、自动化测试、必要的人工验收、Git Tag、GitHub Release、Pages 部署和线上冒烟验证。PR 合并或 CI 通过本身不等于已正式上线。
+
+静态网页回滚与数据库回滚是不同操作。恢复旧网页不代表数据库、云端数据或本地数据已恢复。具体流程见 [回滚制度](../release/ROLLBACK.md)。
+
+## 10. 禁止事项
 
 - 不直接在生产数据库试跑未经核对的 migration。
 - 不把 service_role、数据库密码或其他秘密提交到仓库。
 - 不在未验证兼容性前删除旧版本或更改生产入口。
 - 不把测试文件、临时预览文件误当作正式发布产物。
 - 不把网页代码简单改名为小程序代码；微信小程序需要独立平台适配与审核准备。
+- 不把未经验证的功能、测试结果或部署状态写成已完成。
