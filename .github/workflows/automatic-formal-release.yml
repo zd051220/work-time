@@ -49,7 +49,7 @@ jobs:
           RELEASE_DATE: ${{ github.event.pull_request.merged_at }}
         run: |
           set -euo pipefail
-          mapfile -t labels < <(node -e 'const x=JSON.parse(process.env.PR_LABELS); for(const v of x) if(["release:patch","release:minor","release:major"].includes(v)) console.log(v)')
+          mapfile -t labels < <(node -e 'const x=JSON.parse(process.env.PR_LABELS); for(const v of x) if(["release:patch","release:minor","release:major","release:none"].includes(v)) console.log(v)')
           if [ "${#labels[@]}" -ne 1 ]; then
             echo "必须且只能有一个 release:patch/minor/major 标签。"
             exit 1
