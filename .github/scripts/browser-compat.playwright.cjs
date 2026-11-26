@@ -78,22 +78,6 @@ async function makeContext(browser, origin, options) {
   return context;
 }
 
-async function dismissFirstRunNotice(page) {
-  await page.waitForFunction(() => {
-    var element = document.getElementById('mask');
-    var last = Number(localStorage.getItem('mw_notice_55') || 0);
-    return (element && element.classList.contains('show')) ||
-      (last > 0 && Date.now() - last < 24 * 3600 * 1000);
-  }, null, { timeout: 3000 });
-  const maskIsOpen = await page.locator('#mask').evaluate(element =>
-    element.classList.contains('show')
-  );
-  if (maskIsOpen) await page.locator('#closeNotice').click();
-  await page.waitForFunction(() => {
-    var element = document.getElementById('mask');
-    return !element || !element.classList.contains('show');
-  }, null, { timeout: 3000 });
-}
 
 async function expectVersionInfo(page, info) {
   await page.route('**/version.json*', route => route.fulfill({
@@ -193,7 +177,6 @@ async function runEngine(name, type, origin) {
       const page = await context.newPage();
       await page.route('**/version.json*', route => route.abort());
       await page.goto(origin + '/v5.5.html');
-      await dismissFirstRunNotice(page);
       await page.locator('[data-t="tab-game"]').click();
       await page.locator('#gameStartBtn').click();
       const iframe = page.locator('#game-play-frame');
