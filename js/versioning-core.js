@@ -10,7 +10,7 @@
   var SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
   var LEGACY_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
-  // Compare non-negative decimal strings without Number/BigInt precision loss.
+  // Compare non-negative decimal strings without numeric precision loss.
   function compareDecimalStrings(a, b) {
     a = String(a);
     b = String(b);
