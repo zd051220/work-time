@@ -103,30 +103,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
+      checks: read
     steps:
-      - name: Create narrowly scoped GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.CHANGELOG_APP_ID }}
-          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: work-time
-          permission-contents: write
-          permission-pull-requests: write
-          permission-checks: read
-      - name: Checkout main
+      # Create no write-capable credential until the fixture code has finished.
+      - name: Checkout main without persisted credentials
         uses: actions/checkout@v4
         with:
           ref: main
-          token: ${{ steps.app-token.outputs.token }}
-          persist-credentials: true
-      - name: Checkout isolated E2E fixture source
+          persist-credentials: false
+      - name: Checkout isolated E2E fixture source without credentials
         uses: actions/checkout@v4
         with:
           ref: feat/changelog-e2e-test-mode
           path: e2e-source
-          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -136,6 +126,7 @@ jobs:
         run: node e2e-source/.github/scripts/changelog-e2e-test.cjs
       - name: Prepare dedicated test bot branch
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -C automation/changelog-e2e-test
@@ -151,24 +142,45 @@ jobs:
             exit 1
           fi
           git commit -m "test: exercise isolated changelog automation"
-      - name: Push dedicated test branch
+      - name: Create narrowly scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
+          permission-checks: read
+      - name: Push dedicated test branch with step-scoped credentials
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          set -euo pipefail
+          set +x
+          auth_header="$(printf 'x-access-token:%s' "$APP_TOKEN" | base64 -w0)"
           if git ls-remote --exit-code --heads origin automation/changelog-e2e-test >/dev/null 2>&1; then
             git fetch origin refs/heads/automation/changelog-e2e-test:refs/remotes/origin/automation/changelog-e2e-test
             expected="$(git rev-parse refs/remotes/origin/automation/changelog-e2e-test)"
-            git push --force-with-lease="refs/heads/automation/changelog-e2e-test:${expected}" origin HEAD:refs/heads/automation/changelog-e2e-test
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" push --force-with-lease="refs/heads/automation/changelog-e2e-test:${expected}" origin HEAD:refs/heads/automation/changelog-e2e-test
           else
-            git push origin HEAD:refs/heads/automation/changelog-e2e-test
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" push origin HEAD:refs/heads/automation/changelog-e2e-test
+          fi
+          if git config --local --get-regexp '^http\\..*extraheader$' >/dev/null 2>&1; then
+            echo "Unexpected persisted Git authentication configuration."
+            exit 1
           fi
       - name: Create or keep isolated test PR as Draft
         id: test-pr
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          set -euo pipefail
           existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number // empty')"
           if [ -z "$existing_pr" ]; then
-            gh pr create --draft --base main --head automation/changelog-e2e-test \
-              --title "test: isolated automatic changelog end-to-end test" \
+            gh pr create --draft --base main --head automation/changelog-e2e-test \\
+              --title "test: isolated automatic changelog end-to-end test" \\
               --body "这是隔离测试 PR。只新增 docs/release/e2e-test/CHANGELOG.test.md，不修改正式 CHANGELOG.md、version.json，不创建 Tag/Release。请勿合并。"
             existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number')"
           else
@@ -191,6 +203,5 @@ jobs:
           echo "number=$existing_pr" >> "$GITHUB_OUTPUT"
       - name: Wait for native PR audit on the exact test PR commit
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
         run: gh pr checks "${{ steps.test-pr.outputs.number }}" --watch --interval 10
-
