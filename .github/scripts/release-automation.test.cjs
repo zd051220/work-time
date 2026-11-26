@@ -62,6 +62,21 @@ assert.equal(extractReleaseSummary('## 摘要\n\n第一行\n第二行\n\n第二�
 assert.equal(extractReleaseSummary('## 摘要\n\n第一段 <!-- hidden --> 继续。\n<!--\nsecret\n-->'), '第一段 继续。');
 assert.equal(extractReleaseSummary('<!-- opening -->\n## 摘要\n\n可见说明。<!-- hidden -->'), '可见说明。');
 
+ // Nested headings remain inside the first top-level summary section.
+assert.equal(extractReleaseSummary('## 摘要\\n\\n### 空子章节\\n\\n### 后续子章节\\n\\n实际说明。'), '实际说明。');
+assert.equal(extractReleaseSummary('## 摘要\\n\\n### 第一子章节\\n\\n第一段说明。\\n\\n### 第二子章节\\n\\n不应纳入。'), '第一段说明。');
+ // Spaced Markdown horizontal rules are separators, not summary text.
+assert.equal(extractReleaseSummary('## 摘要\\n\\n- - -\\n说明文字。'), '说明文字。');
+assert.equal(extractReleaseSummary('## 摘要\\n\\n* * *\\n说明文字。'), '说明文字。');
+assert.equal(extractReleaseSummary('## 摘要\\n\\n第一段。\\n_ _ _\\n第二段不纳入。'), '第一段。');
+ // Unclosed HTML comments hide the remainder of the PR body.
+assert.equal(extractReleaseSummary('## 摘要\\n\\n<!-- 未闭合注释\\n隐藏内容。'), '');
+assert.equal(extractReleaseSummary('## 摘要\\n\\n可见说明。\\n<!-- 未闭合注释\\n隐藏内容。'), '可见说明。');
+ // Fenced code content is ignored, for both backtick and tilde fences.
+assert.equal(extractReleaseSummary('## 摘要\\n\\n\\x60\\x60\\x60markdown\\n## 伪标题\\n- 伪列表\\n> 伪引用\\n\\x60\\x60\\x60\\n真正的说明。'), '真正的说明。');
+assert.equal(extractReleaseSummary('## 摘要\\n\\n~~~text\\n### 伪标题\\n~~~\\n实际说明。'), '实际说明。');
+assert.equal(extractReleaseSummary('## 摘要\\n\\n\\x60\\x60\\x60js\\n代码块未闭合\\n## 隐藏标题\\n隐藏内容。'), '');
+
 const source='# 更新日志\n\n## [未发布]\n\n暂无\n\n## [5.5.0] - baseline\n\n历史内容\n';
 const output=insertReleaseSection(source,section);
 assert.ok(output.indexOf('## [5.6.0]') < output.indexOf('## [5.5.0]'));
