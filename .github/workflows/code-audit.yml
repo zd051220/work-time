@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 20
       - name: Automatic versioning tests
-        run: node --test .github/scripts/versioning.test.cjs
+        run: node --test .github/scripts/versioning*.test.cjs
       - name: Automatic changelog tests
         run: node --test .github/scripts/changelog.test.cjs
       - name: Isolated changelog E2E fixture generation

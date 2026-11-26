@@ -23,3 +23,20 @@ test('rejects leading and trailing whitespace in URL without normalizing it away
 test('rejects malformed prerelease identifiers',()=>{for(const v of ['1.2.3-alpha..1','1.2.3-.alpha','1.2.3-alpha.','1.2.3-01','1.2.3-00.beta'])assert.throws(()=>parseSemVer(v),undefined,v);});
 test('validates build metadata boundaries while allowing numeric leading zeroes',()=>{for(const v of ['1.2.3+','1.2.3+meta..data','1.2.3+meta.','1.2.3+white space'])assert.throws(()=>parseSemVer(v),undefined,v);assert.equal(parseSemVer('1.2.3+001.000').build.join('.'),'001.000');});
 test('requires a relative HTML page path',()=>{assert.equal(validateVersionConfig({version:'5.6.0',url:'releases/v5.6.0.html',note:''}).valid,true);assert.equal(validateVersionConfig({version:'5.6.0',url:'assets/app.js',note:''}).valid,false);});
+
+test('shared core compares prerelease identifiers by SemVer precedence',()=>{
+  const ordered=['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0'];
+  for(let i=0;i<ordered.length-1;i++)assert.equal(compareSemVer(ordered[i],ordered[i+1]),-1);
+});
+test('runtime comparison treats final release as newer than prerelease',()=>{
+  assert.equal(compareSemVer('5.6.0-rc.1','5.6.0'),-1);
+  assert.equal(compareSemVer('5.6.0','5.6.0-rc.1'),1);
+});
+test('runtime comparison ignores build metadata and supports legacy versions',()=>{
+  assert.equal(compareSemVer('5.5','5.5.0'),0);
+  assert.equal(compareSemVer('5.6.0+build.1','5.6.0+build.2'),0);
+});
+test('shared comparison preserves arbitrary precision for core and prerelease numbers',()=>{
+  assert.equal(compareSemVer('999999999999999999999.0.0','1000000000000000000000.0.0'),-1);
+  assert.equal(compareSemVer('1.0.0-999999999999999999999','1.0.0-1000000000000000000000'),-1);
+});
