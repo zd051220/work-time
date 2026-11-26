@@ -12,7 +12,7 @@ const CATEGORY_RULES = [
 function cleanText(value,limit=180){
   if(typeof value!=='string')return '';
   return value.replace(/<[^>]*>/g,' ').replace(/!\[[^\]]*\]\([^)]*\)/g,' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[\x60*_>#~]/g,' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[\x60*_>#~]/g,' ').replace(/[\[\]()|\\]/g,' ')
     .replace(/https?:\/\/\S+/g,'').replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().slice(0,limit);
 }
 function getReleaseKind(pr){
