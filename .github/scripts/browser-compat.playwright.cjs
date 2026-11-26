@@ -183,13 +183,16 @@ async function runEngine(name, type, origin) {
       await page.waitForFunction(() => window.__browserCompatMessages.some(message =>
         message.type === 'game-rpc' && message.origin === location.origin
       ), null, { timeout: 10000 });
-      await frame.waitForFunction(() => window.__browserCompatMessages.some(message =>
+      await frame.locator('#connection').filter({ hasText: '云端未连接' }).waitFor({
+        state: 'visible',
+        timeout: 10000
+      });
+      const childMessages = await frame.locator('body').evaluate(() => window.__browserCompatMessages || []);
+      if (!childMessages.some(message =>
         message.type === 'game-rpc-result' && message.fromParent && message.origin === location.origin
-      ), null, { timeout: 10000 });
-      await frame.waitForFunction(() => {
-        var connection = document.getElementById('connection');
-        return connection && connection.textContent.includes('云端未连接');
-      }, null, { timeout: 10000 });
+      )) {
+        throw new Error('游戏 iframe 没有收到父页面的同源 RPC 响应');
+      }
       await context.close();
     });
   } finally {
