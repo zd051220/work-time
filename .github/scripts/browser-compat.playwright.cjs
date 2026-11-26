@@ -189,7 +189,7 @@ async function runEngine(name, type, origin) {
       });
       const childMessages = await frame.locator('body').evaluate(() => window.__browserCompatMessages || []);
       if (!childMessages.some(message =>
-        message.type === 'game-rpc-result' && message.fromParent && message.origin === location.origin
+        message.type === 'game-rpc-result' && message.fromParent && message.origin === origin
       )) {
         throw new Error('游戏 iframe 没有收到父页面的同源 RPC 响应');
       }
