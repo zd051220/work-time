@@ -1,74 +1,59 @@
 # 小猫搬金条 · work-time
 
-一个手机端的工作计时 / 搬金记录小工具。纯静态页面（HTML + 原生 JS），托管在 GitHub Pages，后端用 Supabase 做账号、云同步和站内留言板。
+一个手机端的工作计时 / 搬金记录工具。当前 Web 版本使用 HTML + 原生 JavaScript，托管在 GitHub Pages，后端使用 Supabase 提供账号、云同步和游戏数据服务。
+
+## 项目架构
+
+项目正在进行渐进式架构整理。目标是分离页面展示、业务规则、数据访问和平台适配，同时保留现有线上页面地址。
+
+- [项目架构规范与目标目录](docs/architecture/PROJECT_STRUCTURE.md)
+- 当前正式网页：5.4.1
+- 当前内测网页：v5.5
+- 猫咪游戏：由内测父页面提供 RPC bridge
+- 后端：Supabase Auth、Postgres、RPC 与 Edge Functions
 
 ## 在线地址
 
 | 页面 | 地址 |
 | --- | --- |
-| 站点根地址（自动跳转 5.4.1） | https://zd051220.github.io/work-time/ |
+| 站点根地址 | https://zd051220.github.io/work-time/ |
 | 当前主页 5.4.1 | https://zd051220.github.io/work-time/v5.4.1.html |
 | 完整账本（5.4.1） | https://zd051220.github.io/work-time/ledger54-5.4.1.html |
 | 上一版 5.4 | https://zd051220.github.io/work-time/v5.4.html |
-| v5.5 内测版（独立体验，不替换正式版） | https://zd051220.github.io/work-time/beta-v5.5.html |
-| 小猫游戏页（云存档 / 工作订单 / 冒险） | https://zd051220.github.io/work-time/cat-workshop.html |
-| 5.4.1 测试入口（历史保留） | https://zd051220.github.io/work-time/test-5.4.1.html |
+| v5.5 内测版 | https://zd051220.github.io/work-time/beta-v5.5.html |
+| 小猫游戏页 | https://zd051220.github.io/work-time/cat-workshop.html |
 
-## 当前文件
+## 当前主要文件
 
-| 文件 | 说明 |
+| 文件 | 用途 |
 | --- | --- |
-| `index.html` | 站点入口，5 秒后跳 `v5.4.1.html`，带兜底链接与历史入口 |
-| `v5.4.1.html` | **当前正式版**：账号身份锁 + 导入上限；未部署删号函数时只清云端账本、不假装删除账号 |
-| `ledger54-5.4.1.html` | 5.4.1 的完整账本页 |
-| `v5.4.html` | 上一版（账号账本分库存、改密码、清空云端账本、一个页面计时），可作回滚版 |
-| `ledger54.html` | 5.4 的完整账本页 |
-| `beta-v5.5.html` | 内测版（`index.html` 有入口，正式版仍是 5.4.1）：底部四栏与「我的」五个独立子页面、账号身份锁、备份恢复保护、计时云同步；已接入小猫游戏桥 |
-| `cat-workshop.html` | 小猫游戏页：云端存档、工作订单、金币商店买装备、装备穿脱、冒险与战斗回放 |
-| `test-5.4.1.html` | 5.4.1 的测试入口页（转正后保留） |
-| `v5.3.html` / `v5.2.html` / `v5.1.html` | 历史版本，`index.html` 里有入口 |
-| `ledger.html` | 5.3 及更早版本共用的旧账本页 |
-| `version.json` | 版本提示数据，5.4 启动时读取，`url` 指向 `v5.4.1.html` |
-| `manifest.json` / `icon.svg` | PWA 清单与图标 |
-| `.github/scripts/timer_check.js` | 发布前计时纯函数门禁（20 项断言） |
-| `.github/scripts/cat_game_migration_check.js` | 五份游戏迁移的静态安全审计 |
-| `.github/scripts/cat_work_order_check.js` | 游戏页与父程序桥的行为检查（64 项） |
-| `.github/scripts/cat_game_pg_check.mjs` | 游戏迁移的 PGlite 行为检查（90 项断言，CI 内跑） |
-| `.github/workflows/release-manual.yml` | 手动发布流程：下载→哈希→门禁→单文件提交 |
-| `supabase/migrations/` | 小猫游戏五份迁移：前三份（云存档/工单/冒险）**已于 2026-11-26 执行**；后两份（岗位奖励/商店）需在 Supabase SQL Editor 执行后才能上线游戏 |
-| `supabase/functions/delete-account/index.ts` | 真正删号的 Edge Function 源码，**尚未部署、前端未启用** |
+| `index.html` | GitHub Pages 站点入口 |
+| `v5.4.1.html` | 当前正式主页 |
+| `ledger54-5.4.1.html` | 5.4.1 完整账本 |
+| `beta-v5.5.html` | 独立内测版本，不自动替换正式版 |
+| `cat-workshop.html` | 猫咪游戏页面，需从提供 RPC bridge 的父页面进入 |
+| `v5.1.html`–`v5.4.html` | 历史版本与回滚参考 |
+| `supabase/migrations/` | 数据库迁移历史 |
+| `.github/scripts/` | 自动化检查脚本 |
+| `.github/workflows/` | CI 与手动发布流程 |
 
-## 计时规则
+## 计时与数据规则
 
-- 实际工作、带薪摸鱼都计薪；不带薪摸鱼暂停计薪。费率 = 日工资 / 标准工时 / 3600。
-- **跨午夜**：一次打卡跨几个自然日，下班时拆成几条记录，每天只算当天工时与当日工资。
-- 计时期间系统时间回退、或超过 3 小时没运行，会进入「待核对」状态，不会默默算错。
+- 实际工作、带薪摸鱼计薪；不带薪摸鱼暂停计薪。
+- 跨午夜打卡按自然日拆分记录。
+- 系统时间回退或长时间离线时进入核对流程，避免静默产生错误工时。
+- 本地与云端数据必须按用户身份隔离。
+- 游戏金币、购买、奖励和结算以服务端校验结果为准。
 
-## 数据怎么存的
+## 开发与发布约定
 
-三层：本地一份、云端两份（记录 + 进行中打卡）。
+- 未完成兼容验证前，不移动或删除当前公开页面路径。
+- 正式版与内测版分开维护；内测功能不得自动进入正式入口。
+- 数据库 migration 必须先与生产 schema 和迁移历史核对，不得盲目重复执行。
+- 不得将 Supabase service_role 或其他服务端秘密放入前端或仓库。
+- CI 自动化测试通过不等于真实设备和生产环境端到端测试通过。
+- 发布必须经过对应回归测试，并明确记录本次实际测试范围。
 
-- **本地**：主页和账本页同域名，共用 localStorage，key `catGold_v5`（按账号分库时为 `catGold_v5.u.<uid>`）。
-- **登录态**：key `mw_acct_v1`（token、refresh、uid、昵称、过期时间）。access token 1 小时过期，到期前自动续期；401 重试一次。
-- **云端记录**：Supabase 表 `records`，主键 `user_id + id`，RLS 只能读写自己的行；`feedback` 表做留言板（免登录可读可发）。
-- **正式版 5.4 / 5.4.1 进行中打卡**：写在当前用户的 `user_metadata.session`，登录后定时去重推送。
-- **v5.5 内测版进行中打卡**：使用 `work_sessions` 表和 `sync_work_session` RPC；恢复时会对离线时间进行核对。
+## 当前整理状态
 
-## 后端配置（Supabase）
-
-- 项目 URL 与 publishable key 写在页面的 `SB` / `SBK` 常量（publishable 可公开，**secret key 绝不能进页面或仓库**）。
-- Auth：邮箱提供商开启、关闭确认邮件、允许注册。用户名拼成 `用户名@xiaomao.local` 伪邮箱，只能小写字母/数字/下划线，2–20 位。
-- `feedback` 表只有 select / insert，清理测试留言要用 Dashboard SQL Editor。
-
-## 修改和上线
-
-- 改页面：直接编辑对应 `.html`，提交到 `main`，约 1 分钟后生效；缓存不更新时地址后加 `?v=2`。
-- 发新版：走 Actions → `release-manual` → Run workflow，填文件名、CDN 地址、SHA-256、提交说明；流程会跑计时门禁、限制只改一个文件，**不会自动改入口**。
-- 浏览器缓存：改了没生效，强刷一次。
-
-## 文件命名规范
-
-- 主程序版本：`v主版本.次版本.修订.html`，一个版本一个文件，不覆盖旧的。
-- 固定页面用通用名：`index.html`（站点入口）、`ledger.html`（5.3 及更早的账本）、`ledger54-5.4.1.html`（5.4.1 账本）。
-- 游戏：本体 `cat-workshop.html`。
-- PWA：`manifest.json` + `icon.svg`。
+项目架构整理在独立分支 `refactor/enterprise-structure` 中进行，不直接修改 `main` 生产分支。目录重排和代码拆分将分阶段实施，每阶段验证旧入口、页面导航、资源路径和数据行为后再考虑合并。
