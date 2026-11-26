@@ -9,6 +9,8 @@ test('maps legacy 5.5 to 5.5.0 without a tag side effect',()=>{const v=parseRunt
 test('follows SemVer prerelease precedence',()=>{const a=['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0'];for(let i=0;i<a.length-1;i++)assert.equal(compareSemVer(a[i],a[i+1]),-1);});
 test('ignores build metadata for precedence',()=>assert.equal(compareSemVer('1.2.3+one','1.2.3+two'),0));
 test('compares huge numeric prerelease identifiers exactly',()=>assert.equal(compareSemVer('1.0.0-999999999999999999999','1.0.0-1000000000000000000000'),-1));
+test('compares arbitrarily large core numbers without precision loss',()=>assert.equal(compareSemVer('999999999999999999999.0.0','1000000000000000000000.0.0'),-1));
+test('increments arbitrarily large core numbers without precision loss',()=>assert.equal(calculateNextVersion('999999999999999999999.0.0',['release:major']),'1000000000000000000000.0.0'));
 test('reads release labels as strings or GitHub label objects',()=>{assert.equal(getReleaseBump([{name:'bug'},{name:'release:minor'}]),'minor');assert.equal(getReleaseBump(['release:patch']),'patch');assert.equal(getReleaseBump(['release:none']),null);});
 test('rejects conflicting release labels',()=>assert.throws(()=>getReleaseBump(['release:patch','release:minor']),/只能设置一个/));
 test('calculates major minor patch from legacy production baseline',()=>{assert.equal(calculateNextVersion('5.5',['release:patch']),'5.5.1');assert.equal(calculateNextVersion('5.5',['release:minor']),'5.6.0');assert.equal(calculateNextVersion('5.5',['release:major']),'6.0.0');assert.equal(calculateNextVersion('5.6.4',['release:minor']),'5.7.0');});
