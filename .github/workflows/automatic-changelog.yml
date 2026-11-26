@@ -17,7 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
+      actions: write
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -33,7 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/changelog.cjs CHANGELOG.md
-      - name: Commit generated changelog
+      - name: Prepare bot branch
         run: |
           if git diff --quiet -- CHANGELOG.md; then
             echo "CHANGELOG has no changes."
@@ -41,6 +42,35 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C automation/changelog
           git add CHANGELOG.md
           git commit -m "docs: update changelog from merged PRs"
-          git push origin HEAD:main
+      - name: Push bot branch only
+        run: |
+          if git diff --quiet HEAD^ HEAD -- CHANGELOG.md; then
+            echo "No generated CHANGELOG change to publish."
+            exit 0
+          fi
+          if git ls-remote --exit-code --heads origin automation/changelog >/dev/null 2>&1; then
+            git fetch origin refs/heads/automation/changelog:refs/remotes/origin/automation/changelog
+            expected="$(git rev-parse refs/remotes/origin/automation/changelog)"
+            git push --force-with-lease="refs/heads/automation/changelog:${expected}" origin HEAD:refs/heads/automation/changelog
+          else
+            git push origin HEAD:refs/heads/automation/changelog
+          fi
+      - name: Create or update changelog pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing_pr="$(gh pr list --state open --base main --head automation/changelog --json number --jq '.[0].number // empty')"
+          if [ -z "$existing_pr" ]; then
+            gh pr create --base main --head automation/changelog \
+              --title "docs: update generated Chinese changelog" \
+              --body "由自动更新日志工作流生成。请检查自动生成区块；人工维护内容和历史版本章节不会被覆盖。此 PR 不修改 version.json，不创建 Tag 或 Release。"
+          else
+            echo "Updated existing changelog PR #${existing_pr}."
+          fi
+      - name: Dispatch audit for bot branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run code-audit.yml --ref automation/changelog
