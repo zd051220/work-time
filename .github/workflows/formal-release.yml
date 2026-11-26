@@ -61,6 +61,7 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           CHANNEL: ${{ inputs.channel }}
+          MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
 
@@ -72,10 +73,10 @@ jobs:
               ;;
           esac
 
-          case "${{ inputs.mode }}" in
+          case "$MODE" in
             dry-run|publish) ;;
             *)
-              echo "发布模式无效：${{ inputs.mode }}"
+              echo "发布模式无效：$MODE"
               exit 1
               ;;
           esac
