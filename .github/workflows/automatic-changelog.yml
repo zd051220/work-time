@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: 20
       - name: Install Markdown parser dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Generate Chinese changelog
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
