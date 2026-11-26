@@ -66,5 +66,5 @@ node --test .github/scripts/versioning.test.cjs
 
 随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），再调用可复用的 `code-audit.yml` 对该测试分支执行完整审计。这里不通过 `workflow_dispatch` 派发另一个工作流，因此测试 job 不需要 `actions: write`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
 
-此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 的写权限仅限于创建专用测试分支、草稿 PR 和派发审计所需的 `contents: write`、`pull-requests: write`、`actions: write`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
+此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 仅授予创建专用测试分支和草稿 PR 所需的 `contents: write`、`pull-requests: write`；审计 job 只读。测试 job 不拥有 `actions: write`，因此不能通过 Actions API 派发 `formal-release.yml`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
 
