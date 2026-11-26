@@ -1,0 +1,116 @@
+# 已停用的历史工作流
+
+> 此文件仅用于审计和追溯。它已从 `.github/workflows/` 移出，不会被 GitHub Actions 识别或执行。请勿将其恢复为活动发布入口。新的发布流程以 `.github/workflows/formal-release.yml` 为准。
+
+```yaml
+name: release-manual
+
+# 手动发布：只在你点“Run workflow”时执行。
+# 不做入口切换，不自动跑；一次只提交 target_path 一个文件。
+on:
+  workflow_dispatch:
+    inputs:
+      target_path:
+        description: '要发布的文件名（仓库根目录，例：v5.4.1.html）'
+        required: true
+        type: string
+      source_url:
+        description: '文件下载地址（CDN）；留空则用仓库里已有的文件'
+        required: false
+        type: string
+      sha256:
+        description: '期望的 SHA-256；留空则跳过内容校验'
+        required: false
+        type: string
+      message:
+        description: '提交说明'
+        required: true
+        type: string
+      assert_unchanged:
+        description: '不允许被本次发布改动的文件，逗号分隔（目标文件自身会自动跳过）'
+        required: false
+        default: 'index.html,version.json,v5.4.html,ledger54.html,v5.3.html,ledger.html'
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-manual
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载并校验
+        env:
+          TARGET: ${{ inputs.target_path }}
+          URL: ${{ inputs.source_url }}
+          SHA: ${{ inputs.sha256 }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TARGET" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "文件名不合法：$TARGET（只允许根目录单文件）"; exit 1
+          fi
+          if [[ -n "$URL" ]]; then
+            curl -fsSL --retry 3 -o "$TARGET" "$URL"
+          fi
+          test -f "$TARGET" || { echo "仓库里没有 $TARGET，也没给下载地址"; exit 1; }
+          if [[ -n "$SHA" ]]; then
+            echo "$SHA  $TARGET" | sha256sum -c -
+          fi
+          sha256sum "$TARGET" | tee /tmp/sha.txt
+
+      - name: 计时门禁（仅主页版本文件）
+        env:
+          TARGET: ${{ inputs.target_path }}
+        run: |
+          set -euo pipefail
+          if [[ "$TARGET" =~ ^v[0-9].*\.html$ ]]; then
+            node .github/scripts/timer_check.js "$TARGET"
+          else
+            echo "不是主页版本文件，跳过计时门禁"
+          fi
+
+      - name: 限定改动范围
+        env:
+          TARGET: ${{ inputs.target_path }}
+          GUARDS: ${{ inputs.assert_unchanged }}
+        run: |
+          set -euo pipefail
+          git add "$TARGET"
+          CHANGED=$(git diff --cached --name-only)
+          echo "本次将提交："; echo "$CHANGED"
+          if [[ "$(echo "$CHANGED" | wc -l)" -ne 1 || "$CHANGED" != "$TARGET" ]]; then
+            echo "拒绝：本次改动不止 $TARGET，已中止"; exit 1
+          fi
+          IFS=',' read -ra LIST <<< "$GUARDS"
+          for g in "${LIST[@]}"; do
+            g=$(echo "$g" | xargs)
+            [[ -z "$g" ]] && continue
+            if [[ "$g" == "$TARGET" ]]; then continue; fi
+            if echo "$CHANGED" | grep -qx "$g"; then
+              echo "拒绝：$g 在禁止改动名单里"; exit 1
+            fi
+          done
+
+      - name: 提交并推送
+        env:
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          set -euo pipefail
+          git config user.name 'release-bot'
+          git config user.email 'release-bot@users.noreply.github.com'
+          git commit -m "$MESSAGE"
+          git push origin HEAD:main
+
+      - name: 结果
+        run: |
+          echo '### 发布完成' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/sha.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+```
