@@ -1,7 +1,7 @@
 name: formal-release
 
 # 正式发布入口：仅允许从 main 手动触发。
-# 发布前会重新运行完整代码审计，并确认当前提交的 Pages 部署成功。
+# 验证工作与真正创建 Release 的写权限分离。
 on:
   workflow_dispatch:
     inputs:
@@ -27,24 +27,29 @@ on:
           - dry-run
           - publish
 
-permissions:
-  contents: write
-  actions: read
+# 默认不给工作流授予任何 GITHUB_TOKEN 权限。
+permissions: {}
 
 concurrency:
   group: formal-release
   cancel-in-progress: false
 
 jobs:
-  verify-and-publish:
+  verify:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
     steps:
       - name: Checkout exact main commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -56,8 +61,25 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           CHANNEL: ${{ inputs.channel }}
+          MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
+
+          case "$CHANNEL" in
+            stable|prerelease) ;;
+            *)
+              echo "发布渠道无效：$CHANNEL"
+              exit 1
+              ;;
+          esac
+
+          case "$MODE" in
+            dry-run|publish) ;;
+            *)
+              echo "发布模式无效：$MODE"
+              exit 1
+              ;;
+          esac
 
           # SemVer numeric identifiers must not contain leading zeroes.
           # This project intentionally allows only alpha.N, beta.N, and rc.N prereleases.
@@ -76,7 +98,11 @@ jobs:
           fi
 
           TAG="v$VERSION"
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+          if ! TAG_REFS=$(git ls-remote --tags origin "refs/tags/$TAG"); then
+            echo "无法确认远程版本标签状态，拒绝继续发布：$TAG"
+            exit 1
+          fi
+          if [[ -n "$TAG_REFS" ]]; then
             echo "版本标签已存在：$TAG"
             exit 1
           fi
@@ -157,29 +183,23 @@ jobs:
           echo "等待 10 分钟仍未确认网页部署成功，拒绝创建正式版本。"
           exit 1
 
-      - name: Create GitHub Release
+      - name: Upload release notes for publish job
         if: inputs.mode == 'publish'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag }}
-          NOTES_FILE: ${{ steps.release.outputs.notes_file }}
-          CHANNEL: ${{ inputs.channel }}
-        run: |
-          set -euo pipefail
-          ARGS=("$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES_FILE")
-          if [[ "$CHANNEL" == "prerelease" ]]; then
-            ARGS+=(--prerelease)
-          fi
-          gh release create "${ARGS[@]}"
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ steps.release.outputs.notes_file }}
+          if-no-files-found: error
+          retention-days: 1
 
-      - name: Release summary
+      - name: Verification summary
         env:
           TAG: ${{ steps.release.outputs.tag }}
           CHANNEL: ${{ inputs.channel }}
           MODE: ${{ inputs.mode }}
         run: |
           {
-            echo "## 发布流程检查完成"
+            echo "## 发布前验证完成"
             echo
             echo "- 版本：$TAG"
             echo "- 渠道：$CHANNEL"
@@ -192,7 +212,48 @@ jobs:
               echo "这是安全演练：未创建 Git 标签，也未创建 GitHub Release。"
             else
               echo
-              echo "已创建 Git 标签和 GitHub Release。"
-              echo "注意：本流程不会修改 version.json 或切换网页正式版本。"
+              echo "验证已通过，发布任务将使用独立的 contents:write 权限。"
             fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && inputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verify.outputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+          ARGS=("$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "release-notes/release-notes.md")
+          if [[ "$CHANNEL" == "prerelease" ]]; then
+            ARGS+=(--prerelease)
+          fi
+          gh release create "${ARGS[@]}"
+
+      - name: Release summary
+        env:
+          TAG: ${{ needs.verify.outputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          {
+            echo "## 发布完成"
+            echo
+            echo "- 版本：$TAG"
+            echo "- 渠道：$CHANNEL"
+            echo "- 代码：$GITHUB_SHA"
+            echo "- 验证任务：通过"
+            echo "- GitHub Release：已创建"
+            echo "注意：本流程不会修改 version.json 或切换网页正式版本。"
           } >> "$GITHUB_STEP_SUMMARY"
