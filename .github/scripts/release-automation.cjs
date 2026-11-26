@@ -29,10 +29,47 @@ function extractReleaseSummary(body) {
   for (let index = 0; index < lines.length; index += 1) {
     const rawLine = lines[index];
 
-    // An active fenced block owns its contents: HTML comment markers inside it
-    // must not change comment state, and only a matching fence can close it.
+    // Fenced code owns its contents; comment markers inside it are inert.
     if (fenceChar) {
-      const closePattern = new RegExp('^ {0,3}' + fenceChar + '{' + fenceLength + ',}\\s*
+      const closePattern = new RegExp('^ {0,3}' + fenceChar + '{' + fenceLength + ',}\\s*$');
+      if (closePattern.test(rawLine)) {
+        fenceChar = null;
+        fenceLength = 0;
+      }
+      continue;
+    }
+
+    // Remove HTML comments first, so fence-like text inside comments stays invisible.
+    let visible = '';
+    let cursor = 0;
+    while (cursor < rawLine.length) {
+      if (inHtmlComment) {
+        const close = rawLine.indexOf('-->', cursor);
+        if (close < 0) break;
+        inHtmlComment = false;
+        cursor = close + 3;
+        continue;
+      }
+      const open = rawLine.indexOf('<!--', cursor);
+      if (open < 0) {
+        visible += rawLine.slice(cursor);
+        break;
+      }
+      visible += rawLine.slice(cursor, open);
+      inHtmlComment = true;
+      cursor = open + 4;
+    }
+
+    // Only visible text outside an open comment may start a fenced code block.
+    if (!inHtmlComment) {
+      const fenceOpen = /^ {0,3}(\x60{3,}|~{3,})/.exec(visible);
+      if (fenceOpen) {
+        fenceChar = fenceOpen[1][0];
+        fenceLength = fenceOpen[1].length;
+        continue;
+      }
+    }
+    const line = visible.trim();
     if (!line) {
       if (paragraph.length) break;
       continue;
