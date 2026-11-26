@@ -109,13 +109,11 @@ async function runEngine(name, type, origin) {
     });
 
     if (name === 'Chromium') {
-      await test('手机休眠 5 小时：墙钟与服务器一致时静默补计', async () => {
+      await test('后台 5 小时双时钟一致：静默补计且不弹核对', async () => {
         const context = await makeContext(browser, origin);
         const page = await context.newPage();
-        let serverOffset = 0;
         await page.addInitScript(() => {
-          const realNow = Date.now.bind(Date);
-          const realPerf = performance.now.bind(performance);
+          const realNow = Date.now.bind(Date), realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
           window.__testVisibility = { hidden: false };
           Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
@@ -125,51 +123,28 @@ async function runEngine(name, type, origin) {
             document.dispatchEvent(new Event('visibilitychange'));
           };
           Date.now = () => realNow() + window.__testClock.wall;
-          Object.defineProperty(performance, 'now', {
-            configurable: true,
-            value: () => realPerf() + window.__testClock.mono
-          });
+          Object.defineProperty(performance, 'now', { configurable: true, value: () => realPerf() + window.__testClock.mono });
         });
-        await page.route('https://zemrafvmhfxqdeqauejt.supabase.co/auth/v1/health', async route => {
-          const headers = {
-            'access-control-allow-origin': origin,
-            'access-control-allow-methods': 'GET, OPTIONS',
-            'access-control-allow-headers': 'apikey',
-            'access-control-expose-headers': 'Date',
-            'content-type': 'application/json',
-            'date': new Date(Date.now() + serverOffset).toUTCString()
-          };
-          if (route.request().method() === 'OPTIONS') {
-            return route.fulfill({ status: 204, headers });
-          }
-          return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
-        });
-        const initialClockResponse = page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
         await page.goto(origin + '/v5.5.html');
-        await initialClockResponse;
         await page.locator('#startBtn').click();
         await page.evaluate(() => window.__setTestVisibility(true));
-        await page.waitForFunction(() => document.hidden === true);
         const fiveHours = 5 * 60 * 60 * 1000;
-        serverOffset = fiveHours;
-        await page.evaluate(ms => { window.__testClock.wall += ms; }, fiveHours);
+        await page.evaluate(ms => { window.__testClock.wall += ms; window.__testClock.mono += ms; }, fiveHours);
         await page.evaluate(() => window.__setTestVisibility(false));
-        await page.waitForFunction(() => document.hidden === false);
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && !saved.session.pendingReview &&
-            saved.session.workMs >= 5 * 60 * 60 * 1000;
+          return saved && saved.session && saved.session.workMs >= 5 * 60 * 60 * 1000;
         }, null, { timeout: 10000 });
+        if (await page.locator('#clockReviewBanner').isVisible()) throw new Error('双时钟一致的正常锁屏不应提示异常');
+        if (!(await page.locator('#stopBtn').isEnabled())) throw new Error('正常恢复后下班按钮不可用');
         await context.close();
       });
 
-      await test('后台将系统时间与单调钟同时快进 1 小时：顶部横幅出现且工资冻结', async () => {
+      await test('后台时间偏差：只显示横幅、计时照常增加、下班按钮可用', async () => {
         const context = await makeContext(browser, origin);
         const page = await context.newPage();
-        let serverOffset = 0;
         await page.addInitScript(() => {
-          const realNow = Date.now.bind(Date);
-          const realPerf = performance.now.bind(performance);
+          const realNow = Date.now.bind(Date), realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
           window.__testVisibility = { hidden: false };
           Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
@@ -179,84 +154,37 @@ async function runEngine(name, type, origin) {
             document.dispatchEvent(new Event('visibilitychange'));
           };
           Date.now = () => realNow() + window.__testClock.wall;
-          Object.defineProperty(performance, 'now', {
-            configurable: true,
-            value: () => realPerf() + window.__testClock.mono
-          });
+          Object.defineProperty(performance, 'now', { configurable: true, value: () => realPerf() + window.__testClock.mono });
         });
-        await page.route('https://zemrafvmhfxqdeqauejt.supabase.co/auth/v1/health', async route => {
-          const headers = {
-            'access-control-allow-origin': origin,
-            'access-control-allow-methods': 'GET, OPTIONS',
-            'access-control-allow-headers': 'apikey',
-            'access-control-expose-headers': 'Date',
-            'content-type': 'application/json',
-            'date': new Date(Date.now() + serverOffset).toUTCString()
-          };
-          if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
-          return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
-        });
-        const initialClockResponse = page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
         await page.goto(origin + '/v5.5.html');
-        await initialClockResponse;
         await page.locator('#startBtn').click();
-        await page.waitForTimeout(250);
         const before = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session.workMs);
         await page.evaluate(() => window.__setTestVisibility(true));
-        await page.waitForFunction(() => document.hidden === true);
-        const oneHour = 60 * 60 * 1000;
-        await page.evaluate(ms => {
-          window.__testClock.wall += ms;
-          window.__testClock.mono += ms;
-        }, oneHour);
-        serverOffset = -oneHour;
+        const fiveHours = 5 * 60 * 60 * 1000, sixHours = 6 * 60 * 60 * 1000;
+        await page.evaluate(v => { window.__testClock.wall += v.six; window.__testClock.mono += v.five; }, { five: fiveHours, six: sixHours });
         await page.evaluate(() => window.__setTestVisibility(false));
-        await page.waitForFunction(() => document.hidden === false);
         await page.locator('#clockReviewBanner').waitFor({ state: 'visible', timeout: 10000 });
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && !!saved.session.pendingReview;
+          return saved && saved.session && saved.session.workMs >= 6 * 60 * 60 * 1000;
         }, null, { timeout: 10000 });
-        const pending = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session);
-        if (pending.workMs > before + 5000) throw new Error('异常的 1 小时已被计入工作时长');
-        if (await page.locator('#stopBtn').isEnabled()) throw new Error('核对期间下班按钮没有被冻结');
-        await page.waitForTimeout(1800);
-        const afterWait = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session.workMs);
-        if (afterWait !== pending.workMs) throw new Error('待核对期间工时仍在增长');
-        await page.locator('#clockReviewBanner').click();
-        await page.locator('#reviewBox').waitFor({ state: 'visible' });
-        await page.locator('#reviewInclude').waitFor({ state: 'visible' });
-        await page.locator('#reviewDiscard').waitFor({ state: 'visible' });
-        await page.locator('#reviewEndTime').waitFor({ state: 'hidden' });
-        await page.locator('#reviewInclude').click();
-        await page.locator('#reviewEntry').waitFor({ state: 'visible' });
-        const blankByDefault = await page.locator('#reviewEndTime').inputValue();
-        if (blankByDefault !== '') throw new Error('人工结束时间不能预填设备跳变后的时间');
-        const pendingBaseline = pending.workMs;
-        const manuallyChosen = await page.evaluate(from => {
-          const d = new Date(from + 2 * 60 * 1000);
-          const p = n => String(n).padStart(2, '0');
-          return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
-        }, pending.pendingReview.from);
-        await page.locator('#reviewEndTime').fill(manuallyChosen);
-        await page.locator('#reviewConfirm').click();
-        await page.waitForFunction(() => {
-          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && !saved.session.pendingReview;
-        }, null, { timeout: 10000 });
-        const manuallyReviewed = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session);
-        const credited = manuallyReviewed.workMs - pendingBaseline;
-        if (Math.abs(credited - 2 * 60 * 1000) > 1000) throw new Error('手动确认 2 分钟却计入了 ' + credited + 'ms');
+        const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session);
+        if (saved.pendingReview) throw new Error('异常提示不应创建强制核对状态');
+        if (!(await page.locator('#stopBtn').isEnabled())) throw new Error('异常提示期间下班按钮被锁定');
+        if (saved.workMs < before + sixHours - 1000) throw new Error('后台经过时间没有正常计入');
+        await page.locator('#clockReviewInclude').click();
+        await page.waitForFunction(() => !document.getElementById('clockReviewBanner').classList.contains('show'));
+        await page.waitForTimeout(1200);
+        const after = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session.workMs);
+        if (after <= saved.workMs) throw new Error('确认提示后计时没有继续增长');
         await context.close();
       });
 
-      await test('系统时间比服务器快 30 分钟：强制人工核对', async () => {
+      await test('系统挂起导致单调钟暂停：仍按墙钟恢复且不误报', async () => {
         const context = await makeContext(browser, origin);
         const page = await context.newPage();
-        let serverOffset = 0;
         await page.addInitScript(() => {
-          const realNow = Date.now.bind(Date);
-          const realPerf = performance.now.bind(performance);
+          const realNow = Date.now.bind(Date), realPerf = performance.now.bind(performance);
           window.__testClock = { wall: 0, mono: 0 };
           window.__testVisibility = { hidden: false };
           Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
@@ -266,40 +194,19 @@ async function runEngine(name, type, origin) {
             document.dispatchEvent(new Event('visibilitychange'));
           };
           Date.now = () => realNow() + window.__testClock.wall;
-          Object.defineProperty(performance, 'now', {
-            configurable: true,
-            value: () => realPerf() + window.__testClock.mono
-          });
+          Object.defineProperty(performance, 'now', { configurable: true, value: () => realPerf() + window.__testClock.mono });
         });
-        await page.route('https://zemrafvmhfxqdeqauejt.supabase.co/auth/v1/health', async route => {
-          const headers = {
-            'access-control-allow-origin': origin,
-            'access-control-allow-methods': 'GET, OPTIONS',
-            'access-control-allow-headers': 'apikey',
-            'access-control-expose-headers': 'Date',
-            'content-type': 'application/json',
-            'date': new Date(Date.now() + serverOffset).toUTCString()
-          };
-          if (route.request().method() === 'OPTIONS') {
-            return route.fulfill({ status: 204, headers });
-          }
-          return route.fulfill({ status: 200, headers, body: '{"ok":true}' });
-        });
-        const initialClockResponse = page.waitForResponse(response => response.url().includes('/auth/v1/health') && response.status() === 200);
         await page.goto(origin + '/v5.5.html');
-        await initialClockResponse;
         await page.locator('#startBtn').click();
         await page.evaluate(() => window.__setTestVisibility(true));
-        await page.waitForFunction(() => document.hidden === true);
         const fiveHours = 5 * 60 * 60 * 1000;
-        serverOffset = fiveHours;
-        await page.evaluate(ms => { window.__testClock.wall += ms + 30 * 60 * 1000; }, fiveHours);
+        await page.evaluate(ms => { window.__testClock.wall += ms; }, fiveHours);
         await page.evaluate(() => window.__setTestVisibility(false));
-        await page.waitForFunction(() => document.hidden === false);
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && !!saved.session.pendingReview;
+          return saved && saved.session && saved.session.workMs >= 5 * 60 * 60 * 1000;
         }, null, { timeout: 10000 });
+        if (await page.locator('#clockReviewBanner').isVisible()) throw new Error('单调钟暂停的正常锁屏不应误报');
         await context.close();
       });
     }
