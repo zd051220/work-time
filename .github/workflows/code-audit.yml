@@ -1,6 +1,12 @@
 name: code-audit
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "需要审计的分支或提交"
+        required: true
+        type: string
   push:
     branches: ["**"]
     paths:
@@ -23,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
