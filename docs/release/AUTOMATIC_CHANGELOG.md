@@ -14,10 +14,10 @@
 
 为避免检查静默不运行：
 - `.github/workflows/code-audit.yml` 支持 `workflow_dispatch`，也支持作为可复用工作流被其他工作流调用。
-- 正式 CHANGELOG 机器人流程仍通过 `workflow_dispatch` 显式启动审计，因此该 job 保留 `actions: write`。
+- 正式 CHANGELOG 机器人流程也改为调用可复用的 `code-audit.yml`，并将审计目标明确设为 `automation/changelog`。
 - 隔离 E2E 测试不再调用 Actions API 派发审计，而是在同一工作流中调用可复用的 `code-audit.yml`，并将审计目标明确设为 `automation/changelog-e2e-test`。
-- 隔离测试 job 不再申请 `actions: write`；审计 job 只申请 `contents: read`，checkout 不保留凭据。
-- 这样测试 job 的仓库级写权限不再包含“启动任意 workflow”的能力，避免它能借此启动 `formal-release.yml`。
+- 正式 CHANGELOG 生成 job 和隔离 E2E 测试 job 都不再申请 `actions: write`；两个审计 job 只申请 `contents: read`，checkout 不保留凭据。
+- 因此 `automatic-changelog` 的写入任务均不再拥有“启动任意 workflow”的能力，不能借此启动 `formal-release.yml`。
 
 `workflow_dispatch` 工作流必须存在于默认分支。因此，这套机器人 CI 派发机制会在本 PR 合并、审计工作流进入 `main` 后启用。当前 PR 本身仍由正常的 PR 检查验证。
 
@@ -42,7 +42,7 @@
 
 ## 权限与发布边界
 
-- 顶层工作流权限为空。正式 CHANGELOG 机器人 job 仅因需要显式派发审计而授予 `actions: write`；隔离 E2E 测试 job 只授予 `contents: write` 和 `pull-requests: write`，不拥有启动其他工作流的权限。
+- 顶层工作流权限为空。正式 CHANGELOG 生成 job 和隔离 E2E 测试 job 只授予 `contents: write`、`pull-requests: write`，均不拥有启动其他工作流的权限。
 - `code-audit` 作为独立运行或可复用工作流时均只需要 `contents: read`，checkout 不保留凭据。
 - 自动流程不写入 `main`，不修改 `version.json`，不创建 Tag 或 GitHub Release，也不触发正式发布。
 - 不需要预先配置个人 PAT 或 GitHub App 私钥。
@@ -64,7 +64,7 @@ node --test .github/scripts/versioning.test.cjs
 
 `docs/release/e2e-test/CHANGELOG.test.md`
 
-随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），再调用可复用的 `code-audit.yml` 对该测试分支执行完整审计。这里不通过 `workflow_dispatch` 派发另一个工作流，因此测试 job 不需要 `actions: write`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
+随后在专用分支 `automation/changelog-e2e-test` 创建或更新草稿测试 PR（目标为 `main`），再调用可复用的 `code-audit.yml` 对该测试分支执行完整审计。正式 CHANGELOG 机器人也以相同方式审计其专用分支。两条自动化路径都不通过 `workflow_dispatch` 派发另一个工作流，因此不需要 `actions: write`。测试 PR 不自动合并；检查完成后由维护者人工关闭并清理测试分支。
 
-此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 仅申请 `contents: write` 和 `pull-requests: write`；审计 job 只读。注意：GitHub 的这两项权限是仓库级权限，并非只对测试分支生效；固定的测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。测试 job 不拥有 `actions: write`，因此不能通过 Actions API 派发 `formal-release.yml`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
+此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。测试 job 仅申请 `contents: write` 和 `pull-requests: write`；审计 job 只读。注意：GitHub 的这两项权限是仓库级权限，并非只对测试分支生效；固定的测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。两个自动化写入 job 均不拥有 `actions: write`，因此不能通过 Actions API 派发 `formal-release.yml`。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。
 
