@@ -23,15 +23,25 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     outputs:
       changed: ${{ steps.changelog.outputs.changed }}
     steps:
+      - name: Create narrowly scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -39,7 +49,7 @@ jobs:
           node-version: 20
       - name: Generate Chinese changelog
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/changelog.cjs CHANGELOG.md
       - name: Prepare bot branch
@@ -69,7 +79,7 @@ jobs:
       - name: Create or update changelog pull request
         if: steps.changelog.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           existing_pr="$(gh pr list --state open --base main --head automation/changelog --json number --jq '.[0].number // empty')"
           if [ -z "$existing_pr" ]; then
@@ -80,27 +90,27 @@ jobs:
             echo "Updated existing changelog PR #${existing_pr}."
           fi
 
-
-  changelog-audit:
-    needs: update-changelog
-    if: needs.update-changelog.outputs.changed == 'true'
-    uses: ./.github/workflows/code-audit.yml
-    with:
-      ref: automation/changelog
-    permissions:
-      contents: read
-
   isolated-e2e-test:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
+      - name: Create narrowly scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -114,6 +124,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -C automation/changelog-e2e-test
           git add docs/release/e2e-test/CHANGELOG.test.md
+          changed_files="$(git diff --cached --name-only)"
+          if [ "$changed_files" != "docs/release/e2e-test/CHANGELOG.test.md" ]; then
+            echo "Unexpected files staged for isolated test PR:"
+            printf '%s\\n' "$changed_files"
+            exit 1
+          fi
           git diff --cached --quiet && { echo "Test fixture unchanged."; exit 0; }
           git commit -m "test: exercise isolated changelog automation"
       - name: Push dedicated test branch
@@ -125,24 +141,37 @@ jobs:
           else
             git push origin HEAD:refs/heads/automation/changelog-e2e-test
           fi
-      - name: Create or update draft test PR
+      - name: Create or keep isolated test PR as Draft
+        id: test-pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number // empty')"
           if [ -z "$existing_pr" ]; then
             gh pr create --draft --base main --head automation/changelog-e2e-test \
               --title "test: isolated automatic changelog end-to-end test" \
               --body "这是隔离测试 PR。只新增 docs/release/e2e-test/CHANGELOG.test.md，不修改正式 CHANGELOG.md、version.json，不创建 Tag/Release。请勿合并。"
+            existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number')"
           else
-            echo "Updated existing isolated test PR #${existing_pr}."
+            is_draft="$(gh pr view "$existing_pr" --json isDraft --jq '.isDraft')"
+            if [ "$is_draft" != "true" ]; then
+              gh pr ready "$existing_pr" --undo
+            fi
           fi
+          is_draft="$(gh pr view "$existing_pr" --json isDraft --jq '.isDraft')"
+          if [ "$is_draft" != "true" ]; then
+            echo "Isolated test PR #${existing_pr} is not Draft; refusing to continue."
+            exit 1
+          fi
+          base="$(gh pr view "$existing_pr" --json baseRefName --jq '.baseRefName')"
+          head="$(gh pr view "$existing_pr" --json headRefName --jq '.headRefName')"
+          if [ "$base" != "main" ] || [ "$head" != "automation/changelog-e2e-test" ]; then
+            echo "Isolated test PR has an unexpected base or head branch."
+            exit 1
+          fi
+          echo "number=$existing_pr" >> "$GITHUB_OUTPUT"
+      - name: Wait for native PR audit on the exact test PR commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh pr checks "${{ steps.test-pr.outputs.number }}" --watch --interval 10
 
-  isolated-e2e-audit:
-    needs: isolated-e2e-test
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true
-    uses: ./.github/workflows/code-audit.yml
-    with:
-      ref: automation/changelog-e2e-test
-    permissions:
-      contents: read
