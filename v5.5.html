@@ -329,8 +329,8 @@ try{
 }catch(e){}
 var OLD_KEYS=['catGold_v4','catGold_v3','catGold_v2'];
 var SAVE_EVERY=15000;
-var MAX_AUTO_GAP=3*60*60*1000;
-var CLOCK_DRIFT_LIMIT=2*60*1000;
+var CLOCK_DRIFT_LIMIT=2000;
+var lifecycleSnapshot=null,lifecycleResolving=false,serverClockSample=null,serverClockPromise=null;
 var data=load();
 var monthView=ym(new Date());
 var recSig='';
@@ -361,7 +361,7 @@ function load(){var base={version:5,records:[],session:null,del:[]};try{var cur=
 function validSession(s){return !!(s&&Number(s.started)>0&&Number(s.wage)>=0&&Number(s.hours)>0&&['work','paid','unpaid'].indexOf(s.mode)>=0)}
 function sanitizeSessionWage(s){if(!s)return s;var w=Number(s.wage);if(!Number.isFinite(w)||w<0||w>10000){s.wage=0;s.wageInvalid=true;}return s}
 function upgradeSession(s){
-  var u={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),date:s.date||day(s.started),started:Number(s.started),lastAt:Number(s.lastAt)||Number(s.started),start:s.start||hhmm(s.started),wage:Number(s.wage)||0,hours:Number(s.hours)||8,mode:s.mode||'work',workMs:Math.max(0,Number(s.workMs)||0),paidMs:Math.max(0,Number(s.paidMs)||0),unpaidMs:Math.max(0,Number(s.unpaidMs)||0),pendingReview:s.pendingReview||null,plannedEndTime:validClock(s.plannedEndTime)?s.plannedEndTime:hhmm(Number(s.started)+(Number(s.hours)||8)*3600000),engineVersion:5,dev:s.dev||''};
+  var u={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),date:s.date||day(s.started),started:Number(s.started),lastAt:Number(s.lastAt)||Number(s.started),start:s.start||hhmm(s.started),wage:Number(s.wage)||0,hours:Number(s.hours)||8,mode:s.mode||'work',workMs:Math.max(0,Number(s.workMs)||0),paidMs:Math.max(0,Number(s.paidMs)||0),unpaidMs:Math.max(0,Number(s.unpaidMs)||0),pendingReview:s.pendingReview||null,clockSnapshot:s.clockSnapshot&&typeof s.clockSnapshot==='object'?{wall:Number(s.clockSnapshot.wall)||0,serverAt:Number(s.clockSnapshot.serverAt)||0,preDrift:Number(s.clockSnapshot.preDrift)||0}:null,plannedEndTime:validClock(s.plannedEndTime)?s.plannedEndTime:hhmm(Number(s.started)+(Number(s.hours)||8)*3600000),engineVersion:5,dev:s.dev||''};
   if(s.days&&typeof s.days==='object'){u.days={};Object.keys(s.days).forEach(function(d){var b=s.days[d]||{};u.days[d]={work:Math.max(0,Number(b.work)||0),paid:Math.max(0,Number(b.paid)||0),unpaid:Math.max(0,Number(b.unpaid)||0)}});}
   else{u.days={};u.days[u.date]={work:u.workMs,paid:u.paidMs,unpaid:u.unpaidMs};}
   return u;
@@ -402,10 +402,10 @@ function save(){
   if(data.session)sesPush();
 }
 function todayTotals(){var s=data.session;if(!s)return {work:0,paid:0,unpaid:0};var b=s.days&&s.days[day()];return b?{work:b.work,paid:b.paid,unpaid:b.unpaid}:{work:0,paid:0,unpaid:0}}
-function accrue(now,reason){var s=data.session;if(!s||s.pendingReview)return;now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
+function accrue(now,reason){var s=data.session;if(!s||s.pendingReview||lifecycleResolving)return;now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
   if(delta<0){s.pendingReview={from:from,to:now,delta:0,mode:s.mode,reason:'系统时间发生回退',kind:'clock'};jumpWarn='检测到系统时间回退，计时已暂停核对。';s.lastAt=now;return}
-  var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall;var drift=Math.abs(wallDelta-monoDelta);var suspicious=delta>MAX_AUTO_GAP||(reason==='tick'&&drift>CLOCK_DRIFT_LIMIT);
-  if(suspicious){s.pendingReview={from:from,to:now,delta:delta,mode:s.mode,reason:delta>MAX_AUTO_GAP?'长时间未运行，需确认这段时间是否计薪':'设备时钟与运行时钟差异较大',kind:'gap'};s.lastAt=now;jumpWarn='发现一段需要核对的时间，已暂停自动计薪，确认后继续。';lastMono=mono;lastWall=now;return}
+  var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall;var drift=Math.abs(wallDelta-monoDelta);
+  if(reason==='tick'&&drift>CLOCK_DRIFT_LIMIT){s.pendingReview={from:from,to:now,delta:delta,mode:s.mode,reason:'设备时钟与运行时钟差异较大，可能发生了系统时间调整',kind:'clock'};s.lastAt=now;jumpWarn='检测到系统时间异常，计时已暂停核对。';lastMono=mono;lastWall=now;return}
   var t=from;
   while(t<now){
     var next=new Date(t);next.setHours(24,0,0,0);var segEnd=Math.min(now,next.getTime());
@@ -491,8 +491,103 @@ $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=n
     }
   }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
 };reader.readAsText(f);e.target.value=''};
-function onHide(){visible=false;if(isWriter&&data.session&&!data.session.pendingReview){accrue(Date.now(),'hide');save()}lastWall=Date.now();lastMono=performance.now()}
-function onShow(){visible=true;if(isWriter&&data.session&&!data.session.pendingReview){accrue(Date.now(),'resume');save()}lastWall=Date.now();lastMono=performance.now();draw()}
+function captureServerClock(response,sentMono,receivedMono){
+  try{
+    var raw=response&&response.headers&&response.headers.get('Date'),serverAt=Date.parse(raw);
+    if(!Number.isFinite(serverAt))return false;
+    var rtt=Math.max(0,receivedMono-sentMono),half=rtt/2;
+    serverClockSample={serverAt:serverAt+half,monoAt:sentMono+half,rtt:rtt,seenAt:receivedMono};
+    return true;
+  }catch(e){return false}
+}
+function requestServerTime(){
+  if(serverClockPromise)return serverClockPromise;
+  var sentMono=performance.now();
+  serverClockPromise=fetch(SB+'/auth/v1/health',{method:'GET',headers:{apikey:SBK},cache:'no-store'})
+    .then(function(r){
+      var receivedMono=performance.now();
+      if(!r.ok)throw new Error('服务器时间请求失败');
+      if(!captureServerClock(r,sentMono,receivedMono))throw new Error('服务器未返回可验证的时间戳');
+      return {serverAt:serverClockSample.serverAt,rtt:serverClockSample.rtt};
+    })
+    .finally(function(){serverClockPromise=null});
+  return serverClockPromise;
+}
+function classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance){
+  if(wallDelta<0||preDrift>CLOCK_DRIFT_LIMIT)return 'review-clock';
+  if(monoDelta!==null&&Number.isFinite(monoDelta)&&Math.abs(wallDelta-monoDelta)<CLOCK_DRIFT_LIMIT)return 'auto-dual';
+  if(!Number.isFinite(serverDelta))return 'review-unverified';
+  if(wallDelta>serverDelta+tolerance)return 'review-fast';
+  if(Math.abs(wallDelta-serverDelta)<=tolerance)return 'auto-server';
+  return 'review-mismatch';
+}
+function onHide(){
+  visible=false;
+  var wall=Date.now(),mono=performance.now();
+  if(isWriter&&data.session&&!data.session.pendingReview){
+    var preDrift=Math.abs((wall-lastWall)-(mono-lastMono));
+    accrue(wall,'hide');
+    if(data.session&&!data.session.pendingReview){
+      var sample=serverClockSample,serverAt=0;
+      if(sample&&mono-sample.monoAt>=0&&mono-sample.monoAt<=120000)serverAt=sample.serverAt+(mono-sample.monoAt);
+      lifecycleSnapshot={wall:wall,mono:mono,serverAt:serverAt,preDrift:preDrift};
+      data.session.clockSnapshot={wall:wall,serverAt:serverAt,preDrift:preDrift};
+      save();
+    }
+  }
+  lastWall=wall;lastMono=mono;
+}
+function onShow(){
+  visible=true;
+  var s=data.session,now=Date.now(),mono=performance.now();
+  if(!isWriter||!s||s.pendingReview){lastWall=now;lastMono=mono;draw();return}
+  var snap=lifecycleSnapshot||s.clockSnapshot;
+  if(!snap){accrue(now,'resume');save();lastWall=now;lastMono=mono;draw();return}
+  if(lifecycleResolving)return;
+  lifecycleResolving=true;
+  var wallDelta=now-(Number(snap.wall)||Number(s.lastAt)||now);
+  var monoDelta=Number.isFinite(Number(snap.mono))?mono-Number(snap.mono):null;
+  var preDrift=Number(snap.preDrift)||0;
+  function finishReview(reason,kind){
+    if(data.session&&!data.session.pendingReview){
+      var from=Number(data.session.lastAt)||Number(snap.wall)||now;
+      data.session.pendingReview={from:from,to:now,delta:Math.max(0,now-from),mode:data.session.mode,reason:reason,kind:kind||'clock'};
+      data.session.lastAt=now;
+      jumpWarn='检测到时间异常，已暂停计时，请核对后继续。';
+    }
+    if(data.session)delete data.session.clockSnapshot;
+    lifecycleSnapshot=null;lifecycleResolving=false;lastWall=now;lastMono=mono;save();draw();
+  }
+  function finishAuto(){
+    if(data.session&&!data.session.pendingReview){
+      delete data.session.clockSnapshot;
+      lifecycleSnapshot=null;lifecycleResolving=false;
+      accrue(now,'resume');save();
+    }else{lifecycleSnapshot=null;lifecycleResolving=false}
+    lastWall=now;lastMono=mono;draw();
+  }
+  if(wallDelta<0||preDrift>CLOCK_DRIFT_LIMIT){
+    finishReview(wallDelta<0?'系统时间发生回退':'切出前检测到系统时间与单调时钟不一致','clock');
+    return;
+  }
+  if(monoDelta!==null&&Math.abs(wallDelta-monoDelta)<CLOCK_DRIFT_LIMIT){finishAuto();return}
+  if(!(Number(snap.serverAt)>0)){
+    finishReview('设备休眠导致双钟不一致，且没有可用的可信服务器时间','clock');
+    return;
+  }
+  requestServerTime().then(function(server){
+    var serverDelta=server.serverAt-Number(snap.serverAt);
+    var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
+    var verdict=classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance);
+    if(verdict==='auto-server')finishAuto();
+    else if(verdict==='review-fast')finishReview('墙钟流逝时间明显快于 Supabase 服务器时间，疑似人为调快系统时钟','clock');
+    else if(verdict==='review-clock')finishReview('检测到系统时间异常，无法安全自动补计','clock');
+    else if(verdict==='review-unverified')finishReview('服务器时间无法验证这段休眠时间，请人工核对','clock');
+    else finishReview('墙钟与 Supabase 服务器时间不一致，请人工核对','clock');
+  }).catch(function(){
+    finishReview('设备休眠后双钟不一致，且当前无法连接服务器验证时间','clock');
+  });
+}
 /* ===== 5.3 单写者：同一台设备只让一个页面计时 ===== */
 var MW_LOCK='mw_writer_v53', MW_CH='mw_sync_v53', isWriter=true, mwBc=null;
 /* mwFix53b：本机实测 Web Locks 在“刷新后旧文档不释放锁”的场景会永久占死（锁查询显示 held、两个页面都拿不到、关页面也不解）。
@@ -585,10 +680,11 @@ document.addEventListener('visibilitychange',function(){document.hidden?onHide()
 var mwPullTick=0;
 setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 /* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
+setInterval(function(){if(!document.hidden&&isWriter&&data.session){sesPush(true);requestServerTime().catch(function(){})}},30000);
 setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},5000);
 /* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
 setInterval(function(){if(!document.hidden&&accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},5000);
-if(data.session){data.session=upgradeSession(data.session);var gap=Date.now()-(data.session.lastAt||Date.now());if(gap>MAX_AUTO_GAP&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:gap,mode:data.session.mode,reason:'重新打开时发现长时间未运行，请核对是否一直在工作',kind:'recovery'};data.session.lastAt=Date.now();jumpWarn='发现未结束的打卡，请先核对离线期间的时间。';}else if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now()}save()}
+if(data.session){data.session=upgradeSession(data.session);if(data.session.clockSnapshot){lifecycleSnapshot={wall:data.session.clockSnapshot.wall,mono:null,serverAt:data.session.clockSnapshot.serverAt,preDrift:data.session.clockSnapshot.preDrift};lifecycleResolving=true;}var gap=Date.now()-(data.session.lastAt||Date.now());if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now();lifecycleSnapshot=null;lifecycleResolving=false;}save()}
 if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
 draw();
 
@@ -754,8 +850,9 @@ function accReq(path,opt){
     .then(function(tk){
       mwAssertAccountContext();            /* token 刷新期间也可能已换账号 */
       if(!tk)throw {noauth:1};
+      var sentMono=performance.now();
       return fetch(SB+path,{method:opt.method||'GET',headers:accHdr(tk,opt.headers),body:opt.body})
-        .then(function(r){mwAssertAccountContext();return r});   /* 响应回来先验身份，再交给业务 */
+        .then(function(r){mwAssertAccountContext();captureServerClock(r,sentMono,performance.now());return r});   /* 响应回来先验身份，再交给业务 */
     });
 }
 function accCall(path,opt){
@@ -804,9 +901,9 @@ function applyCloudSession(row){
     if(!local||remote.started>local.started||(remote.sid===local.sid&&Number(remote.lastAt)>=Number(local.lastAt))){
       if(remote.dev!==DEV){
         var gap=Date.now()-(Number(remote.lastAt)||Date.now());
-        if(gap>MAX_AUTO_GAP||gap<0){
-          remote.pendingReview={from:Number(remote.lastAt)||Date.now(),to:Date.now(),delta:Math.max(0,gap),mode:remote.mode,reason:'从云端恢复的打卡，'+duration(Math.max(0,gap))+' 未在本机计时，请核对',kind:'gap'};
-          remote.lastAt=Date.now();jumpWarn='已从云端恢复打卡，请先核对离线期间的时间。';
+        if(gap<0){
+          remote.pendingReview={from:Number(remote.lastAt)||Date.now(),to:Date.now(),delta:0,mode:remote.mode,reason:'系统时间早于云端最近一次记录时间，请核对',kind:'clock'};
+          remote.lastAt=Date.now();jumpWarn='检测到系统时间异常，请先核对。';
         }
       }
       data.session=remote;save();draw();return true;
@@ -1232,6 +1329,7 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 })();
 
 loadFeed(false);loadStats();
+if(data.session&&lifecycleSnapshot&&!data.session.pendingReview)setTimeout(function(){onShow()},0);
 
 })();
 
