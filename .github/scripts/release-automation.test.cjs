@@ -77,6 +77,12 @@ assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60markdown\n## 伪标
 assert.equal(extractReleaseSummary('## 摘要\n\n~~~text\n### 伪标题\n~~~\n实际说明。'), '实际说明。');
 assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60js\n代码块未闭合\n## 隐藏标题\n隐藏内容。'), '');
 
+// Fence markers inside HTML comments are invisible and cannot alter fence state.
+assert.equal(extractReleaseSummary('## 摘要\n\n<!--\n\x60\x60\x60js\n注释中的伪代码\n-->\n真正的说明。'), '真正的说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n<!--\n~~~js\n注释中的伪代码\n-->\n真正的说明。'), '真正的说明。');
+// HTML comment markers inside fenced code are inert; text after the closing fence remains visible.
+assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60md\n<!-- 未闭合注释标记\n\x60\x60\x60\n围栏后的真正说明。'), '围栏后的真正说明。');
+
 const source='# 更新日志\n\n## [未发布]\n\n暂无\n\n## [5.5.0] - baseline\n\n历史内容\n';
 const output=insertReleaseSection(source,section);
 assert.ok(output.indexOf('## [5.6.0]') < output.indexOf('## [5.5.0]'));
