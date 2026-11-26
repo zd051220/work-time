@@ -20,7 +20,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: automatic-changelog-main
+  group: ${{ github.ref == 'refs/heads/feat/changelog-e2e-test-mode' && 'automatic-changelog-isolated-e2e' || 'automatic-changelog-main' }}
   cancel-in-progress: false
 
 jobs:
