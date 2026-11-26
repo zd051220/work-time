@@ -227,7 +227,26 @@ async function runEngine(name, type, origin) {
         await page.locator('#reviewBox').waitFor({ state: 'visible' });
         await page.locator('#reviewInclude').waitFor({ state: 'visible' });
         await page.locator('#reviewDiscard').waitFor({ state: 'visible' });
-        await page.locator('#reviewEndTime').waitFor({ state: 'visible' });
+        await page.locator('#reviewEndTime').waitFor({ state: 'hidden' });
+        await page.locator('#reviewInclude').click();
+        await page.locator('#reviewEntry').waitFor({ state: 'visible' });
+        const blankByDefault = await page.locator('#reviewEndTime').inputValue();
+        if (blankByDefault !== '') throw new Error('人工结束时间不能预填设备跳变后的时间');
+        const pendingBaseline = pending.workMs;
+        const manuallyChosen = await page.evaluate(from => {
+          const d = new Date(from + 2 * 60 * 1000);
+          const p = n => String(n).padStart(2, '0');
+          return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+        }, pending.pendingReview.from);
+        await page.locator('#reviewEndTime').fill(manuallyChosen);
+        await page.locator('#reviewConfirm').click();
+        await page.waitForFunction(() => {
+          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
+          return saved && saved.session && !saved.session.pendingReview;
+        }, null, { timeout: 10000 });
+        const manuallyReviewed = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session);
+        const credited = manuallyReviewed.workMs - pendingBaseline;
+        if (Math.abs(credited - 2 * 60 * 1000) > 1000) throw new Error('手动确认 2 分钟却计入了 ' + credited + 'ms');
         await context.close();
       });
 
