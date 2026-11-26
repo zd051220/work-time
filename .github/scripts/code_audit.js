@@ -6,7 +6,8 @@ const path = require('path');
 const files = process.argv.slice(2);
 const targets = files.length ? files : [
   'index.html',
-  'v5.4.html',
+  'v5.5.html',
+  'ledger-v5.5.html',
   'beta-v5.5.html',
   'preview-v5.4.1-sync.html',
   'ledger54.html',
@@ -50,16 +51,16 @@ for (const file of targets) {
   }
 }
 
-const production = fs.readFileSync('v5.4.html', 'utf8');
+const production = fs.readFileSync('v5.5.html', 'utf8');
 const pull = section(production, 'function accPull(){', 'function syncAll(first){');
 const sync = section(production, 'function syncAll(first){', "if($('accLogin')){");
 const tombPull = section(production, 'function tombPull(){', 'function accRow(');
 const deleteRecord = section(production, 'function accDelRec(id){', 'function accPull(){');
-if (!/return\s+tombPull\(\)\.then/.test(pull)) fail('v5.4.html', 'cloud pull must wait for deletion markers');
-if (!/if\(!r\.ok\)throw/.test(tombPull)) fail('v5.4.html', 'tombstone pull must fail closed on HTTP errors');
-if (!/return\s+tombPush\(\)\.then/.test(sync)) fail('v5.4.html', 'cloud sync must await deletion-marker upload');
-if (!/return\s+tombPush\(\)\.then/.test(deleteRecord)) fail('v5.4.html', 'record deletion must await deletion-marker upload');
-if (/\btombPush\(\)\s*;/.test(sync)) fail('v5.4.html', 'fire-and-forget tombstone upload remains in syncAll');
+if (!/return\s+tombPull\(\)\.then/.test(pull)) fail('v5.5.html', 'cloud pull must wait for deletion markers');
+if (!/if\(!r\.ok\)throw/.test(tombPull)) fail('v5.5.html', 'tombstone pull must fail closed on HTTP errors');
+if (!/return\s+tombPush\(\)\.then/.test(sync)) fail('v5.5.html', 'cloud sync must await deletion-marker upload');
+if (!/return\s+tombPush\(\)\.then/.test(deleteRecord)) fail('v5.5.html', 'record deletion must await deletion-marker upload');
+if (/\btombPush\(\)\s*;/.test(sync)) fail('v5.5.html', 'fire-and-forget tombstone upload remains in syncAll');
 
 if (failures) {
   console.error('\nCode audit failed: ' + failures + ' issue(s)');
