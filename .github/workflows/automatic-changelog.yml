@@ -85,7 +85,7 @@ jobs:
         run: gh workflow run code-audit.yml --ref automation/changelog
 
   isolated-e2e-test:
-    if: github.event_name == 'workflow_dispatch' && inputs.test_mode == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
