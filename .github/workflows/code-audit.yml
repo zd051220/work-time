@@ -48,3 +48,32 @@ jobs:
           node .github/scripts/cat_game_pg_check.mjs .
       - name: Timer regression tests (formal)
         run: node .github/scripts/timer_check.js v5.5.html
+
+  verify-changelog-app-token:
+    # One-time credential smoke test, limited to PR #21's own branch and PR.
+    # This job does not checkout or execute repository code.
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/feat/changelog-e2e-test-mode') || (github.event_name == 'pull_request' && github.event.pull_request.number == 21 && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Generate temporary GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
+          permission-checks: read
+      - name: Confirm token was generated without printing it
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if [ -z "$APP_TOKEN" ]; then
+            echo "GitHub App token generation did not return a token."
+            exit 1
+          fi
+          echo "GitHub App installation token generated successfully. Token value was not printed."
