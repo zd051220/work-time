@@ -8,10 +8,12 @@ on:
       version:
         description: "发布版本号，例如 5.6.0 或 5.6.0-rc.1（不带 v）"
         required: true
+        default: "5.5.0"
         type: string
       channel:
         description: "发布渠道"
         required: true
+        default: stable
         type: choice
         options:
           - stable
