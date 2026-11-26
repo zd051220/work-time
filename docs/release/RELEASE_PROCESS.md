@@ -85,6 +85,9 @@ GitHub PR 合并成功不等于 Pages 部署成功；Pages 工作流成功也不
 
 如发现严重问题，按 `docs/release/ROLLBACK.md` 处理，并记录事件。
 
-## 8. 当前工作流限制
+## 8. 发布工作流入口
 
-当前仓库的 `.github/workflows/release-manual.yml` 是一个根目录单文件手动发布流程，会直接向 `main` 推送，不是完整的 Tag/Release 发布流水线。完成工作流重构、分支保护和路径兼容验证之前，不应将它视为本规范定义的正式发布入口，也不应通过它发布多文件版本。
+- 正式发布统一使用 `.github/workflows/formal-release.yml`。该流程必须从 `main` 手动触发，默认 `dry-run`；只有明确选择 `publish`，并且版本校验、CHANGELOG、自动审计、计时回归和当前提交对应的 Pages 部署全部成功后，才会创建 Git Tag 与 GitHub Release。
+- 旧的 `.github/workflows/release-manual.yml` 会直接向 `main` 推送单个文件，已从活动工作流目录移除；历史内容仅归档在 `docs/release/archive/release-manual.yml.md`，不得恢复为活动发布入口。
+- 所有代码与发布配置变更仍须通过独立分支和 Pull Request 审查。不得通过旧工作流绕过 PR。
+- GitHub 分支保护和必需状态检查属于仓库设置，必须单独核实；文档描述不代表设置已经启用。
