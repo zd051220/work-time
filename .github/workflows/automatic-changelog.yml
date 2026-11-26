@@ -121,12 +121,19 @@ jobs:
           ref: main
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
+      - name: Checkout isolated E2E fixture source
+        uses: actions/checkout@v4
+        with:
+          ref: feat/changelog-e2e-test-mode
+          path: e2e-source
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Generate isolated test CHANGELOG
-        run: node .github/scripts/changelog-e2e-test.cjs
+        run: node e2e-source/.github/scripts/changelog-e2e-test.cjs
       - name: Prepare dedicated test bot branch
         run: |
           git config user.name "github-actions[bot]"
