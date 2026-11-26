@@ -90,7 +90,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      actions: write
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -132,7 +131,12 @@ jobs:
           else
             echo "Updated existing isolated test PR #${existing_pr}."
           fi
-      - name: Dispatch code audit for test branch
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run code-audit.yml --ref automation/changelog-e2e-test
+
+  isolated-e2e-audit:
+    needs: isolated-e2e-test
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true
+    uses: ./.github/workflows/code-audit.yml
+    with:
+      ref: automation/changelog-e2e-test
+    permissions:
+      contents: read
