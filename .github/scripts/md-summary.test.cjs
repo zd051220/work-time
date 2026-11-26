@@ -15,7 +15,7 @@ test('uses legacy first paragraph when no structured heading exists', () => {
   assert.equal(extractSummary('The first paragraph explains the change.\n\nMore details.'), 'The first paragraph explains the change.');
 });
 test('does not treat blockquotes, inline code, or fenced code as summaries', () => {
-  assert.equal(extractSummary('> quoted fake summary\n\n\`inline fake\`\n\n\`\`\`md\nRelease Summary\nFake code.\n\`\`\`', 'fix: fallback title'), 'fallback title');
+  assert.equal(extractSummary('> quoted fake summary\n\n\`inline fake\`\n\n\`\`\`md\nRelease Summary\nFake code.\n\`\`\`', 'fix: fallback title'), 'fix: fallback title');
 });
 test('ignores HTML comments including comments wrapping fenced code', () => {
   const body = '<!--\n## Release Summary\nFake comment.\n\`\`\`md\nRelease Summary\nFake code.\n\`\`\`\n-->\n\n<!-- ## Release Summary -->';
