@@ -76,3 +76,14 @@ test('rejects HTTP errors, malformed API payloads, and invalid fetch arguments',
  await assert.rejects(()=>fetchMergedPullRequests('../repo','token',async()=>response([])),/仓库名称无效/);
  await assert.rejects(()=>fetchMergedPullRequests('owner/repo','',async()=>response([])),/缺少 GitHub API token/);
 });
+
+const { generateIsolatedChangelog, OUTPUT } = require('./changelog-e2e-test.cjs');
+test('isolated end-to-end fixture includes release:patch and skips unlabelled PR without touching formal changelog',()=>{
+ const generated=generateIsolatedChangelog();
+ assert.equal(OUTPUT,'docs/release/e2e-test/CHANGELOG.test.md');
+ assert.match(generated,/\[#910001\]/);
+ assert.doesNotMatch(generated,/\[#910002\]/);
+ assert.match(generated,/TEST ONLY/);
+ assert.match(generated,/测试文件人工说明：此段必须保留。/);
+ assert.match(generated,/历史测试内容必须保留。/);
+});

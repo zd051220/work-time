@@ -10,15 +10,20 @@
 
 ## CI 如何可靠启动
 
-机器人使用仓库自带的 `GITHUB_TOKEN` 创建或更新 PR。GitHub 对这类 PR 产生的 `pull_request` 检查可能要求有写权限的维护者手动批准，因此工作流**不把该事件当作唯一 CI 入口**。
+机器人分支需要获得**属于机器人 PR 自身提交**的 GitHub Actions 检查。单纯在原工作流里调用 reusable workflow，只会把检查记录在调用方的事件和提交上下文中；即使 checkout 了机器人分支代码，也不能把该检查变成机器人 PR head SHA 的检查。
 
-为避免检查静默不运行：
-- `.github/workflows/code-audit.yml` 同时支持 `workflow_dispatch`。
-- 机器人 PR 创建或更新后，自动更新日志工作流通过 `gh workflow run code-audit.yml --ref automation/changelog` 显式派发完整审计。
-- GitHub 允许由 `GITHUB_TOKEN` 触发的 `workflow_dispatch` 创建工作流运行；这项权限只授予自动更新日志 job。
-- 派发失败会使自动更新日志工作流失败，不会把“未执行检查”伪装成成功。合并前仍须看到 PR 对应提交的必需审计检查成功。
+因此，创建或更新机器人分支及 PR 使用专用 GitHub App installation token，而不是 `GITHUB_TOKEN`：
+- GitHub App installation token 对 `work-time` 仓库仅申请 `contents: write` 和 `pull_requests: write`；App token 不申请 `checks: read`。
+- App token 推送机器人分支、创建或更新 PR；这些由 App token 触发的 push / pull_request 事件会启动仓库原生的 `code-audit.yml`。
+- 原生 `pull_request` 审计运行在机器人 PR 的事件上下文中，检查记录关联到该 PR 的提交；E2E job 会等待测试 PR 的检查完成。
+- 不再使用 reusable workflow 冒充机器人 PR 的审计结果，也不使用 `workflow_dispatch` 作为 PR 必需检查。
+- 工作流各 job 的内置 `GITHUB_TOKEN` 仅使用只读权限，具体权限按 job 职责分别设置（见下文）；自动更新日志 job 和隔离测试 job 均不授予 `actions: write`。
 
-`workflow_dispatch` 工作流必须存在于默认分支。因此，这套机器人 CI 派发机制会在本 PR 合并、审计工作流进入 `main` 后启用。当前 PR 本身仍由正常的 PR 检查验证。
+**一次性仓库配置：**需要创建并安装一个专用于此仓库的 GitHub App，仅授予 `Contents: read and write` 与 `Pull requests: read and write`，并在仓库 Actions secrets 中配置：
+- `CHANGELOG_APP_ID`：GitHub App ID。
+- `CHANGELOG_APP_PRIVATE_KEY`：该 App 的私钥 PEM。
+
+App installation 必须覆盖 `zd051220/work-time`。如果缺少密钥或 App 权限不足，工作流会在写入机器人分支之前失败关闭，不会退回到无法触发 PR 检查的 `GITHUB_TOKEN` 方案。无需个人 PAT。该 App 不需要 `Actions: write` 权限。
 
 ## 分类与版本标签
 
@@ -41,10 +46,10 @@
 
 ## 权限与发布边界
 
-- 顶层工作流权限为空；job 仅授予创建机器人分支所需的 `contents: write`、创建 PR 所需的 `pull-requests: write`，以及显式派发审计所需的 `actions: write`。
-- `code-audit` 本身只有 `contents: read`，checkout 不保留凭据。
+- 顶层工作流权限为空。各 job 的内置 `GITHUB_TOKEN` 按职责分别授权：`update-changelog` 和 `isolated-e2e-generate` 仅有 `contents: read`；`isolated-e2e-publish` 有 `contents: read`、`pull-requests: read`、`checks: read`，其中 `checks: read` 专门用于读取测试 PR 的检查结果。`code-audit` workflow 自身仅有 `contents: read`，checkout 不保留凭据。
+- GitHub App installation token 只授予 `contents: write` 和 `pull_requests: write`，仅用于推送专用机器人分支及创建/更新 PR；它不需要也不申请 `checks: read` 或 `actions: write`。
 - 自动流程不写入 `main`，不修改 `version.json`，不创建 Tag 或 GitHub Release，也不触发正式发布。
-- 不需要预先配置个人 PAT 或 GitHub App 私钥。
+- 不使用个人 PAT；需要按上文配置专用 GitHub App ID 和私钥仓库密钥。
 
 ## 本地测试
 
@@ -54,3 +59,15 @@ node --test .github/scripts/versioning.test.cjs
 ```
 
 当前阶段仅自动维护未发布区的 PR 变更摘要，不自动决定发布日期、版本号或正式发布状态。
+
+## 隔离端到端测试模式
+
+测试模式支持两种受控入口：维护者可在 GitHub Actions 中手动运行 `automatic-changelog`，选择 `main` 并显式勾选 `test_mode=true`；开发期间也可仅在 `feat/changelog-e2e-test-mode` 分支修改 `.github/workflows/automatic-changelog.yml`，且提交信息必须包含 `[run-changelog-e2e]`。push 入口不会响应其他分支或其他文件路径。正式更新日志 job 仍只响应已合并到 `main` 的 PR。
+
+测试模式使用固定模拟数据（一个带 `release:patch` 标签的 PR 和一个无标签 PR），调用同一更新日志生成器，并且只允许写入：
+
+`docs/release/e2e-test/CHANGELOG.test.md`
+
+生成过程与写入过程分成两个独立 job。生成 job 中主仓库和 fixture checkout 均设置 `persist-credentials: false`，不创建或接收 GitHub App token；只上传经过目录、符号链接和大小检查的单个测试文件。写入 job 在全新 runner 中下载并再次验证该文件，提交前仍不创建 App token。令牌只在独立的 push 步骤和创建/更新 PR 步骤按步骤提供；push 使用一次性 Git 命令级认证，不写入 `.git/config`。等待原生检查时使用只读 `GITHUB_TOKEN`。随后更新 `automation/changelog-e2e-test` 分支，并创建或更新目标为 `main` 的草稿测试 PR。工作流会检查 PR 的 head/base 分支，并在 PR 已被标记为 Ready 时将其恢复为 Draft；无法确认 Draft 状态就失败关闭。App token 触发的 `pull_request` 事件会启动默认分支中的 `code-audit.yml`。E2E job 使用只读 `GITHUB_TOKEN` 查询测试 PR head SHA 的 Check Runs，只接受名称为 `audit` 且 `pull_requests` 元数据同时匹配目标 PR 编号、精确 head SHA、`main` base 和 `automation/changelog-e2e-test` head 分支的检查；必须等到所有匹配的 audit 检查完成且结论全部为 `success`，并再次确认 PR head SHA 未变化。不会以任意数量的检查完成代替目标审计成功。正式 CHANGELOG 机器人 PR 使用相同的 App token 事件触发机制。
+
+此模式不读取或写入正式 `CHANGELOG.md`，不修改 `version.json`，不创建 Tag 或 Release，也不调用正式发布工作流。自动化 job 的内置 `GITHUB_TOKEN` 仅为只读；写入机器人分支和 PR 的 GitHub App token 不具备 `actions: write`。注意：`contents: write` 和 `pull_requests: write` 是仓库级权限，并非分支级限权；固定测试分支名、固定文件路径和 main 分支保护规则属于操作层防线，不能误称为 Token 已获得分支级限权。测试模式输入固定为布尔开关，不接受任意文件路径、分支名或 PR 数据。

@@ -4,26 +4,50 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "仅运行隔离的端到端测试，不更新正式 CHANGELOG"
+        required: true
+        type: boolean
+        default: false
+  push:
+    branches:
+      - feat/changelog-e2e-test-mode
+    paths:
+      - .github/workflows/automatic-changelog.yml
 
 permissions: {}
 
 concurrency:
-  group: automatic-changelog-main
+  group: ${{ github.ref == 'refs/heads/feat/changelog-e2e-test-mode' && 'automatic-changelog-isolated-e2e' || 'automatic-changelog-main' }}
   cancel-in-progress: false
 
 jobs:
   update-changelog:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-      actions: write
+      contents: read
+    outputs:
+      changed: ${{ steps.changelog.outputs.changed }}
     steps:
+      - name: Create narrowly scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -31,7 +55,7 @@ jobs:
           node-version: 20
       - name: Generate Chinese changelog
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/changelog.cjs CHANGELOG.md
       - name: Prepare bot branch
@@ -61,7 +85,7 @@ jobs:
       - name: Create or update changelog pull request
         if: steps.changelog.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           existing_pr="$(gh pr list --state open --base main --head automation/changelog --json number --jq '.[0].number // empty')"
           if [ -z "$existing_pr" ]; then
@@ -71,8 +95,237 @@ jobs:
           else
             echo "Updated existing changelog PR #${existing_pr}."
           fi
-      - name: Dispatch audit for bot branch
-        if: steps.changelog.outputs.changed == 'true'
+
+  isolated-e2e-generate:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/feat/changelog-e2e-test-mode' && contains(github.event.head_commit.message, '[run-changelog-e2e]'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout main without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Checkout isolated E2E fixture source without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: feat/changelog-e2e-test-mode
+          path: e2e-source
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate isolated test CHANGELOG
+        run: node e2e-source/.github/scripts/changelog-e2e-test.cjs
+      - name: Validate and stage fixture artifact
+        run: |
+          set -euo pipefail
+          for directory in docs docs/release docs/release/e2e-test; do
+            test -d "$directory"
+            test ! -L "$directory"
+          done
+          target="docs/release/e2e-test/CHANGELOG.test.md"
+          test -f "$target"
+          test ! -L "$target"
+          size="$(wc -c < "$target")"
+          if [ "$size" -gt 1048576 ]; then
+            echo "Isolated fixture exceeds the 1 MiB safety limit."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/changelog-e2e-artifact"
+          cp -- "$target" "$RUNNER_TEMP/changelog-e2e-artifact/CHANGELOG.test.md"
+      - name: Upload only the isolated fixture file
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-e2e-fixture
+          path: ${{ runner.temp }}/changelog-e2e-artifact/CHANGELOG.test.md
+          if-no-files-found: error
+          retention-days: 1
+
+  isolated-e2e-publish:
+    needs: isolated-e2e-generate
+    if: needs.isolated-e2e-generate.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    steps:
+      - name: Checkout main without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Download isolated fixture artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog-e2e-fixture
+          path: generated-output
+      - name: Validate artifact and stage the exact allowed file
+        run: |
+          set -euo pipefail
+          test -d generated-output
+          test ! -L generated-output
+          unexpected="$(find generated-output -mindepth 1 ! -type f -print)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected non-file artifact entries:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+          files="$(find generated-output -type f -printf '%P\n')"
+          if [ "$files" != "CHANGELOG.test.md" ]; then
+            echo "Artifact must contain exactly CHANGELOG.test.md."
+            exit 1
+          fi
+          test ! -L generated-output/CHANGELOG.test.md
+          size="$(wc -c < generated-output/CHANGELOG.test.md)"
+          if [ "$size" -gt 1048576 ]; then
+            echo "Isolated fixture exceeds the 1 MiB safety limit."
+            exit 1
+          fi
+          mkdir -p docs/release/e2e-test
+          install -m 0644 generated-output/CHANGELOG.test.md docs/release/e2e-test/CHANGELOG.test.md
+      - name: Prepare dedicated test bot branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C automation/changelog-e2e-test
+          git add docs/release/e2e-test/CHANGELOG.test.md
+          changed_files="$(git diff --cached --name-only)"
+          if [ "$changed_files" != "docs/release/e2e-test/CHANGELOG.test.md" ]; then
+            echo "Unexpected files staged for isolated test PR:"
+            printf '%s\n' "$changed_files"
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo "The isolated fixture has no diff from main; refusing to create an empty test PR."
+            exit 1
+          fi
+          git commit -m "test: exercise isolated changelog automation"
+      - name: Create narrowly scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CHANGELOG_APP_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: work-time
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Push dedicated test branch with step-scoped credentials
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          set +x
+          auth_header="$(printf 'x-access-token:%s' "$APP_TOKEN" | base64 -w0)"
+          if git ls-remote --exit-code --heads origin automation/changelog-e2e-test >/dev/null 2>&1; then
+            git fetch origin refs/heads/automation/changelog-e2e-test:refs/remotes/origin/automation/changelog-e2e-test
+            expected="$(git rev-parse refs/remotes/origin/automation/changelog-e2e-test)"
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" push --force-with-lease="refs/heads/automation/changelog-e2e-test:${expected}" origin HEAD:refs/heads/automation/changelog-e2e-test
+          else
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" push origin HEAD:refs/heads/automation/changelog-e2e-test
+          fi
+          if git config --local --get-regexp '^http\..*extraheader$' >/dev/null 2>&1; then
+            echo "Unexpected persisted Git authentication configuration."
+            exit 1
+          fi
+      - name: Create or keep isolated test PR as Draft
+        id: test-pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number // empty')"
+          if [ -z "$existing_pr" ]; then
+            gh pr create --draft --base main --head automation/changelog-e2e-test \
+              --title "test: isolated automatic changelog end-to-end test" \
+              --body "这是隔离测试 PR。只新增 docs/release/e2e-test/CHANGELOG.test.md，不修改正式 CHANGELOG.md、version.json，不创建 Tag/Release。请勿合并。"
+            existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number')"
+          else
+            is_draft="$(gh pr view "$existing_pr" --json isDraft --jq '.isDraft')"
+            if [ "$is_draft" != "true" ]; then
+              gh pr ready "$existing_pr" --undo
+            fi
+          fi
+          is_draft="$(gh pr view "$existing_pr" --json isDraft --jq '.isDraft')"
+          if [ "$is_draft" != "true" ]; then
+            echo "Isolated test PR #${existing_pr} is not Draft; refusing to continue."
+            exit 1
+          fi
+          base="$(gh pr view "$existing_pr" --json baseRefName --jq '.baseRefName')"
+          head="$(gh pr view "$existing_pr" --json headRefName --jq '.headRefName')"
+          if [ "$base" != "main" ] || [ "$head" != "automation/changelog-e2e-test" ]; then
+            echo "Isolated test PR has an unexpected base or head branch."
+            exit 1
+          fi
+          echo "number=$existing_pr" >> "$GITHUB_OUTPUT"
+      - name: Wait for native PR audit on the exact test PR commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run code-audit.yml --ref automation/changelog
+        run: |
+          set -euo pipefail
+          pr_number="${{ steps.test-pr.outputs.number }}"
+          pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}")"
+          head_sha="$(printf '%s' "$pr_json" | jq -r '.head.sha')"
+          base_ref="$(printf '%s' "$pr_json" | jq -r '.base.ref')"
+          head_ref="$(printf '%s' "$pr_json" | jq -r '.head.ref')"
+          if [ "$base_ref" != "main" ] || [ "$head_ref" != "automation/changelog-e2e-test" ] || [ -z "$head_sha" ]; then
+            echo "Unexpected test PR base, head, or commit SHA; refusing to wait on unrelated checks."
+            exit 1
+          fi
+
+          audit_count=0
+          pending_count=0
+          failed_count=0
+          success_count=0
+          for attempt in $(seq 1 60); do
+            check_runs_json="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs?per_page=100")"
+            summary="$(printf '%s' "$check_runs_json" | jq -r --argjson pr "$pr_number" --arg sha "$head_sha" '
+              [.check_runs[]
+                | select(
+                    .name == "audit"
+                    and any(.pull_requests[]?;
+                      .number == $pr
+                      and .head.sha == $sha
+                      and .base.ref == "main"
+                      and .head.ref == "automation/changelog-e2e-test"
+                    )
+                  )
+              ] as $audit
+              | [
+                  ($audit | length),
+                  ([$audit[] | select(.status != "completed")] | length),
+                  ([$audit[] | select(.status == "completed" and .conclusion != "success")] | length),
+                  ([$audit[] | select(.status == "completed" and .conclusion == "success")] | length)
+                ] | @tsv
+            ')";
+            audit_count="$(printf '%s\n' "$summary" | cut -f1)"
+            pending_count="$(printf '%s\n' "$summary" | cut -f2)"
+            failed_count="$(printf '%s\n' "$summary" | cut -f3)"
+            success_count="$(printf '%s\n' "$summary" | cut -f4)"
+
+            if [ "$failed_count" -gt 0 ]; then
+              echo "A target PR audit check failed for exact head SHA ${head_sha}."
+              exit 1
+            fi
+            if [ "$audit_count" -gt 0 ] && [ "$pending_count" -eq 0 ] && [ "$success_count" -eq "$audit_count" ]; then
+              latest_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq '.head.sha')"
+              if [ "$latest_head" != "$head_sha" ]; then
+                echo "Test PR head changed while waiting; refusing to accept checks for a stale commit."
+                exit 1
+              fi
+              echo "All ${audit_count} audit check(s) associated with PR #${pr_number} succeeded on exact head SHA ${head_sha}."
+              exit 0
+            fi
+            echo "Waiting for PR-associated audit on ${head_sha}: audit=${audit_count}, pending=${pending_count}, success=${success_count} (attempt ${attempt}/60)."
+            sleep 10
+          done
+          echo "The target PR audit did not complete successfully within 10 minutes for ${head_sha}."
+          exit 1

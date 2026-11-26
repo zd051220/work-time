@@ -31,6 +31,8 @@ jobs:
         run: node --test .github/scripts/versioning.test.cjs
       - name: Automatic changelog tests
         run: node --test .github/scripts/changelog.test.cjs
+      - name: Isolated changelog E2E fixture generation
+        run: node .github/scripts/changelog-e2e-test.cjs
       - name: Runtime version configuration validation
         run: node .github/scripts/versioning.cjs check-config version.json
       - name: Static code audit
