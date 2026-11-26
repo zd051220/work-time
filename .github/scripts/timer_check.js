@@ -1,138 +1,112 @@
 #!/usr/bin/env node
+'use strict';
 /**
- * v5.5 计时恢复回归测试。
- * 覆盖：双钟一致、休眠时单调钟停滞、服务器兜底、墙钟调快、断网、前台调表。
+ * v5.5 timer regression tests: UX-first, warning-only dual clock.
+ * Covers foreground drift warnings, action-path accrual, lock/background recovery,
+ * and confirms there is no server-time or manual-review gate.
  */
-const fs = require('fs');
-const path = require('path');
-process.env.TZ = 'Asia/Shanghai';
+const fs = require('node:fs');
+const path = require('node:path');
 const file = process.argv[2] || path.join(__dirname, '..', '..', 'v5.5.html');
-const srcText = fs.readFileSync(file, 'utf8');
-const src = srcText.split('\n');
-function grab(name) {
-  for (let i = 0; i < src.length; i++) {
-    if (new RegExp('function ' + name + '\\(').test(src[i].trim())) {
-      let buf = [src[i]], bal = src[i].split('{').length - src[i].split('}').length, j = i;
-      while (bal > 0 && j + 1 < src.length) {
-        j++; buf.push(src[j]);
-        bal += src[j].split('{').length - src[j].split('}').length;
-      }
-      return buf.join('\n');
+const html = fs.readFileSync(file, 'utf8');
+
+function extractFunction(name) {
+  const marker = 'function ' + name + '(';
+  const start = html.indexOf(marker);
+  if (start < 0) throw new Error('Missing function ' + name);
+  const brace = html.indexOf('{', start);
+  let depth = 0, quote = null, escaped = false, lineComment = false, blockComment = false;
+  for (let i = brace; i < html.length; i++) {
+    const ch = html[i], next = html[i + 1];
+    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
+    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\\\') { escaped = true; continue; }
+      if (ch === quote) quote = null;
+      continue;
     }
+    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
+    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
+    if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue; }
+    if (ch === '{') depth++;
+    if (ch === '}' && --depth === 0) return html.slice(start, i + 1);
   }
-  throw new Error('缺少函数 ' + name);
+  throw new Error('Unclosed function ' + name);
 }
-if (/MAX_AUTO_GAP/.test(srcText)) throw new Error('MAX_AUTO_GAP 不应再存在');
-const driftExpr = /CLOCK_DRIFT_LIMIT=([^;]+);/.exec(srcText);
-if (!driftExpr) throw new Error('缺少 CLOCK_DRIFT_LIMIT');
-const body = ['pad2','day','dayBucket','addSeg','accrue','resolveReview','captureServerClock','requestServerTime','classifyResumeClock','onHide','onShow'].map(grab).join('\n\n');
-const RealDate = Date;
-const T0 = RealDate.parse('2026-11-24T10:00:00+08:00');
+
+const checks = [];
+function check(name, condition) {
+  checks.push({ name, ok: !!condition });
+  console.log((condition ? '  PASS ' : '  FAIL ') + name);
+}
 function makeHarness() {
-  const clock = {wall:T0,mono:0,serverNow:T0,offline:false,healthNoDate:false,fetches:0,saves:0,draws:0};
-  const FakeDate = class extends RealDate {
+  const RealDate = Date;
+  const T0 = RealDate.parse('2026-11-27T09:00:00+08:00');
+  const clock = { wall: T0, mono: 1000, timeOrigin: 123456, saves: 0, draws: 0 };
+  class FakeDate extends RealDate {
     constructor(...args) { if (!args.length) super(clock.wall); else super(...args); }
     static now() { return clock.wall; }
-  };
-  const perf = {now:()=>clock.mono};
-  const data = {session:null,records:[]};
-  const consts = 'var CLOCK_DRIFT_LIMIT='+driftExpr[1]+';var MAX_MANUAL_REVIEW_MS=7*24*60*60*1000;'+
-    'var lifecycleSnapshot=null,lifecycleResolving=false,serverClockSample=null,serverClockPromise=null;'+
-    "var SB='https://example.supabase.co',SBK='test-key',isWriter=true,visible=true;"+
-    'var lastWall=Date.now(),lastMono=performance.now(),jumpWarn=\'\';'+
-    'var save=function(){clock.saves++},draw=function(){clock.draws++},toast=function(){};'+
-    'var fetch=function(url){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));var noDate=clock.healthNoDate&&String(url).indexOf(\'auth/v1/health\')>=0;return Promise.resolve({ok:true,headers:{get:function(name){return !noDate&&String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
-  const runner = new Function('performance','Date','data','clock','RealDate',
-    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},clearSample:function(){serverClockSample=null},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,resolveReview:resolveReview,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,lastAt:data.session.lastAt,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
-  const T = runner(perf,FakeDate,data,clock,RealDate);
-  data.session = {sid:'test-session',date:'2026-11-24',started:T0,lastAt:T0,start:'10:00',wage:200,hours:8,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,clockSnapshot:null,days:{'2026-11-24':{work:0,paid:0,unpaid:0}}};
-  T.setSample();
-  return T;
+  }
+  const performance = { now: () => clock.mono, timeOrigin: clock.timeOrigin };
+  const data = { session: {
+    lastAt: T0, mode: 'work', workMs: 0, paidMs: 0, unpaidMs: 0,
+    days: { '2026-11-27': { work: 0, paid: 0, unpaid: 0 } }, clockSnapshot: null
+  }};
+  const funcs = ['accrue', 'onHide', 'onShow'].map(extractFunction).join('\n');
+  const runner = new Function('Date','performance','data','clock','RealDate','day','addSeg','save','draw',
+    'var CLOCK_DRIFT_LIMIT=2000,lifecycleResolving=false,lifecycleSnapshot=null,visible=true,isWriter=true,lastWall=Date.now(),lastMono=performance.now(),jumpWarn="";' +
+    funcs +
+    '\nreturn {clock,data,accrue,onHide,onShow,state:function(){return {work:data.session.workMs,pending:data.session.pendingReview||null,lastAt:data.session.lastAt,warn:jumpWarn,snapshot:data.session.clockSnapshot}}};');
+  return runner(FakeDate, performance, data, clock, RealDate,
+    () => '2026-11-27',
+    (s, d, mode, ms) => { s[mode + 'Ms'] += ms; s.days[d][mode] += ms; },
+    () => { clock.saves++; },
+    () => { clock.draws++; });
 }
-let pass=0,fail=0;
-function check(name,got,want){const ok=got===want;if(ok)pass++;else fail++;console.log((ok?'  PASS ':'  FAIL ')+name+' | got='+String(got)+' expected='+String(want));}
-async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
-  const T=makeHarness(),c=T.clock;T.hide();c.wall+=gap;c.mono+=monoGap;c.serverNow+=serverGap;c.offline=!!offline;await T.show();
-  const st=T.state();check(name+' 是否进入人工核对',st.pending,expectPending);
-  if(!expectPending)check(name+' 全额累计',st.work,gap);
-  return st;
-}
-(async()=>{
-  check('彻底移除 MAX_AUTO_GAP',/MAX_AUTO_GAP/.test(srcText),false);
-  check('双钟阈值为 2 秒',Number(driftExpr[1]),2000);
-  await resumeCase('后台 1 小时、单调钟停滞、服务器确认',3600000,0,3600000,false,false);
-  await resumeCase('后台 5 小时、单调钟停滞、服务器确认',5*3600000,0,5*3600000,false,false);
-  await resumeCase('后台 24 小时、单调钟停滞、服务器确认',24*3600000,0,24*3600000,false,false);
-  const dual=await resumeCase('后台 5 小时、双钟一致',5*3600000,5*3600000,5*3600000,false,false);
-  check('双钟一致也必须请求服务器校验绝对时间',dual.fetches>=1,true);
-  await resumeCase('系统时间与单调时钟同时快进 1 小时、服务器未前进：必须冻结核对',3600000,3600000,0,true,false);
-  await resumeCase('墙钟比服务器快 30 分钟',5*3600000+1800000,0,5*3600000,true,false);
-  await resumeCase('双钟不一致且断网',3600000,0,3600000,true,true);
+
+(async () => {
+  check('双时钟阈值为 2 秒', /var CLOCK_DRIFT_LIMIT=2000;/.test(html));
+  check('不再请求服务器时间进行绝对校验', !/requestServerTime\s*\(|verifyServerWall\s*\(/.test(html));
+  check('不再包含强制人工核对入口', !/reviewInclude|reviewManual|reviewEndTime|resolveReview\s*\(/.test(html));
+  check('异常检测横幅为普通提示，不再要求点击核对', /id="clockReviewBanner" role="status"/.test(html));
+  check('下班按钮不受异常状态锁定', /\$\('stopBtn'\)\.disabled=!isWriter\|\|!s;/.test(html));
+  check('切换带薪休息按钮不受异常状态锁定', /\$\('paidBtn'\)\.disabled=!isWriter\|\|!s\|\|s\.mode==='paid';/.test(html));
+  check('计时器不再创建 pendingReview 冻结状态', !/pendingReview\s*=/.test(html));
+
   {
-    const T=makeHarness(),c=T.clock;T.clearSample();T.hide();c.wall+=3*3600000;c.serverNow+=3*3600000;await T.show();
-    check('没有隐藏前心跳但恢复时服务器可用，仍静默恢复',T.state().pending,false);
-    check('服务器当前时间确认后全额累计',T.state().work,3*3600000);
+    const T = makeHarness(), c = T.clock;
+    c.wall += 1000; c.mono += 1000; T.accrue(c.wall, 'tick');
+    check('正常前台计时按秒累计且不提示', T.state().work === 1000 && !T.state().warn);
   }
   {
-    const T=makeHarness(),c=T.clock;T.clearSample();T.hide();c.wall+=3600000;c.offline=true;await T.show();
-    check('没有隐藏前心跳且恢复时断网，进入人工核对',T.state().pending,true);
+    const T = makeHarness(), c = T.clock;
+    c.wall += 3600000; c.mono += 1000; T.accrue(c.wall, 'action');
+    check('点击操作触发时发现双钟偏差仍显示提示', T.state().warn.includes('明显变动'));
+    check('异常提示不会冻结或丢弃已经过的工时', T.state().work === 3600000 && !T.state().pending);
   }
   {
-    const T=makeHarness(),c=T.clock;T.hide();c.wall+=2*3600000;c.serverNow+=2*3600000;c.healthNoDate=true;await T.show();
-    check('Supabase 未暴露 Date 时回退同源服务器时间',T.state().pending,false);
-    check('同源服务器确认后全额累计',T.state().work,2*3600000);
-    check('同源服务器回退至少请求两次',T.state().fetches>=2,true);
+    const T = makeHarness(), c = T.clock;
+    T.onHide(); c.wall += 5 * 3600000; c.mono += 5 * 3600000; T.onShow();
+    check('锁屏/后台五小时双钟一致：静默补计', T.state().work === 5 * 3600000 && !T.state().warn);
   }
   {
-    const T=makeHarness(),c=T.clock;c.wall+=1800000;T.hide();
-    check('切出前调快时立即拦截',T.state().pending,true);
-    check('切出前调表不提前计入',T.state().work,0);
+    const T = makeHarness(), c = T.clock;
+    T.onHide(); c.wall += 5 * 3600000; T.onShow();
+    check('系统挂起导致单调钟暂停：仍按墙钟恢复且不误报', T.state().work === 5 * 3600000 && !T.state().warn);
   }
   {
-    const T=makeHarness(),c=T.clock;c.wall+=1800000;T.resetTickBaseline();T.hide();
-    check('页面启动后墙钟绝对值快于服务器时拦截',T.state().pending,true);
-    check('绝对墙钟偏差不提前计入',T.state().work,0);
+    const T = makeHarness(), c = T.clock;
+    T.onHide(); c.wall += 6 * 3600000; c.mono += 5 * 3600000; T.onShow();
+    check('后台期间墙钟与单调钟偏差：显示提示但照常累计', T.state().work === 6 * 3600000 && T.state().warn.includes('明显变动'));
   }
   {
-    const T=makeHarness(),c=T.clock;c.wall+=3600000;T.accrue(c.wall,'action');
-    check('按钮 action 入口调快系统时间也必须拦截',T.state().pending,true);
-    check('action 检测到跳变后不计入虚增工时',T.state().work,0);
+    const T = makeHarness(), c = T.clock;
+    c.wall -= 60000; c.mono += 1000; T.accrue(c.wall, 'action');
+    check('系统时间回退不产生负工时并重置基准', T.state().work === 0 && T.state().lastAt === c.wall && T.state().warn.includes('回退'));
   }
-  {
-    const T=makeHarness(),c=T.clock;c.wall+=600000;c.mono+=1000;T.accrue(c.wall,'tick');
-    check('前台运行中调快系统时间被拦截',T.state().pending,true);
-    check('前台调表区间不计入',T.state().work,0);
-  }
-  {
-    const T=makeHarness();T.data.session.pendingReview={from:T0,to:T0+3600000,delta:0,mode:'work',reason:'clock jump',kind:'clock'};
-    T.resolveReview(5*60000);
-    check('手动确认 5 分钟只计入 5 分钟，不使用跳变的一小时',T.state().work,5*60000);
-    check('手动确认后解除待核对状态',T.state().pending,false);
-  }
-  {
-    const T=makeHarness(),c=T.clock;T.data.session.pendingReview={from:T0,to:T0+3600000,delta:0,mode:'work',reason:'clock jump',kind:'clock'};
-    c.wall=T0+3600000;T.resolveReview(0);
-    check('作废异常区间后整段工时为零',T.state().work,0);
-    check('作废后从当前时刻重新建立计时基准',T.state().lastAt,c.wall);
-    c.wall+=60000;c.mono+=60000;T.accrue(c.wall,'action');
-    check('作废后新计时正常累计',T.state().work,60000);
-  }
-  {
-    const T=makeHarness();T.data.session.pendingReview={from:T0,to:T0+3600000,delta:0,mode:'work',kind:'clock'};
-    T.resolveReview(8*24*3600000);
-    check('超过 7 天的手动时长拒绝计入',T.state().work,0);
-    check('拒绝超限输入时继续保持待核对',T.state().pending,true);
-  }
-  check('计入按钮不再直接使用异常 delta',srcText.includes("$('reviewInclude').onclick=openManual"),true);
-  check('人工结束时间输入为 datetime-local',/id="reviewEndTime" type="datetime-local"/.test(srcText),true);
-  {
-    const T=makeHarness(),c=T.clock;T.hide();c.wall-=60000;c.serverNow+=60000;await T.show();
-    check('系统时间回退触发人工核对',T.state().pending,true);
-  }
-  {
-    const T=makeHarness(),c=T.clock;T.hide();c.wall+=3600000;c.mono+=3600000;c.serverNow+=3600000;await T.show();
-    check('双钟一致的长时间后台不弹窗',T.state().pending,false);
-  }
-  console.log('\n通过 '+pass+' 项，失败 '+fail+' 项');
-  process.exit(fail?1:0);
-})().catch(err=>{console.error(err&&err.stack||err);process.exit(1)});
+
+  const failed = checks.filter(x => !x.ok);
+  console.log('\n通过 ' + (checks.length - failed.length) + ' 项，失败 ' + failed.length + ' 项');
+  process.exit(failed.length ? 1 : 0);
+})().catch(err => { console.error(err && err.stack || err); process.exit(1); });
