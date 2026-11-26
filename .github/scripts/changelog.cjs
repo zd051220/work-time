@@ -56,7 +56,7 @@ function renderEntries(pulls,repository){
   const order=['新功能','问题修复','性能优化','安全改进','其他更新','工程优化','文档更新'];
   const sections=[];
   for(const category of order){const entries=groups.get(category);if(entries&&entries.length)sections.push('### '+category+'\n'+entries.map(x=>x.line).join('\n'));}
-  return {markdown:sections.length?sections.join('\n\n'):'（暂无带有效版本标签的已合并 PR）',included:[...unique.keys()],unlabeled};
+  return {markdown:sections.length?sections.join('\n\n'):'（暂无带有效版本标签的已合并 PR）',included:[...unique.values()].sort((a,b)=>Date.parse(b.pr.merged_at)-Date.parse(a.pr.merged_at)||b.pr.number-a.pr.number).map(x=>x.pr.number),unlabeled};
 }
 function updateChangelog(existing,pulls,repository){
   if(typeof existing!=='string'||!existing.includes('## [未发布]'))throw new Error('CHANGELOG.md 缺少「## [未发布]」章节');
