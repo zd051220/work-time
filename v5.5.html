@@ -143,8 +143,7 @@ body.game-playing .tabbar{display:none!important}
   background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
 </style></head>
 <body><main class="app">
-<div class="clock-review-banner" id="clockReviewBanner" role="button" tabindex="0" aria-expanded="false">⚠️ 检测到系统时间变动，计时已暂停。请点击核对 ▼</div>
-<section class="clock-review-panel" id="reviewBox" aria-live="polite"></section>
+<div class="clock-review-banner" id="clockReviewBanner" role="status" aria-live="polite"></div>
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 正式版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 正式版更新</b>：查看本次版本更新内容与功能说明</span><span class="arrow">›</span></div>
@@ -363,7 +362,7 @@ function load(){var base={version:5,records:[],session:null,del:[]};try{var cur=
 function validSession(s){return !!(s&&Number(s.started)>0&&Number(s.wage)>=0&&Number(s.hours)>0&&['work','paid','unpaid'].indexOf(s.mode)>=0)}
 function sanitizeSessionWage(s){if(!s)return s;var w=Number(s.wage);if(!Number.isFinite(w)||w<0||w>10000){s.wage=0;s.wageInvalid=true;}return s}
 function upgradeSession(s){
-  var u={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),date:s.date||day(s.started),started:Number(s.started),lastAt:Number(s.lastAt)||Number(s.started),start:s.start||hhmm(s.started),wage:Number(s.wage)||0,hours:Number(s.hours)||8,mode:s.mode||'work',workMs:Math.max(0,Number(s.workMs)||0),paidMs:Math.max(0,Number(s.paidMs)||0),unpaidMs:Math.max(0,Number(s.unpaidMs)||0),pendingReview:s.pendingReview||null,clockSnapshot:s.clockSnapshot&&typeof s.clockSnapshot==='object'?{wall:Number(s.clockSnapshot.wall)||0,serverAt:Number(s.clockSnapshot.serverAt)||0,preDrift:Number(s.clockSnapshot.preDrift)||0}:null,plannedEndTime:validClock(s.plannedEndTime)?s.plannedEndTime:hhmm(Number(s.started)+(Number(s.hours)||8)*3600000),engineVersion:5,dev:s.dev||''};
+  var u={sid:String(s.sid||('legacy-'+String(Number(s.started)||0))),date:s.date||day(s.started),started:Number(s.started),lastAt:Number(s.lastAt)||Number(s.started),start:s.start||hhmm(s.started),wage:Number(s.wage)||0,hours:Number(s.hours)||8,mode:s.mode||'work',workMs:Math.max(0,Number(s.workMs)||0),paidMs:Math.max(0,Number(s.paidMs)||0),unpaidMs:Math.max(0,Number(s.unpaidMs)||0),pendingReview:null,clockSnapshot:s.clockSnapshot&&typeof s.clockSnapshot==='object'?{wall:Number(s.clockSnapshot.wall)||0,mono:Number(s.clockSnapshot.mono)||0,timeOrigin:Number(s.clockSnapshot.timeOrigin)||0,preDrift:Number(s.clockSnapshot.preDrift)||0}:null,plannedEndTime:validClock(s.plannedEndTime)?s.plannedEndTime:hhmm(Number(s.started)+(Number(s.hours)||8)*3600000),engineVersion:5,dev:s.dev||''};
   if(s.days&&typeof s.days==='object'){u.days={};Object.keys(s.days).forEach(function(d){var b=s.days[d]||{};u.days[d]={work:Math.max(0,Number(b.work)||0),paid:Math.max(0,Number(b.paid)||0),unpaid:Math.max(0,Number(b.unpaid)||0)}});}
   else{u.days={};u.days[u.date]={work:u.workMs,paid:u.paidMs,unpaid:u.unpaidMs};}
   return u;
@@ -409,7 +408,7 @@ function accrue(now,reason){
   now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
   var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall;
   if(delta<0){jumpWarn='检测到系统时间回退，已重新校准计时基准。';s.lastAt=now;lastMono=mono;lastWall=now;return}
-  if(Math.abs(wallDelta-monoDelta)>CLOCK_DRIFT_LIMIT)jumpWarn='检测到设备时间有明显变动；本次仍按经过时间正常记录。';
+  if(reason!=='resume'&&Math.abs(wallDelta-monoDelta)>CLOCK_DRIFT_LIMIT)jumpWarn='检测到设备时间有明显变动；本次仍按经过时间正常记录。';
   var t=from;while(t<now){var nx=new Date(t);nx.setHours(24,0,0,0);var e=Math.min(now,nx.getTime());if(e<=t)e=now;addSeg(s,day(t),s.mode,e-t);t=e}
   s.lastAt=now;lastMono=mono;lastWall=now;
 }
@@ -429,7 +428,7 @@ $('recordsPager').addEventListener('click',function(e){var b=e.target&&e.target.
 
 function changeMode(mode){var s=data.session;if(!s)return;accrue(Date.now(),'action');s.mode=mode;s.dev=DEV;s.lastAt=Date.now();lastWall=s.lastAt;lastMono=performance.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&w<=10000&&h>0&&h<=24&&Number.isFinite(w)&&Number.isFinite(h))){toast('日工资须大于 0 且不超过 10,000 元，标准工作时长须大于 0 且不超过 24 小时');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);
-  data.session={sid:'ws-'+String(now),date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,plannedEndTime:hhmm(now+h*3600000),mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5,dev:DEV};
+  data.session={sid:'ws-'+String(now),date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,plannedEndTime:hhmm(now+h*3600000),mode:'work',workMs:0,paidMs:0,unpaidMs:0,engineVersion:5,dev:DEV};
   data.session.days={};data.session.days[day(now)]={work:0,paid:0,unpaid:0};
   if(mwEndedSession&&now>mwEndedSession.started){mwEndedSession=null;try{localStorage.removeItem(KEY+'_ended')}catch(e){}}lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
