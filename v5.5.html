@@ -526,13 +526,19 @@ function onHide(){
   var wall=Date.now(),mono=performance.now();
   if(isWriter&&data.session&&!data.session.pendingReview){
     var preDrift=Math.abs((wall-lastWall)-(mono-lastMono));
-    accrue(wall,'hide');
-    if(data.session&&!data.session.pendingReview){
-      var sample=serverClockSample,serverAt=0;
-      if(sample&&mono-sample.monoAt>=0&&mono-sample.monoAt<=120000)serverAt=sample.serverAt+(mono-sample.monoAt);
-      lifecycleSnapshot={wall:wall,mono:mono,serverAt:serverAt,preDrift:preDrift};
-      data.session.clockSnapshot={wall:wall,serverAt:serverAt,preDrift:preDrift};
-      save();
+    if(preDrift>CLOCK_DRIFT_LIMIT){
+      var from=Number(data.session.lastAt)||wall;
+      data.session.pendingReview={from:from,to:wall,delta:Math.max(0,wall-from),mode:data.session.mode,reason:'切出前检测到系统时间与单调时钟不一致，可能发生了调表',kind:'clock'};
+      data.session.lastAt=wall;jumpWarn='检测到系统时间异常，已暂停计时，请核对后继续。';save();
+    }else{
+      accrue(wall,'hide');
+      if(data.session&&!data.session.pendingReview){
+        var sample=serverClockSample,serverAt=0;
+        if(sample&&mono-sample.monoAt>=0&&mono-sample.monoAt<=120000)serverAt=sample.serverAt+(mono-sample.monoAt);
+        lifecycleSnapshot={wall:wall,mono:mono,serverAt:serverAt,preDrift:preDrift};
+        data.session.clockSnapshot={wall:wall,serverAt:serverAt,preDrift:preDrift};
+        save();
+      }
     }
   }
   lastWall=wall;lastMono=mono;
@@ -684,7 +690,7 @@ setInterval(function(){if(!document.hidden&&isWriter&&data.session){sesPush(true
 setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},5000);
 /* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
 setInterval(function(){if(!document.hidden&&accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},5000);
-if(data.session){data.session=upgradeSession(data.session);if(data.session.clockSnapshot){lifecycleSnapshot={wall:data.session.clockSnapshot.wall,mono:null,serverAt:data.session.clockSnapshot.serverAt,preDrift:data.session.clockSnapshot.preDrift};lifecycleResolving=true;}var gap=Date.now()-(data.session.lastAt||Date.now());if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now();lifecycleSnapshot=null;lifecycleResolving=false;}save()}
+if(data.session){data.session=upgradeSession(data.session);if(data.session.clockSnapshot){lifecycleSnapshot={wall:data.session.clockSnapshot.wall,mono:null,serverAt:data.session.clockSnapshot.serverAt,preDrift:data.session.clockSnapshot.preDrift};}var gap=Date.now()-(data.session.lastAt||Date.now());if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now();lifecycleSnapshot=null;lifecycleResolving=false;}save()}
 if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
 draw();
 
