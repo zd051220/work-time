@@ -87,7 +87,14 @@ section.card{scroll-margin-top:14px}
 .accMsg.ok{background:#eef7e9;color:#4c7343;border-color:#d7e8ce}
 .accOut{flex:none;width:74px;height:36px;border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:11px;font-size:11px;font-weight:850;font-family:inherit;cursor:pointer}
 
-/* 新版本提示条（只在发现新版本时出现，点了才刷新，不打断打卡） */
+/* 版本更新提示：不自动刷新，避免打断计时 */
+.update-banner{display:none;align-items:center;gap:10px;margin-top:10px;padding:11px 13px;border:1px solid #e8cf98;border-radius:15px;background:linear-gradient(105deg,#fff8e8,#fff0c9);color:#79571f;font-size:11px;line-height:1.55}
+.update-banner.show{display:flex}
+.update-copy{flex:1;min-width:0}
+.update-copy b{display:block;font-size:12px;margin-bottom:2px}
+.update-btn{flex:none;border:0;border-radius:10px;padding:9px 12px;background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer}
+.update-dismiss{flex:none;border:0;background:transparent;color:#9b8466;font-size:18px;padding:2px 4px;cursor:pointer}
+
 
 
 /* ===== 游戏入口与独立游戏页 ===== */
@@ -139,6 +146,7 @@ body.game-playing .tabbar{display:none!important}
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 正式版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 正式版更新</b>：查看本次版本更新内容与功能说明</span><span class="arrow">›</span></div>
+<div class="update-banner" id="updateBanner" role="status" aria-live="polite"><div class="update-copy"><b id="updateTitle">发现新版本</b><span id="updateNote">有新版本可以更新了</span></div><button class="update-btn" id="updateNow" type="button">立即更新</button><button class="update-dismiss" id="updateLater" type="button" aria-label="稍后更新">×</button></div>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
@@ -1227,4 +1235,43 @@ loadFeed(false);loadStats();
 
 })();
 
+</script><script>
+/* v5.5：轻量版本检查。只提示、不强制刷新；版本号与目标页面由 version.json 管理。 */
+(function(){
+  'use strict';
+  var CURRENT_VERSION='5.5';
+  var META_URL='version.json';
+  var banner=document.getElementById('updateBanner');
+  var nowBtn=document.getElementById('updateNow');
+  var laterBtn=document.getElementById('updateLater');
+  var targetUrl='';
+  function parts(v){return String(v||'').split('.').map(function(x){var n=parseInt(x,10);return Number.isFinite(n)&&n>=0?n:0})}
+  function newer(remote,current){
+    var a=parts(remote),b=parts(current),len=Math.max(a.length,b.length);
+    for(var i=0;i<len;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false}
+    return false;
+  }
+  function show(info){
+    if(!banner)return;
+    document.getElementById('updateTitle').textContent='发现新版本 v'+info.version;
+    document.getElementById('updateNote').textContent=info.note||'新版本已准备好，点击后更新页面';
+    banner.classList.add('show');
+    targetUrl=info.url;
+  }
+  fetch(META_URL+'?check='+Date.now(),{cache:'no-store',credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('version check failed');return r.json()})
+    .then(function(info){
+      if(!info||typeof info.version!=='string'||typeof info.url!=='string'||!newer(info.version,CURRENT_VERSION))return;
+      var target=new URL(info.url,window.location.href);
+      if(target.origin!==window.location.origin||!/^https?:$/.test(target.protocol))return;
+      targetUrl=target.href;
+      show(info);
+    }).catch(function(){/* 更新检查失败不影响计时和账本 */});
+  if(nowBtn)nowBtn.addEventListener('click',function(){
+    if(!targetUrl)return;
+    nowBtn.disabled=true;nowBtn.textContent='正在打开…';
+    window.location.assign(targetUrl+(targetUrl.indexOf('?')>=0?'&':'?')+'update='+Date.now());
+  });
+  if(laterBtn)laterBtn.addEventListener('click',function(){banner.classList.remove('show')});
+})();
 </script></body></html>
