@@ -6,8 +6,7 @@
   "scripts": {
     "test": "node --test .github/scripts/md-summary.test.cjs .github/scripts/changelog.test.cjs .github/scripts/release-automation.test.cjs"
   },
-  "devDependencies": {
-    "remark-parse": "9.0.0",
-    "unified": "9.2.2"
+  "dependencies": {
+    "markdown-it": "^13.0.2"
   }
 }

@@ -1,57 +1,70 @@
 'use strict';
-const unified = require('unified');
-const remarkParse = require('remark-parse');
-const processor = unified().use(remarkParse);
-function inlineText(node) {
-  if (!node || typeof node !== 'object') return '';
-  if (node.type === 'text') return node.value || '';
-  if (node.type === 'inlineCode') return '';
-  if (node.type === 'image') return node.alt || '';
-  if (['link','linkReference','emphasis','strong','delete','paragraph','heading'].includes(node.type))
-    return (node.children || []).map(inlineText).join('');
-  return '';
+
+const MarkdownIt = require('markdown-it');
+const parser = new MarkdownIt({ html: true, linkify: false, typographer: false });
+
+function inlineText(tokens) {
+  return (tokens || []).map(token => {
+    if (token.type === 'text') return token.content;
+    if (token.type === 'image') return token.content || '';
+    if (token.type === 'code_inline' || token.type === 'html_inline') return '';
+    if (token.children) return inlineText(token.children);
+    return '';
+  }).join('');
 }
+
 function normalize(value, limit = 180) {
   return value.split(/[\r\n\t ]+/).filter(Boolean).join(' ').trim().slice(0, limit);
 }
+
+function topLevelBlocks(source) {
+  const tokens = parser.parse(source, {});
+  const blocks = [];
+  let quoteDepth = 0;
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (token.type === 'blockquote_open') { quoteDepth += 1; continue; }
+    if (token.type === 'blockquote_close') { quoteDepth -= 1; continue; }
+    if (quoteDepth !== 0) continue;
+    if (token.type === 'heading_open' || token.type === 'paragraph_open') {
+      const inline = tokens[i + 1];
+      if (inline && inline.type === 'inline') {
+        blocks.push({
+          type: token.type === 'heading_open' ? 'heading' : 'paragraph',
+          level: token.type === 'heading_open' ? Number(token.tag.slice(1)) : 0,
+          text: inlineText(inline.children)
+        });
+      }
+    }
+  }
+  return blocks;
+}
+
 function cleanMarkdownText(value, limit = 180) {
   if (typeof value !== 'string' || !value.trim()) return '';
-  const tree = processor.parse(value);
-  return normalize((tree.children || []).map(node =>
-    node.type === 'paragraph' || node.type === 'heading' ? inlineText(node) : ''
-  ).filter(Boolean).join(' '), limit);
+  return normalize(topLevelBlocks(value).map(block => block.text).filter(Boolean).join(' '), limit);
 }
+
 function extractSummary(body, title = '', limit = 180) {
   const fallback = cleanMarkdownText(title, limit);
   if (typeof body !== 'string' || !body.trim()) return fallback;
-  const nodes = processor.parse(body).children || [];
-  let headingIndex = -1;
-  let headingDepth = 7;
-  for (let i = 0; i < nodes.length; i += 1) {
-    const node = nodes[i];
-    if (node.type === 'heading' && normalize(inlineText(node), 80).toLowerCase() === 'release summary') {
-      headingIndex = i; headingDepth = node.depth; break;
-    }
-  }
+  const blocks = topLevelBlocks(body);
+  const headingIndex = blocks.findIndex(block =>
+    block.type === 'heading' && normalize(block.text, 80).toLowerCase() === 'release summary'
+  );
   if (headingIndex >= 0) {
+    const depth = blocks[headingIndex].level;
     const parts = [];
-    for (let i = headingIndex + 1; i < nodes.length; i += 1) {
-      const node = nodes[i];
-      if (node.type === 'heading' && node.depth <= headingDepth) break;
-      if (node.type === 'paragraph') {
-        const value = normalize(inlineText(node), limit);
-        if (value) parts.push(value);
-      }
+    for (let i = headingIndex + 1; i < blocks.length; i += 1) {
+      const block = blocks[i];
+      if (block.type === 'heading' && block.level <= depth) break;
+      if (block.type === 'paragraph' && block.text) parts.push(normalize(block.text, limit));
     }
     const structured = normalize(parts.join(' '), limit);
     if (structured) return structured;
   }
-  for (const node of nodes) {
-    if (node.type === 'paragraph') {
-      const legacy = normalize(inlineText(node), limit);
-      if (legacy) return legacy;
-    }
-  }
-  return fallback;
+  const legacy = blocks.find(block => block.type === 'paragraph' && block.text);
+  return legacy ? normalize(legacy.text, limit) : fallback;
 }
+
 module.exports = { cleanMarkdownText, extractSummary };
