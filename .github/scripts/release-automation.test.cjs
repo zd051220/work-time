@@ -31,6 +31,27 @@ const structuredSection = makeReleaseSection({
 });
 assert.match(structuredSection,/验证普通 PR 合并到 main 后/);
 assert.doesNotMatch(structuredSection,/变更范围|安全边界|不改产品代码|不创建 Tag/);
+
+// Exact regression fixture copied from PR #28's original body.
+const pr28OriginalBody = [
+  '## 测试目的',
+  '验证普通 PR 合并到 main 后，唯一 `release:patch` 标签能否触发自动版本候选分支与候选 PR 创建。',
+  '',
+  '## 变更范围',
+  '仅新增 `docs/release/AUTOMATION_TRIGGER_ACCEPTANCE.md`，不改产品代码、版本文件或 CHANGELOG。',
+  '',
+  '## 安全边界',
+  '本 PR 合并后只验证候选 PR 生成。自动生成的候选 PR 不会被合并；不创建 Tag/Release；不触发正式发布。'
+].join('\n');
+const expectedPr28Summary = '验证普通 PR 合并到 main 后，唯一 release:patch 标签能否触发自动版本候选分支与候选 PR 创建。';
+assert.equal(extractReleaseSummary(pr28OriginalBody), expectedPr28Summary);
+const pr28ReleaseSection = makeReleaseSection({
+  version:'5.6.3',date:'2026-11-27',title:'test: verify guarded automatic release candidate trigger',
+  number:28,repository:'zd051220/work-time',body:pr28OriginalBody
+});
+assert.ok(pr28ReleaseSection.includes(' — ' + expectedPr28Summary + ' '));
+assert.doesNotMatch(pr28ReleaseSection,/变更范围|安全边界|不创建 Tag|不触发正式发布/);
+
 assert.equal(extractReleaseSummary('## 概述\n\n<!-- hidden template -->\n\n'), '');
 const titleOnlySection = makeReleaseSection({
   version:'5.6.2',date:'2026-11-27',title:'fix: concise title',
@@ -75,6 +96,13 @@ assert.equal(extractReleaseSummary('## 摘要\n\n可见说明。\n<!-- 未闭合
  // Fenced code content is ignored, for both backtick and tilde fences.
 assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60markdown\n## 伪标题\n- 伪列表\n> 伪引用\n\x60\x60\x60\n真正的说明。'), '真正的说明。');
 assert.equal(extractReleaseSummary('## 摘要\n\n~~~text\n### 伪标题\n~~~\n实际说明。'), '实际说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n    const hidden = true;\n    console.log(hidden);\n\n真正的说明。'), '真正的说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n\tconst hidden = true;\n\tconsole.log(hidden);\n\n真正的说明。'), '真正的说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n第一段说明。\n\n    const hidden = true;\n    console.log(hidden);\n\n代码块后的内容不纳入。'), '第一段说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n第一段说明。\n\n\tconst hidden = true;\n\tconsole.log(hidden);\n\n代码块后的内容不纳入。'), '第一段说明。');
+// Indentation on a continuation line without a blank block boundary remains paragraph text.
+assert.equal(extractReleaseSummary('## 摘要\n\n第一行说明。\n    同一段的缩进行说明。'), '第一行说明。 同一段的缩进行说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n第一行说明。\n\t同一段的 Tab 缩进行说明。'), '第一行说明。 同一段的 Tab 缩进行说明。');
 assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60js\n代码块未闭合\n## 隐藏标题\n隐藏内容。'), '');
 
 // A code fence after the first paragraph ends summary extraction; later prose is a separate block.

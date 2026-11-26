@@ -25,9 +25,21 @@ function extractReleaseSummary(body) {
   let fenceChar = null;
   let fenceLength = 0;
   let inHtmlComment = false;
+  let inIndentedCode = false;
+  // At the beginning of a document, or after a blank line, an indented block may start.
+  let previousBlank = true;
 
   for (let index = 0; index < lines.length; index += 1) {
     const rawLine = lines[index];
+
+    // Indented code blocks continue through indented and blank lines.
+    if (inIndentedCode) {
+      if (!rawLine.trim() || /^(?: {4,}|\t)/.test(rawLine)) {
+        previousBlank = !rawLine.trim();
+        continue;
+      }
+      inIndentedCode = false;
+    }
 
     // Fenced code owns its contents; comment markers inside it are inert.
     if (fenceChar) {
@@ -71,11 +83,22 @@ function extractReleaseSummary(body) {
         continue;
       }
     }
+    // Four-space or tab indentation starts a Markdown indented code block only
+    // at a block boundary; indentation within an existing paragraph remains text.
+    if (/^(?: {4,}|\t)/.test(visible) && previousBlank) {
+      if (paragraph.length) break;
+      inIndentedCode = true;
+      previousBlank = false;
+      continue;
+    }
+
     const line = visible.trim();
     if (!line) {
       if (paragraph.length) break;
+      previousBlank = true;
       continue;
     }
+    previousBlank = false;
 
     const atxHeading = /^(#{1,6})\s+/.exec(line);
     if (atxHeading) {
