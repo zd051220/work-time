@@ -25,7 +25,7 @@ function grab(name) {
 if (/MAX_AUTO_GAP/.test(srcText)) throw new Error('MAX_AUTO_GAP 不应再存在');
 const driftExpr = /CLOCK_DRIFT_LIMIT=([^;]+);/.exec(srcText);
 if (!driftExpr) throw new Error('缺少 CLOCK_DRIFT_LIMIT');
-const body = ['pad2','day','dayBucket','addSeg','accrue','captureServerClock','requestServerTime','classifyResumeClock','onHide','onShow'].map(grab).join('\n\n');
+const body = ['pad2','day','dayBucket','addSeg','accrue','resolveReview','captureServerClock','requestServerTime','classifyResumeClock','onHide','onShow'].map(grab).join('\n\n');
 const RealDate = Date;
 const T0 = RealDate.parse('2026-11-24T10:00:00+08:00');
 function makeHarness() {
@@ -36,14 +36,14 @@ function makeHarness() {
   };
   const perf = {now:()=>clock.mono};
   const data = {session:null,records:[]};
-  const consts = 'var CLOCK_DRIFT_LIMIT='+driftExpr[1]+';'+
+  const consts = 'var CLOCK_DRIFT_LIMIT='+driftExpr[1]+';var MAX_MANUAL_REVIEW_MS=7*24*60*60*1000;'+
     'var lifecycleSnapshot=null,lifecycleResolving=false,serverClockSample=null,serverClockPromise=null;'+
     "var SB='https://example.supabase.co',SBK='test-key',isWriter=true,visible=true;"+
     'var lastWall=Date.now(),lastMono=performance.now(),jumpWarn=\'\';'+
     'var save=function(){clock.saves++},draw=function(){clock.draws++};'+
     'var fetch=function(url){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));var noDate=clock.healthNoDate&&String(url).indexOf(\'auth/v1/health\')>=0;return Promise.resolve({ok:true,headers:{get:function(name){return !noDate&&String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
   const runner = new Function('performance','Date','data','clock','RealDate',
-    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},clearSample:function(){serverClockSample=null},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
+    consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},clearSample:function(){serverClockSample=null},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,resolveReview:resolveReview,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,lastAt:data.session.lastAt,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
   const T = runner(perf,FakeDate,data,clock,RealDate);
   data.session = {sid:'test-session',date:'2026-11-24',started:T0,lastAt:T0,start:'10:00',wage:200,hours:8,mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,clockSnapshot:null,days:{'2026-11-24':{work:0,paid:0,unpaid:0}}};
   T.setSample();
@@ -94,10 +94,37 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
     check('绝对墙钟偏差不提前计入',T.state().work,0);
   }
   {
+    const T=makeHarness(),c=T.clock;c.wall+=3600000;T.accrue(c.wall,'action');
+    check('按钮 action 入口调快系统时间也必须拦截',T.state().pending,true);
+    check('action 检测到跳变后不计入虚增工时',T.state().work,0);
+  }
+  {
     const T=makeHarness(),c=T.clock;c.wall+=600000;c.mono+=1000;T.accrue(c.wall,'tick');
     check('前台运行中调快系统时间被拦截',T.state().pending,true);
     check('前台调表区间不计入',T.state().work,0);
   }
+  {
+    const T=makeHarness();T.data.session.pendingReview={from:T0,to:T0+3600000,delta:0,mode:'work',reason:'clock jump',kind:'clock'};
+    T.resolveReview(5*60000);
+    check('手动确认 5 分钟只计入 5 分钟，不使用跳变的一小时',T.state().work,5*60000);
+    check('手动确认后解除待核对状态',T.state().pending,false);
+  }
+  {
+    const T=makeHarness(),c=T.clock;T.data.session.pendingReview={from:T0,to:T0+3600000,delta:0,mode:'work',reason:'clock jump',kind:'clock'};
+    c.wall=T0+3600000;T.resolveReview(0);
+    check('作废异常区间后整段工时为零',T.state().work,0);
+    check('作废后从当前时刻重新建立计时基准',T.state().lastAt,c.wall);
+    T.accrue(c.wall+60000,'action');
+    check('作废后新计时正常累计',T.state().work,60000);
+  }
+  {
+    const T=makeHarness();T.data.session.pendingReview={from:T0,to:T0+3600000,delta:0,mode:'work',kind:'clock'};
+    T.resolveReview(8*24*3600000);
+    check('超过 7 天的手动时长拒绝计入',T.state().work,0);
+    check('拒绝超限输入时继续保持待核对',T.state().pending,true);
+  }
+  check('计入按钮不再直接使用异常 delta',/reviewInclude'\\)\\.onclick=function\\(\\)\\{resolveReview\\(p\\.delta/.test(srcText),false);
+  check('人工结束时间输入为 datetime-local',/id="reviewEndTime" type="datetime-local"/.test(srcText),true);
   {
     const T=makeHarness(),c=T.clock;T.hide();c.wall-=60000;c.serverNow+=60000;await T.show();
     check('系统时间回退触发人工核对',T.state().pending,true);
