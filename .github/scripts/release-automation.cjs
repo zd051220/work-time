@@ -3,18 +3,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const versioning = require('./versioning.cjs');
+const { cleanMarkdownText, extractSummary } = require('./md-summary.cjs');
 
-function cleanMarkdown(value, limit=180) {
-  if (typeof value !== 'string') return '';
-  return value.replace(/<[^>]*>/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/[\x60*_>#~]/g, ' ')
-    .replace(/[\[\]()|\\]/g, ' ')
-    .replace(/https?:\/\/\S+/g, '')
-    .replace(/[\r\n\t]+/g, ' ')
-    .replace(/\s+/g, ' ').trim().slice(0, limit);
-}
+function cleanMarkdown(value, limit=180) { return cleanMarkdownText(value, limit); }
 
 function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('仅允许稳定版 SemVer');
@@ -23,7 +14,7 @@ function makeReleaseSection({version, date, title, number, repository, body}) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('仓库名称无效');
   const safeTitle = cleanMarkdown(title, 140);
   if (!safeTitle) throw new Error('PR 标题为空');
-  const summary = cleanMarkdown(body, 180);
+  const summary = extractSummary(body, title, 180);
   const line = '- ' + safeTitle + (summary && summary.toLowerCase() !== safeTitle.toLowerCase() ? ' — ' + summary : '') +
     ' ([#' + number + '](https://github.com/' + repository + '/pull/' + number + '))';
   return '## [' + version + '] - ' + date + '\n\n### 更新内容\n' + line + '\n';
