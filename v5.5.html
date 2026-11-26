@@ -143,12 +143,12 @@ body.game-playing .tabbar{display:none!important}
   background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
 </style></head>
 <body><main class="app">
+<div class="clock-review-banner" id="clockReviewBanner" role="button" tabindex="0" aria-expanded="false">⚠️ 检测到系统时间变动，计时已暂停。请点击核对 ▼</div>
+<section class="clock-review-panel" id="reviewBox" aria-live="polite"></section>
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 正式版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 正式版更新</b>：查看本次版本更新内容与功能说明</span><span class="arrow">›</span></div>
 <div class="update-banner" id="updateBanner" role="status" aria-live="polite"><div class="update-copy"><b id="updateTitle">发现新版本</b><span id="updateNote">有新版本可以更新了</span></div><button class="update-btn" id="updateNow" type="button">立即更新</button><button class="update-dismiss" id="updateLater" type="button" aria-label="稍后更新">×</button></div>
-<div class="clock-review-banner" id="clockReviewBanner" role="button" tabindex="0" aria-expanded="false">⚠️ 检测到系统时间变动，计时已暂停。请点击核对 ▼</div>
-<section class="clock-review-panel" id="reviewBox" aria-live="polite"></section>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
