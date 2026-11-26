@@ -46,7 +46,7 @@ App installation 必须覆盖 `zd051220/work-time`。如果缺少密钥或 App �
 
 ## 权限与发布边界
 
-- 顶层工作流权限为空；自动化 job 的内置 `GITHUB_TOKEN` 只授予 `contents: read`。用于机器人分支和 PR 的专用 GitHub App token 仅授予 `contents: write`、`pull_requests: write`、`checks: read)，不授予 `actions: write`。
+- 顶层工作流权限为空；自动化 job 的内置 `GITHUB_TOKEN` 只授予 `contents: read`。用于机器人分支和 PR 的专用 GitHub App token 仅授予 `contents: write`、`pull_requests: write`、`checks: read`，不授予 `actions: write`。
 - `code-audit` 只需要 `contents: read`，checkout 不保留凭据。
 - 自动流程不写入 `main`，不修改 `version.json`，不创建 Tag 或 GitHub Release，也不触发正式发布。
 - 不使用个人 PAT；需要按上文配置专用 GitHub App ID 和私钥仓库密钥。
