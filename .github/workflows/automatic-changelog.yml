@@ -4,6 +4,13 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "仅运行隔离的端到端测试，不更新正式 CHANGELOG"
+        required: true
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -13,7 +20,7 @@ concurrency:
 
 jobs:
   update-changelog:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -76,3 +83,56 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run code-audit.yml --ref automation/changelog
+
+  isolated-e2e-test:
+    if: github.event_name == 'workflow_dispatch' && inputs.test_mode == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate isolated test CHANGELOG
+        run: node .github/scripts/changelog-e2e-test.cjs
+      - name: Prepare dedicated test bot branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C automation/changelog-e2e-test
+          git add docs/release/e2e-test/CHANGELOG.test.md
+          git diff --cached --quiet && { echo "Test fixture unchanged."; exit 0; }
+          git commit -m "test: exercise isolated changelog automation"
+      - name: Push dedicated test branch
+        run: |
+          if git ls-remote --exit-code --heads origin automation/changelog-e2e-test >/dev/null 2>&1; then
+            git fetch origin refs/heads/automation/changelog-e2e-test:refs/remotes/origin/automation/changelog-e2e-test
+            expected="$(git rev-parse refs/remotes/origin/automation/changelog-e2e-test)"
+            git push --force-with-lease="refs/heads/automation/changelog-e2e-test:${expected}" origin HEAD:refs/heads/automation/changelog-e2e-test
+          else
+            git push origin HEAD:refs/heads/automation/changelog-e2e-test
+          fi
+      - name: Create or update draft test PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing_pr="$(gh pr list --state open --base main --head automation/changelog-e2e-test --json number --jq '.[0].number // empty')"
+          if [ -z "$existing_pr" ]; then
+            gh pr create --draft --base main --head automation/changelog-e2e-test \
+              --title "test: isolated automatic changelog end-to-end test" \
+              --body "这是隔离测试 PR。只新增 docs/release/e2e-test/CHANGELOG.test.md，不修改正式 CHANGELOG.md、version.json，不创建 Tag/Release。请勿合并。"
+          else
+            echo "Updated existing isolated test PR #${existing_pr}."
+          fi
+      - name: Dispatch code audit for test branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run code-audit.yml --ref automation/changelog-e2e-test
