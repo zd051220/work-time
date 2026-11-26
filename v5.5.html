@@ -112,10 +112,33 @@ section.card{scroll-margin-top:14px}
 .game-play-frame{display:block;width:100%;height:100dvh;min-height:100%;border:0;background:#eee5d6}
 body.game-playing{padding-bottom:0!important;overflow:hidden}
 body.game-playing .tabbar{display:none!important}
+.notice{margin-top:12px;display:flex;align-items:center;gap:9px;border:1px solid #f2dfb5;
+  background:linear-gradient(105deg,#fff6e0,#ffeec4);border-radius:16px;padding:11px 13px;
+  color:#7d5a20;font-size:11.5px;font-weight:750;line-height:1.5;cursor:pointer;box-shadow:0 6px 16px #9a6d2010}
+.notice .ico{width:26px;height:26px;flex:none;border-radius:9px;background:#fff;display:grid;place-items:center;font-size:14px;box-shadow:0 2px 5px #b58b4a30}
+.notice .txt{flex:1;min-width:0}
+.notice .txt b{font-weight:900}
+.notice .arrow{flex:none;color:#b98d45;font-weight:900;font-size:13px}
+.notice:active{transform:scale(.99)}
+.mask{position:fixed;inset:0;z-index:60;background:#3b2a1a55;backdrop-filter:blur(3px);display:none;
+  align-items:flex-end;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
+.mask.show{display:flex}
+.sheet{width:100%;max-width:470px;max-height:82vh;overflow:auto;background:#fffdf8;border-radius:24px;padding:20px 18px;box-shadow:0 -10px 40px #3b2a1a30}
+.sheet h3{font-size:16px;margin:0 0 5px;font-weight:950}
+.sheet .ver{font-size:10px;color:#a58e70;margin-bottom:14px}
+.sheet ul{margin:0;padding-left:16px;font-size:12px;line-height:1.85;color:#5b4938}
+.sheet li{margin-bottom:9px}
+.sheet li b{color:#8a5f1c}
+.sheet .addr{background:#fff7e8;border-radius:12px;padding:11px 12px;font-size:11px;line-height:1.9;color:#8a6c42;margin-top:14px;word-break:break-all}
+.noauto{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11.5px;color:#8a6c42;cursor:pointer}
+.noauto input{width:16px;height:16px;accent-color:#e8ad3e;margin:0}
+.sheet .close{width:100%;margin-top:10px;border:0;border-radius:14px;padding:13px;font-size:12px;font-weight:900;
+  background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
 </style></head>
 <body><main class="app">
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 正式版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
+<div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 正式版更新</b>：查看本次版本更新内容与功能说明</span><span class="arrow">›</span></div>
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
@@ -243,6 +266,7 @@ body.game-playing .tabbar{display:none!important}
     <div class="my-subpage-head"><button class="my-back" data-my-back>‹ 返回</button><b>软件设置</b></div>
     <section class="card" id="sec-settings"><div class="head"><h2>⚙️ 软件设置</h2><span class="tag">正式版</span></div>
       <div class="note">当前版本：小猫搬金条 v5.5 正式版。感谢使用，建议定期导出数据备份。</div>
+      <div class="tools"><button class="tool" id="settingsNoticeBtn">查看更新公告</button></div>
       
     </section>
   </div>
@@ -254,6 +278,22 @@ body.game-playing .tabbar{display:none!important}
 <button data-t="tab-me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.7-3.3 3-5 6.5-5s5.8 1.7 6.5 5"/></svg><span>我的</span></button>
 </nav>
 <div class="foot">今天也辛苦啦，小猫把你的每一秒都认真记下来了 ♡</div></main>
+<div class="mask" id="mask">
+ <div class="sheet" role="dialog" aria-modal="true" aria-label="更新公告">
+  <h3>小猫搬金条 v5.5 正式版</h3>
+  <div class="ver">正式版更新说明 · 本次更新内容</div>
+  <ul>
+   <li><b>账号身份锁（重要）</b>：页面打开时绑定当时的账号；账号一变，这个旧页面立刻停止所有云端读写并提示重新加载，不会把 A 的记录传进 B。</li>
+   <li><b>删号不再假装</b>：没有安全服务端时只做「清空云端账本 + 退出登录」，并明确写明账号本身没删；只有部署了删号函数才走真正删除。</li>
+   <li><b>账本页同一套校验</b>：首页和账本都做身份锁，任一边切账号都会停。</li>
+   <li><b>原有功能继续保留</b>：账号分库存、一个页面计时、账本合并、删除后不复活、跨午夜拆账、跨月跨年。</li>
+   <li><b>猫咪冒险工坊</b>：已加入游戏入口，目前仍处于测试阶段，玩法和内容可能继续调整。</li>
+  </ul>
+  <div class="addr">账本页：ledger-v5.5.html（同域名共用一份数据与登录态）<br>主页和账本互通：一边打卡、一边看账、哪边删哪边同步（登录后云端也同步）。<br>换设备前建议先「导出备份」，再登录账号。</div>
+  <label class="noauto"><input type="checkbox" id="noNotice" checked> 24 小时内不再自动弹出</label>
+  <button class="close" id="closeNotice">知道啦</button>
+ </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 (function(){
@@ -593,6 +633,27 @@ document.querySelectorAll('[data-my-back]').forEach(function(b){
   b.addEventListener('click',function(){setMyPage('')});
 });
 setMyPage('');
+
+/* ===== 更新公告 ===== */
+var maskEl=$('mask');
+var NOTICE_KEY='mw_notice_55', NOTICE_GAP=24*3600*1000;
+function openNotice(){maskEl.classList.add('show')}
+function closeNotice(){
+  maskEl.classList.remove('show');
+  var chk=$('noNotice');
+  if(chk&&chk.checked){try{localStorage.setItem(NOTICE_KEY,String(Date.now()))}catch(e){}}
+}
+function autoNotice(){
+  var last=Number(localStorage.getItem(NOTICE_KEY)||0);
+  if(Date.now()-last<NOTICE_GAP)return;
+  var chk=$('noNotice');if(chk)chk.checked=true;
+  openNotice();
+}
+$('noticeBtn').addEventListener('click',openNotice);
+$('noticeBtn').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' ')openNotice()});
+$('closeNotice').addEventListener('click',closeNotice);
+maskEl.addEventListener('click',function(e){if(e.target===maskEl)closeNotice()});
+setTimeout(autoNotice,350);
 
 /* ===== 账号 · 云同步 ===== */
 var ACC_KEY='mw_acct_v1';
