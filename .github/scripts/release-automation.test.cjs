@@ -77,6 +77,11 @@ assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60markdown\n## 伪标
 assert.equal(extractReleaseSummary('## 摘要\n\n~~~text\n### 伪标题\n~~~\n实际说明。'), '实际说明。');
 assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60js\n代码块未闭合\n## 隐藏标题\n隐藏内容。'), '');
 
+// A code fence after the first paragraph ends summary extraction; later prose is a separate block.
+assert.equal(extractReleaseSummary('## 摘要\n\n围栏前的第一段说明。\n\x60\x60\x60js\nconst hidden = true;\n\x60\x60\x60\n围栏后的第二段说明。'), '围栏前的第一段说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n围栏前的第一段说明。\n\n~~~text\n隐藏代码\n~~~\n\n围栏后的第二段说明。'), '围栏前的第一段说明。');
+assert.equal(extractReleaseSummary('## 摘要\n\n\x60\x60\x60js\n代码块在前\n\x60\x60\x60\n代码块后的第一段说明。\n\n后续段落不纳入。'), '代码块后的第一段说明。');
+
 // Fence markers inside HTML comments are invisible and cannot alter fence state.
 assert.equal(extractReleaseSummary('## 摘要\n\n<!--\n\x60\x60\x60js\n注释中的伪代码\n-->\n真正的说明。'), '真正的说明。');
 assert.equal(extractReleaseSummary('## 摘要\n\n<!--\n~~~js\n注释中的伪代码\n-->\n真正的说明。'), '真正的说明。');
