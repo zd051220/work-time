@@ -332,8 +332,7 @@ try{
 var OLD_KEYS=['catGold_v4','catGold_v3','catGold_v2'];
 var SAVE_EVERY=15000;
 var CLOCK_DRIFT_LIMIT=2000;
-var MAX_MANUAL_REVIEW_MS=7*24*60*60*1000;
-var lifecycleSnapshot=null,lifecycleResolving=false,serverClockSample=null,serverClockPromise=null;
+var lifecycleSnapshot=null,lifecycleResolving=false;
 var data=load();
 var monthView=ym(new Date());
 var recSig='';
@@ -405,49 +404,36 @@ function save(){
   if(data.session)sesPush();
 }
 function todayTotals(){var s=data.session;if(!s)return {work:0,paid:0,unpaid:0};var b=s.days&&s.days[day()];return b?{work:b.work,paid:b.paid,unpaid:b.unpaid}:{work:0,paid:0,unpaid:0}}
-function accrue(now,reason){var s=data.session;if(!s||s.pendingReview||lifecycleResolving)return;now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
-  var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall,drift=Math.abs(wallDelta-monoDelta);
-  if(delta<0||drift>CLOCK_DRIFT_LIMIT){s.pendingReview={from:from,to:now,delta:0,mode:s.mode,reason:delta<0?'系统时间发生回退':'设备时钟与运行时钟差异较大，可能发生了系统时间调整',kind:'clock'};jumpWarn='检测到系统时间异常，计时已暂停核对。';s.lastAt=now;lastMono=mono;lastWall=now;return}
-  var t=from;
-  while(t<now){
-    var next=new Date(t);next.setHours(24,0,0,0);var segEnd=Math.min(now,next.getTime());
-    if(segEnd<=t)segEnd=now;
-    addSeg(s,day(t),s.mode,segEnd-t);
-    t=segEnd;
-  }
+function accrue(now,reason){
+  var s=data.session;if(!s||lifecycleResolving)return;
+  now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
+  var mono=performance.now(),monoDelta=mono-lastMono,wallDelta=now-lastWall;
+  if(delta<0){jumpWarn='检测到系统时间回退，已重新校准计时基准。';s.lastAt=now;lastMono=mono;lastWall=now;return}
+  if(Math.abs(wallDelta-monoDelta)>CLOCK_DRIFT_LIMIT)jumpWarn='检测到设备时间有明显变动；本次仍按经过时间正常记录。';
+  var t=from;while(t<now){var nx=new Date(t);nx.setHours(24,0,0,0);var e=Math.min(now,nx.getTime());if(e<=t)e=now;addSeg(s,day(t),s.mode,e-t);t=e}
   s.lastAt=now;lastMono=mono;lastWall=now;
 }
 function rate(){var s=data.session;if(s){var w=Number(s.wage),h=Number(s.hours);if(!Number.isFinite(w)||w<0||w>10000||!Number.isFinite(h)||h<=0||h>24)return 0;return w/h/3600}var wage=Number($('wage').value),hours=Number($('hours').value)||8;if(!Number.isFinite(wage)||wage<0||wage>10000)return 0;return wage/Math.max(.1,hours)/3600}
-function reviewDefaultTime(p,s){var to=Number(p.to)||Date.now(),from=Number(p.from)||to,hm=hhmm(Number(s.started)+(Number(s.hours)||8)*3600000).split(':'),d=new Date(to);d.setHours(Number(hm[0]),Number(hm[1]),0,0);var ts=d.getTime();if(ts>to)ts-=86400000;if(ts<from||ts>to)ts=to;return hhmm(ts)}
-function reviewDateTimeValue(ts){var d=new Date(ts),p=function(n){return String(n).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())}
-function resolveReviewAt(value){var s=data.session;if(!s||!s.pendingReview)return;var p=s.pendingReview,ts=new Date(String(value||'')).getTime(),from=Number(p.from)||0,delta=ts-from;if(!Number.isFinite(ts)||!Number.isFinite(from)||delta<0||delta>MAX_MANUAL_REVIEW_MS){toast('请选择有效的实际结束时间（最多核对 7 天）');return}resolveReview(delta)}
-function setReviewUI(){var s=data.session,box=$('reviewBox'),banner=$('clockReviewBanner');if(!box||!banner)return;if(!s||!s.pendingReview){banner.classList.remove('show');banner.setAttribute('aria-expanded','false');box.classList.remove('show');box.innerHTML='';box.dataset.reviewKey='';return}var p=s.pendingReview,key=String(p.from)+'|'+String(p.to)+'|'+String(p.kind||'');banner.classList.add('show');if(box.dataset.reviewKey===key)return;box.dataset.reviewKey=key;box.innerHTML='<div class="range">异常检测区间：['+escapeHTML(hhmm(p.from))+'] 至 ['+escapeHTML(hhmm(p.to))+']<br>异常原因：'+escapeHTML(p.reason||'系统时间异常')+'</div><div class="hint">异常区间已冻结。设备时间跳变值不可信，不会自动计入工资。点击“计入工时”后，必须手动填写真实结束时间；也可以作废整段。</div><div class="clock-review-actions"><button class="btn paid" id="reviewInclude" type="button">计入工时</button><button class="btn stop" id="reviewDiscard" type="button">作废这段</button><button class="btn start manual" id="reviewManual" type="button">手动修改实际结束时间</button><div class="field" id="reviewEntry" style="display:none;grid-column:1/-1"><label for="reviewEndTime">实际结束时间（手动选择，不采用设备跳变时间）</label><input id="reviewEndTime" type="datetime-local" step="60" value=""><button class="btn start" id="reviewConfirm" type="button" style="width:100%;margin-top:8px">确认并按手动时长计入</button></div></div>';
-  function openManual(){var editor=$('reviewEntry');editor.style.display='';$('reviewEndTime').focus()}
-  $('reviewInclude').onclick=openManual;$('reviewManual').onclick=openManual;$('reviewDiscard').onclick=function(){resolveReview(0)};$('reviewConfirm').onclick=function(){resolveReviewAt($('reviewEndTime').value)};
-}
-$('clockReviewBanner').addEventListener('click',function(){var box=$('reviewBox'),open=!box.classList.contains('show');box.classList.toggle('show',open);this.setAttribute('aria-expanded',String(open));if(open)box.scrollIntoView({behavior:'smooth',block:'nearest'})});
-$('clockReviewBanner').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}});
-function resolveReview(ms){var s=data.session;if(!s||!s.pendingReview)return;var p=s.pendingReview,delta=Number(ms);if(!Number.isFinite(delta)||delta<0||delta>MAX_MANUAL_REVIEW_MS){toast('手动核对时长无效，请重新选择');return}if(delta>0){var t=Number(p.from);if(!Number.isFinite(t)||t<=0){toast('异常区间起点无效，无法计入');return}var endT=t+delta;while(t<endT){var nx=new Date(t);nx.setHours(24,0,0,0);var segEnd=Math.min(endT,nx.getTime());if(segEnd<=t)segEnd=endT;addSeg(s,day(t),p.mode,segEnd-t);t=segEnd;}}
-  var resumedAt=Date.now();s.pendingReview=null;s.lastAt=resumedAt;delete s.clockSnapshot;lastWall=resumedAt;lastMono=performance.now();lifecycleSnapshot=null;jumpWarn='';save();draw();toast(delta===0?'异常时段已作废，已从现在重新计时':'已按手动确认的时长计入，计时已恢复')}
+function setReviewUI(){var b=$('clockReviewBanner');if(!b)return;if(jumpWarn){b.textContent='⚠️ '+jumpWarn;b.classList.add('show')}else{b.classList.remove('show');b.textContent=''}}
 function draw(){var s=data.session,t=todayTotals(),r=rate(),payMs=t.work+t.paid,allMs=payMs+t.unpaid,pay=payMs/1000*r,goal=(s?s.hours:Math.max(.1,Number($('hours').value)||8))*3600000;
-  $('today').textContent='今天 · '+day().slice(5).replace('-','/');$('now').textContent='现在时间 '+new Date().toLocaleTimeString('zh-CN',{hour12:false});$('status').textContent=!s?'今日实时收入 · 等待开工':(s.wageInvalid?'⚠️ 历史日工资异常，已暂停计薪；请结束本次记录后核对':(s.pendingReview?'⚠️ 等待核对计时时间':(s.mode==='work'?'🟢 正在工作 · 金条持续增加':s.mode==='paid'?'☕ 带薪摸鱼中 · 工资继续增加':'🌿 不带薪摸鱼中 · 暂停计薪')));
+  $('today').textContent='今天 · '+day().slice(5).replace('-','/');$('now').textContent='现在时间 '+new Date().toLocaleTimeString('zh-CN',{hour12:false});$('status').textContent=!s?'今日实时收入 · 等待开工':(s.wageInvalid?'⚠️ 历史日工资异常，已暂停计薪；请结束本次记录后核对':((s.mode==='work'?'🟢 正在工作 · 金条持续增加':s.mode==='paid'?'☕ 带薪摸鱼中 · 工资继续增加':'🌿 不带薪摸鱼中 · 暂停计薪')));
   $('earned').textContent='¥'+pay.toFixed(4);$('secRate').textContent=money(r,6);$('minRate').textContent=money(r*60,4);$('workTime').textContent=duration(t.work);$('paidTime').textContent=duration(t.paid);$('unpaidTime').textContent=duration(t.unpaid);$('paidTotal').textContent=duration(payMs);$('totalTime').textContent=duration(allMs);var pct=goal>0?payMs/goal*100:0;$('fill').style.width=Math.min(100,Math.max(0,pct))+'%';$('pct').textContent=pct.toFixed(1)+'%'+(pct>100?' · 已超标准工时':'');$('hourRate').textContent=money(r*3600);$('todayPay').textContent=money(pay);$('breakTotal').textContent=duration(t.paid+t.unpaid);
   var days=s&&s.days?Object.keys(s.days).length:0;
   var dn=$('dayNote');
-  if(s&&!s.pendingReview&&days>1){dn.style.display='';dn.textContent='本次已跨 '+days+' 天，上面只算今天；下班时会按天拆成 '+days+' 条记录。'}else{dn.style.display='none';dn.textContent=''}
-  $('startBtn').disabled=!isWriter||!!s;$('stopBtn').disabled=!isWriter||!s||!!s.pendingReview;/* mwFix53h：带薪/不带薪之间允许直接互切（原来必须先进“继续工作”再切，休息切换要多一步） */$('paidBtn').disabled=!isWriter||!s||s.mode==='paid'||!!s.pendingReview;$('unpaidBtn').disabled=!isWriter||!s||s.mode==='unpaid'||!!s.pendingReview;$('resumeBtn').disabled=!isWriter||!s||s.mode==='work'||!!s.pendingReview;$('wage').disabled=!!s;$('hours').disabled=!!s;$('lockTag').textContent=s?'本次已锁定':'开工前设置';$('cat').textContent=!s?'🐈':s.pendingReview?'🐾':s.mode==='work'?'🐈‍⬛':s.mode==='paid'?'😺':'😴';$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.pendingReview?'小猫发现时间需要核对～<small>确认后就会继续计时。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>';
+  if(s&&days>1){dn.style.display='';dn.textContent='本次已跨 '+days+' 天，上面只算今天；下班时会按天拆成 '+days+' 条记录。'}else{dn.style.display='none';dn.textContent=''}
+  $('startBtn').disabled=!isWriter||!!s;$('stopBtn').disabled=!isWriter||!s;/* mwFix53h：带薪/不带薪之间允许直接互切（原来必须先进“继续工作”再切，休息切换要多一步） */$('paidBtn').disabled=!isWriter||!s||s.mode==='paid';$('unpaidBtn').disabled=!isWriter||!s||s.mode==='unpaid';$('resumeBtn').disabled=!isWriter||!s||s.mode==='work';$('wage').disabled=!!s;$('hours').disabled=!!s;$('lockTag').textContent=s?'本次已锁定':'开工前设置';$('cat').textContent=!s?'🐈':s.mode==='work'?'🐈‍⬛':s.mode==='paid'?'😺':'😴';$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>';
   $('breakStatus').classList.toggle('show',!!s&&s.mode!=='work');$('breakStatus').textContent=s&&s.mode!=='work'?(s.mode==='paid'?'当前状态：带薪摸鱼，计薪仍在继续。':'当前状态：不带薪摸鱼，工资暂时停止累计。'):'';var wb=$('warnBox');if(jumpWarn){wb.classList.add('show');wb.textContent='⚠ '+jumpWarn}else{wb.classList.remove('show');wb.textContent=''}setReviewUI();drawRecords();mwTxt={};}
 var recordsPage=1,RECORDS_PER_PAGE=8;
 function drawRecords(){var arr=data.records.filter(function(r){return r.date.indexOf(monthView)===0});arr.sort(function(a,b){return a.date===b.date?(a.start<b.start?-1:1):(a.date<b.date?1:-1)});var pages=Math.max(1,Math.ceil(arr.length/RECORDS_PER_PAGE));recordsPage=Math.min(Math.max(1,recordsPage),pages);var sig=monthView+'|p'+recordsPage+'|'+arr.map(function(r){return r.id+':'+r.pay}).join(',');if(sig===recSig)return;recSig=sig;$('month').textContent=monthView.replace('-','年')+'月';$('monthTotal').textContent=money(arr.reduce(function(v,r){return v+(Number(r.pay)||0)},0));var box=$('records'),pager=$('recordsPager');if(!arr.length){box.innerHTML='<div class="empty">这个月还没有搬金记录～</div>';pager.style.display='none';return}var html='';arr.slice((recordsPage-1)*RECORDS_PER_PAGE,recordsPage*RECORDS_PER_PAGE).forEach(function(r){html+='<div class="record"><div><div class="rdate">'+escapeHTML(r.date)+' · '+escapeHTML(r.start)+'—'+escapeHTML(r.end)+'</div><div class="rmeta">工作 '+escapeHTML(r.work)+' · 带薪 '+escapeHTML(r.paid)+' · 不带薪 '+escapeHTML(r.unpaid)+'</div></div><div class="rside"><div class="rpay">'+money(r.pay)+'</div><button class="del" data-id="'+escapeHTML(r.id)+'" aria-label="删除这条记录">删</button></div></div>'});box.innerHTML=html;if(pages>1){pager.style.display='flex';pager.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12px;color:#8e7047';pager.innerHTML='<button type="button" data-page="prev" '+(recordsPage===1?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===1?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">上一页</button><span style="font-weight:800;min-width:68px;text-align:center">第 '+recordsPage+' / '+pages+' 页</span><button type="button" data-page="next" '+(recordsPage===pages?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===pages?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">下一页</button>'}else{pager.style.display='none';pager.innerHTML=''}}
 $('recordsPager').addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('button[data-page]'):null;if(!b||b.disabled)return;recordsPage+=b.getAttribute('data-page')==='next'?1:-1;recSig='';drawRecords()});
 
-function changeMode(mode){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}s.mode=mode;s.dev=DEV;s.lastAt=Date.now();lastWall=s.lastAt;lastMono=performance.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
+function changeMode(mode){var s=data.session;if(!s)return;accrue(Date.now(),'action');s.mode=mode;s.dev=DEV;s.lastAt=Date.now();lastWall=s.lastAt;lastMono=performance.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&w<=10000&&h>0&&h<=24&&Number.isFinite(w)&&Number.isFinite(h))){toast('日工资须大于 0 且不超过 10,000 元，标准工作时长须大于 0 且不超过 24 小时');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);
   data.session={sid:'ws-'+String(now),date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,plannedEndTime:hhmm(now+h*3600000),mode:'work',workMs:0,paidMs:0,unpaidMs:0,pendingReview:null,engineVersion:5,dev:DEV};
   data.session.days={};data.session.days[day(now)]={work:0,paid:0,unpaid:0};
   if(mwEndedSession&&now>mwEndedSession.started){mwEndedSession=null;try{localStorage.removeItem(KEY+'_ended')}catch(e){}}lastWall=now;lastMono=performance.now();jumpWarn='';save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
-$('stopBtn').onclick=function(){var s=data.session;if(!s||s.pendingReview)return;accrue(Date.now(),'action');if(s.pendingReview){draw();return}
+$('stopBtn').onclick=function(){var s=data.session;if(!s)return;accrue(Date.now(),'action');
   var now=Date.now(),r=s.wage/s.hours/3600,lastDate=day(now);
   var keys=Object.keys(s.days||{}).sort();if(!keys.length)keys=[s.date];
   var made=[];
@@ -497,144 +483,32 @@ $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=n
     }
   }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
 };reader.readAsText(f);e.target.value=''};
-function captureServerClock(response,sentMono,receivedMono){
-  try{
-    var raw=response&&response.headers&&response.headers.get('Date'),serverAt=Date.parse(raw);
-    if(!Number.isFinite(serverAt))return false;
-    var rtt=Math.max(0,receivedMono-sentMono),half=rtt/2;
-    serverClockSample={serverAt:serverAt+half,monoAt:sentMono+half,rtt:rtt,seenAt:receivedMono};
-    return true;
-  }catch(e){return false}
-}
-function requestServerTime(){
-  if(serverClockPromise)return serverClockPromise;
-  function readClockResponse(r,sentMono){
-    var receivedMono=performance.now();
-    if(!r.ok)throw new Error('服务器时间请求失败');
-    if(!captureServerClock(r,sentMono,receivedMono))throw new Error('响应没有可读取的服务器时间戳');
-    return {serverAt:serverClockSample.serverAt,rtt:serverClockSample.rtt};
-  }
-  var sentMono=performance.now();
-  serverClockPromise=fetch(SB+'/auth/v1/health',{method:'GET',headers:{apikey:SBK},cache:'no-store'})
-    .then(function(r){return readClockResponse(r,sentMono)})
-    .catch(function(){
-      /* Supabase 未暴露 Date 响应头时，回退到同源静态资源的 HTTP Date；断网时两路都会失败。 */
-      var fallbackMono=performance.now();
-      return fetch('version.json?clock='+Date.now(),{method:'GET',cache:'no-store',credentials:'same-origin'})
-        .then(function(r){return readClockResponse(r,fallbackMono)});
-    })
-    .finally(function(){serverClockPromise=null});
-  return serverClockPromise;
-}
-function verifyServerWall(server){
-  var s=data.session;if(!s||s.pendingReview||!server)return true;
-  var now=Date.now(),offset=now-server.serverAt,tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
-  if(Math.abs(offset)<=tolerance)return true;
-  var from=Number(s.lastAt)||now;
-  s.pendingReview={from:from,to:now,delta:Math.max(0,now-from),mode:s.mode,reason:offset>0?'本机墙钟明显快于可信服务器时间，疑似系统时间被调快':'本机墙钟明显慢于可信服务器时间，系统时间可能异常',kind:'clock'};
-  s.lastAt=now;delete s.clockSnapshot;lifecycleSnapshot=null;lifecycleResolving=false;
-  jumpWarn='检测到系统时间与服务器不一致，已暂停计时，请核对。';
-  save();draw();return false;
-}
-function classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance){
-  if(wallDelta<0||preDrift>CLOCK_DRIFT_LIMIT)return 'review-clock';
-  if(!Number.isFinite(serverDelta))return 'review-unverified';
-  if(wallDelta>serverDelta+tolerance)return 'review-fast';
-  if(wallDelta<serverDelta-tolerance)return 'review-mismatch';
-  if(monoDelta!==null&&Number.isFinite(monoDelta)&&Math.abs(wallDelta-monoDelta)<CLOCK_DRIFT_LIMIT)return 'auto-dual';
-  if(Math.abs(wallDelta-serverDelta)<=tolerance)return 'auto-server';
-  return 'review-mismatch';
-}
 function onHide(){
-  visible=false;
-  var wall=Date.now(),mono=performance.now();
-  if(isWriter&&data.session&&!data.session.pendingReview){
+  visible=false;var wall=Date.now(),mono=performance.now();
+  if(isWriter&&data.session){
     var preDrift=Math.abs((wall-lastWall)-(mono-lastMono));
-    var sample=serverClockSample,serverAt=0,serverOffset=0,serverTolerance=CLOCK_DRIFT_LIMIT;
-    if(sample&&mono-sample.monoAt>=0&&mono-sample.monoAt<=120000){
-      serverAt=sample.serverAt+(mono-sample.monoAt);
-      serverOffset=wall-serverAt;
-      serverTolerance=Math.max(CLOCK_DRIFT_LIMIT,Number(sample.rtt||0)+1500);
-    }
-    if(sample&&serverAt>0&&Math.abs(serverOffset)>serverTolerance){
-      var from=Number(data.session.lastAt)||wall;
-      data.session.pendingReview={from:from,to:wall,delta:0,mode:data.session.mode,reason:serverOffset>0?'本机墙钟明显快于可信服务器时间，疑似系统时间被调快':'本机墙钟明显慢于可信服务器时间，系统时间可能异常',kind:'clock'};
-      data.session.lastAt=wall;jumpWarn='检测到系统时间快于服务器，已暂停计时，请核对。';save();
-    }else if(preDrift>CLOCK_DRIFT_LIMIT){
-      var from=Number(data.session.lastAt)||wall;
-      data.session.pendingReview={from:from,to:wall,delta:0,mode:data.session.mode,reason:'切出前检测到系统时间与单调时钟不一致，可能发生了调表',kind:'clock'};
-      data.session.lastAt=wall;jumpWarn='检测到系统时间异常，已暂停计时，请核对后继续。';save();
-    }else{
-      accrue(wall,'hide');
-      if(data.session&&!data.session.pendingReview){
-        lifecycleSnapshot={wall:wall,mono:mono,serverAt:serverAt,preDrift:preDrift};
-        data.session.clockSnapshot={wall:wall,serverAt:serverAt,preDrift:preDrift};
-        save();
-      }
-    }
+    if(preDrift>CLOCK_DRIFT_LIMIT)jumpWarn='切换后台前检测到设备时间变动；仍会按经过时间记录。';
+    accrue(wall,'hide');
+    if(data.session){lifecycleSnapshot={wall:wall,mono:mono,timeOrigin:performance.timeOrigin||0,preDrift:preDrift};data.session.clockSnapshot={wall:wall,mono:mono,timeOrigin:performance.timeOrigin||0,preDrift:preDrift};save()}
   }
   lastWall=wall;lastMono=mono;
 }
 function onShow(){
-  visible=true;
-  var s=data.session,now=Date.now(),mono=performance.now();
-  if(!isWriter||!s||s.pendingReview){lastWall=now;lastMono=mono;draw();return}
+  visible=true;var s=data.session,now=Date.now(),mono=performance.now();
+  if(!isWriter||!s){lastWall=now;lastMono=mono;draw();return}
   var snap=lifecycleSnapshot||s.clockSnapshot;
-  if(!snap){accrue(now,'resume');save();lastWall=now;lastMono=mono;draw();return}
-  if(lifecycleResolving)return;
-  lifecycleResolving=true;
-  var wallDelta=now-(Number(snap.wall)||Number(s.lastAt)||now);
-  var monoDelta=snap.mono!=null&&Number.isFinite(Number(snap.mono))?mono-Number(snap.mono):null;
-  var preDrift=Number(snap.preDrift)||0;
-  function finishReview(reason,kind){
-    if(data.session&&!data.session.pendingReview){
-      var from=Number(data.session.lastAt)||Number(snap.wall)||now;
-      data.session.pendingReview={from:from,to:now,delta:0,mode:data.session.mode,reason:reason,kind:kind||'clock'};
-      data.session.lastAt=now;
-      jumpWarn='检测到时间异常，已暂停计时，请核对后继续。';
-    }
-    if(data.session)delete data.session.clockSnapshot;
-    lifecycleSnapshot=null;lifecycleResolving=false;lastWall=now;lastMono=mono;save();draw();
+  if(snap){
+    var wallDelta=now-(Number(snap.wall)||Number(s.lastAt)||now);
+    var sameClock=snap.timeOrigin!=null&&Number(snap.timeOrigin)===Number(performance.timeOrigin||0);
+    var monoDelta=sameClock&&snap.mono!=null?mono-Number(snap.mono):null;
+    if(wallDelta<0)jumpWarn='检测到系统时间回退，计时已重新校准。';
+    else if(monoDelta!==null&&monoDelta>0&&Math.abs(wallDelta-monoDelta)>CLOCK_DRIFT_LIMIT)jumpWarn='检测到设备时间有明显变动；本次仍按经过时间正常记录。';
+    delete s.clockSnapshot;
   }
-  function finishAuto(){
-    if(data.session&&!data.session.pendingReview){
-      delete data.session.clockSnapshot;
-      lifecycleSnapshot=null;lifecycleResolving=false;
-      accrue(now,'resume');save();
-    }else{lifecycleSnapshot=null;lifecycleResolving=false}
-    lastWall=now;lastMono=mono;draw();
-  }
-  if(wallDelta<0||preDrift>CLOCK_DRIFT_LIMIT){
-    finishReview(wallDelta<0?'系统时间发生回退':'切出前检测到系统时间与单调时钟不一致','clock');
-    return;
-  }
-  /* 双钟经过时间一致也不能跳过服务器绝对时间校验：系统调表可能同时影响 Date.now 与 performance.now。 */
-  if(!(Number(snap.serverAt)>0)){
-    return requestServerTime().then(function(server){
-      var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500),offset=now-server.serverAt;
-      if(offset>tolerance)finishReview('本机墙钟当前时间明显快于可信服务器时间，疑似系统时间被调快','clock');
-      else if(offset< -tolerance)finishReview('本机墙钟当前时间明显慢于可信服务器时间，系统时间可能异常','clock');
-      else finishAuto();
-    }).catch(function(){
-      finishReview('设备休眠导致双钟不一致，且当前无法连接服务器验证时间','clock');
-    });
-  }
-  return requestServerTime().then(function(server){
-    var serverDelta=server.serverAt-Number(snap.serverAt);
-    var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
-    if(Math.abs(now-server.serverAt)>tolerance){
-      finishReview('本机墙钟当前时间明显快于可信服务器时间，疑似系统时间被调快','clock');
-      return;
-    }
-    var verdict=classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance);
-    if(verdict==='auto-server'||verdict==='auto-dual')finishAuto();
-    else if(verdict==='review-fast')finishReview('墙钟流逝时间明显快于 Supabase 服务器时间，疑似人为调快系统时钟','clock');
-    else if(verdict==='review-clock')finishReview('检测到系统时间异常，无法安全自动补计','clock');
-    else if(verdict==='review-unverified')finishReview('服务器时间无法验证这段休眠时间，请人工核对','clock');
-    else finishReview('墙钟与 Supabase 服务器时间不一致，请人工核对','clock');
-  }).catch(function(){
-    finishReview('设备休眠后双钟不一致，且当前无法连接服务器验证时间','clock');
-  });
+  lifecycleSnapshot=null;lifecycleResolving=false;
+  lastWall=Number(snap&&snap.wall)||Number(s.lastAt)||now;
+  lastMono=(snap&&snap.mono!=null&&snap.timeOrigin===Number(performance.timeOrigin||0))?Number(snap.mono):mono;
+  accrue(now,'resume');save();lastWall=now;lastMono=mono;draw();
 }
 /* ===== 5.3 单写者：同一台设备只让一个页面计时 ===== */
 var MW_LOCK='mw_writer_v53', MW_CH='mw_sync_v53', isWriter=true, mwBc=null;
@@ -721,19 +595,18 @@ function drawSoft(){
   var pct=goal>0?payMs/goal*100:0;$('fill').style.width=Math.min(100,Math.max(0,pct))+'%';
   st('pct',pct.toFixed(1)+'%'+(pct>100?' · 已超标准工时':''));
   st('hourRate',money(r*3600));st('todayPay',money(pay));
-  var sig=[s.mode,s.pendingReview?1:0,Object.keys(s.days||{}).length,data.records.length,jumpWarn?1:0,monthView].join('|');
+  var sig=[s.mode,Object.keys(s.days||{}).length,data.records.length,jumpWarn?1:0,monthView].join('|');
   if(sig!==mwSig){mwSig=sig;draw()}
 }
 document.addEventListener('visibilitychange',function(){document.hidden?onHide():onShow()});window.addEventListener('pagehide',function(){onHide();if(mwLeaseOwner()===mwTabId){mwLeaseClear();if(mwBc){try{mwBc.postMessage({type:'release'})}catch(e){}}}});window.addEventListener('beforeunload',onHide);
 var mwPullTick=0;
-setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
+setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 /* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
-setInterval(function(){if(!document.hidden&&isWriter&&data.session){sesPush(true);requestServerTime().then(verifyServerWall).catch(function(){})}},30000);
+setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},30000);
 setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},5000);
 /* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
 setInterval(function(){if(!document.hidden&&accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},5000);
-if(data.session){data.session=upgradeSession(data.session);if(data.session.clockSnapshot){lifecycleSnapshot={wall:data.session.clockSnapshot.wall,mono:null,serverAt:data.session.clockSnapshot.serverAt,preDrift:data.session.clockSnapshot.preDrift};}var gap=Date.now()-(data.session.lastAt||Date.now());if(gap<0&&!data.session.pendingReview){data.session.pendingReview={from:data.session.lastAt,to:Date.now(),delta:0,mode:data.session.mode,reason:'系统时间早于上次记录时间',kind:'clock'};data.session.lastAt=Date.now();lifecycleSnapshot=null;lifecycleResolving=false;}else if(gap>CLOCK_DRIFT_LIMIT&&!lifecycleSnapshot&&!data.session.pendingReview){lifecycleSnapshot={wall:Number(data.session.lastAt)||Date.now(),mono:null,serverAt:0,preDrift:0};}save()}
-if(!$('reviewBox')){var rb=document.createElement('div');rb.id='reviewBox';rb.className='reviewBox';$('warnBox').insertAdjacentElement('afterend',rb)}
+if(data.session){data.session=upgradeSession(data.session);delete data.session.pendingReview;if(data.session.clockSnapshot){lifecycleSnapshot={wall:data.session.clockSnapshot.wall,mono:null,timeOrigin:null,preDrift:data.session.clockSnapshot.preDrift};}var gap=Date.now()-(data.session.lastAt||Date.now());if(gap<0){jumpWarn='检测到系统时间回退，计时已重新校准。';data.session.lastAt=Date.now();lifecycleSnapshot=null;}else if(gap>CLOCK_DRIFT_LIMIT&&!lifecycleSnapshot){lifecycleSnapshot={wall:Number(data.session.lastAt)||Date.now(),mono:null,timeOrigin:null,preDrift:0};}save()}
 draw();
 
 /* ===== 删除单条记录 ===== */
@@ -1377,7 +1250,6 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 })();
 
 loadFeed(false);loadStats();
-requestServerTime().then(verifyServerWall).catch(function(){});
 if(data.session&&lifecycleSnapshot&&!data.session.pendingReview)setTimeout(function(){onShow()},0);
 
 })();
