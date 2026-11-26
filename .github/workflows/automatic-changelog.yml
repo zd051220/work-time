@@ -11,6 +11,11 @@ on:
         required: true
         type: boolean
         default: false
+  push:
+    branches:
+      - feat/changelog-e2e-test-mode
+    paths:
+      - .github/workflows/automatic-changelog.yml
 
 permissions: {}
 
@@ -92,7 +97,9 @@ jobs:
           fi
 
   isolated-e2e-test:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.test_mode == true) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/feat/changelog-e2e-test-mode' && contains(github.event.head_commit.message, '[run-changelog-e2e]'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
