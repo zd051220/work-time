@@ -19,11 +19,11 @@ function calculateNextVersion(currentVersion,labels) {
   const v=parseRuntimeVersion(currentVersion);
   if(v.prerelease.length)throw new Error('自动递增暂不接受预发布基线；请先完成正式版本发布或人工确定候选版本');
   let {major,minor,patch}=v;
-  if(bump==='major'){major+=1n;minor=0n;patch=0n;}
-  else if(bump==='minor'){minor+=1n;patch=0n;}
-  else if(bump==='patch')patch+=1n;
+  if(bump==='major'){major=versioningCore.incrementDecimalString(major);minor='0';patch='0';}
+  else if(bump==='minor'){minor=versioningCore.incrementDecimalString(minor);patch='0';}
+  else if(bump==='patch')patch=versioningCore.incrementDecimalString(patch);
   else throw new Error('不支持的版本递增类型：'+bump);
-  return major.toString()+'.'+minor.toString()+'.'+patch.toString();
+  return major+'.'+minor+'.'+patch;
 }
 function validateVersionConfigFile(file='version.json') {
   return validateVersionConfig(JSON.parse(fs.readFileSync(file,'utf8')));
