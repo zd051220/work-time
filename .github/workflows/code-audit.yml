@@ -5,7 +5,7 @@ on:
     branches: ["**"]
     paths:
       - "*.html"
-      - "**.md"
+      - "**.md"\n      - "version.json"
       - "docs/**"
       - "supabase/migrations/**"
       - ".github/scripts/**"
@@ -19,7 +19,7 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4\n        with:\n          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20

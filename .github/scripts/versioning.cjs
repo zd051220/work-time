@@ -63,7 +63,8 @@ function validateVersionConfig(config) {
   try{parsed=parseRuntimeVersion(config.version);}catch(e){errors.push(e.message);}
   if(typeof config.url!=='string'||!config.url.trim())errors.push('url 必须是非空相对路径字符串');
   else{
-    const url=config.url.trim();
+    if(config.url!==config.url.trim())errors.push('url 不能包含首尾空白字符');
+    const url=config.url;
     if(url.startsWith('/')||url.includes('\\')||url.includes('?')||url.includes('#')||
       /^[A-Za-z][A-Za-z0-9+.-]*:/.test(url)||url.split('/').some(p=>p==='..'||p==='.'||!p))
       errors.push('url 必须是站点内安全相对路径，不能包含协议、根路径、路径穿越或空路径段');
