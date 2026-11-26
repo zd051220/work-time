@@ -191,11 +191,11 @@ async function runEngine(name, type, origin) {
         state: 'visible',
         timeout: 10000
       });
-      const parentMessages = await page.evaluate(() => window.__browserCompatMessages || []);
-      if (!parentMessages.some(message =>
-        message.type === 'game-rpc-result' && !message.fromParent && message.origin === origin
+      const childMessages = await frame.locator('body').evaluate(() => window.__browserCompatMessages || []);
+      if (!childMessages.some(message =>
+        message.type === 'game-rpc-result' && message.fromParent && message.origin === origin
       )) {
-        throw new Error('父页面没有收到游戏 iframe 返回的同源 RPC 响应');
+        throw new Error('游戏 iframe 没有收到父页面返回的同源 RPC 响应');
       }
       await context.close();
     });
