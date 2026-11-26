@@ -5,6 +5,7 @@ on:
     branches: ["**"]
     paths:
       - "*.html"
+      - "js/**"
       - "**.md"
       - "version.json"
       - "docs/**"
