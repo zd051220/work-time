@@ -10,7 +10,7 @@ function parseSemVer(input) {
   if (typeof input !== 'string') throw new TypeError('版本号必须是字符串');
   const m = SEMVER_RE.exec(input);
   if (!m) throw new Error('无效的 SemVer 版本号：' + input);
-  return { major:Number(m[1]), minor:Number(m[2]), patch:Number(m[3]),
+  return { major:BigInt(m[1]), minor:BigInt(m[2]), patch:BigInt(m[3]),
     prerelease:m[4] ? m[4].split('.') : [], build:m[5] ? m[5].split('.') : [], raw:input };
 }
 function parseRuntimeVersion(input) {
@@ -50,11 +50,11 @@ function calculateNextVersion(currentVersion,labels) {
   const v=parseRuntimeVersion(currentVersion);
   if(v.prerelease.length)throw new Error('自动递增暂不接受预发布基线；请先完成正式版本发布或人工确定候选版本');
   let {major,minor,patch}=v;
-  if(bump==='major'){major++;minor=0;patch=0;}
-  else if(bump==='minor'){minor++;patch=0;}
-  else if(bump==='patch')patch++;
+  if(bump==='major'){major+=1n;minor=0n;patch=0n;}
+  else if(bump==='minor'){minor+=1n;patch=0n;}
+  else if(bump==='patch')patch+=1n;
   else throw new Error('不支持的版本递增类型：'+bump);
-  return major+'.'+minor+'.'+patch;
+  return major.toString()+'.'+minor.toString()+'.'+patch.toString();
 }
 function validateVersionConfig(config) {
   const errors=[];
@@ -72,7 +72,7 @@ function validateVersionConfig(config) {
   }
   if(typeof config.note!=='string'||config.note.length>500)errors.push('note 必须是字符串，且不超过 500 个字符');
   return {valid:errors.length===0,errors,
-    normalizedVersion:parsed?(parsed.major+'.'+parsed.minor+'.'+parsed.patch+(parsed.prerelease.length?'-'+parsed.prerelease.join('.') :'')):null,
+    normalizedVersion:parsed?(parsed.major.toString()+'.'+parsed.minor.toString()+'.'+parsed.patch.toString()+(parsed.prerelease.length?'-'+parsed.prerelease.join('.') :'')):null,
     legacyVersion:Boolean(parsed&&parsed.legacy)};
 }
 function validateVersionConfigFile(file='version.json') {
