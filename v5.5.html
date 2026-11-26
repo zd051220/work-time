@@ -520,6 +520,16 @@ function requestServerTime(){
     .finally(function(){serverClockPromise=null});
   return serverClockPromise;
 }
+function verifyServerWall(server){
+  var s=data.session;if(!s||s.pendingReview||!server)return true;
+  var now=Date.now(),offset=now-server.serverAt,tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
+  if(Math.abs(offset)<=tolerance)return true;
+  var from=Number(s.lastAt)||now;
+  s.pendingReview={from:from,to:now,delta:Math.max(0,now-from),mode:s.mode,reason:offset>0?'本机墙钟明显快于可信服务器时间，疑似系统时间被调快':'本机墙钟明显慢于可信服务器时间，系统时间可能异常',kind:'clock'};
+  s.lastAt=now;delete s.clockSnapshot;lifecycleSnapshot=null;lifecycleResolving=false;
+  jumpWarn='检测到系统时间与服务器不一致，已暂停计时，请核对。';
+  save();draw();return false;
+}
 function classifyResumeClock(wallDelta,monoDelta,serverDelta,preDrift,tolerance){
   if(wallDelta<0||preDrift>CLOCK_DRIFT_LIMIT)return 'review-clock';
   if(monoDelta!==null&&Number.isFinite(monoDelta)&&Math.abs(wallDelta-monoDelta)<CLOCK_DRIFT_LIMIT)return 'auto-dual';
@@ -605,7 +615,7 @@ function onShow(){
   return requestServerTime().then(function(server){
     var serverDelta=server.serverAt-Number(snap.serverAt);
     var tolerance=Math.max(CLOCK_DRIFT_LIMIT,server.rtt+1500);
-    if(now-server.serverAt>tolerance){
+    if(Math.abs(now-server.serverAt)>tolerance){
       finishReview('本机墙钟当前时间明显快于可信服务器时间，疑似系统时间被调快','clock');
       return;
     }
@@ -711,7 +721,7 @@ document.addEventListener('visibilitychange',function(){document.hidden?onHide()
 var mwPullTick=0;
 setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session&&!data.session.pendingReview)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 /* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
-setInterval(function(){if(!document.hidden&&isWriter&&data.session){sesPush(true);requestServerTime().catch(function(){})}},30000);
+setInterval(function(){if(!document.hidden&&isWriter&&data.session){sesPush(true);requestServerTime().then(verifyServerWall).catch(function(){})}},30000);
 setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},5000);
 /* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
 setInterval(function(){if(!document.hidden&&accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},5000);
@@ -1360,7 +1370,7 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 })();
 
 loadFeed(false);loadStats();
-requestServerTime().catch(function(){});
+requestServerTime().then(verifyServerWall).catch(function(){});
 if(data.session&&lifecycleSnapshot&&!data.session.pendingReview)setTimeout(function(){onShow()},0);
 
 })();
