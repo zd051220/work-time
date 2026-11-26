@@ -40,7 +40,7 @@ function makeHarness() {
     'var lifecycleSnapshot=null,lifecycleResolving=false,serverClockSample=null,serverClockPromise=null;'+
     "var SB='https://example.supabase.co',SBK='test-key',isWriter=true,visible=true;"+
     'var lastWall=Date.now(),lastMono=performance.now(),jumpWarn=\'\';'+
-    'var save=function(){clock.saves++},draw=function(){clock.draws++};'+
+    'var save=function(){clock.saves++},draw=function(){clock.draws++},toast=function(){};'+
     'var fetch=function(url){clock.fetches++;if(clock.offline)return Promise.reject(new Error(\'offline\'));var noDate=clock.healthNoDate&&String(url).indexOf(\'auth/v1/health\')>=0;return Promise.resolve({ok:true,headers:{get:function(name){return !noDate&&String(name).toLowerCase()===\'date\'?new RealDate(clock.serverNow).toUTCString():null}}})};';
   const runner = new Function('performance','Date','data','clock','RealDate',
     consts + body + '\nreturn {data:data,clock:clock,setSample:function(){serverClockSample={serverAt:clock.serverNow,monoAt:clock.mono,seenAt:clock.mono,rtt:0}},clearSample:function(){serverClockSample=null},resetTickBaseline:function(){lastWall=Date.now();lastMono=performance.now()},hide:onHide,show:onShow,accrue:accrue,resolveReview:resolveReview,state:function(){return {pending:!!data.session.pendingReview,review:data.session.pendingReview,work:data.session.workMs,lastAt:data.session.lastAt,fetches:clock.fetches,snapshot:data.session.clockSnapshot}}};');
@@ -123,7 +123,7 @@ async function resumeCase(name,gap,monoGap,serverGap,expectPending,offline){
     check('超过 7 天的手动时长拒绝计入',T.state().work,0);
     check('拒绝超限输入时继续保持待核对',T.state().pending,true);
   }
-  check('计入按钮不再直接使用异常 delta',/reviewInclude'\\)\\.onclick=function\\(\\)\\{resolveReview\\(p\\.delta/.test(srcText),false);
+  check('计入按钮不再直接使用异常 delta',srcText.includes("$('reviewInclude').onclick=openManual"),true);
   check('人工结束时间输入为 datetime-local',/id="reviewEndTime" type="datetime-local"/.test(srcText),true);
   {
     const T=makeHarness(),c=T.clock;T.hide();c.wall-=60000;c.serverNow+=60000;await T.show();
