@@ -539,9 +539,9 @@ function onHide(){
       serverOffset=wall-serverAt;
       serverTolerance=Math.max(CLOCK_DRIFT_LIMIT,Number(sample.rtt||0)+1500);
     }
-    if(sample&&serverAt>0&&serverOffset>serverTolerance){
+    if(sample&&serverAt>0&&Math.abs(serverOffset)>serverTolerance){
       var from=Number(data.session.lastAt)||wall;
-      data.session.pendingReview={from:from,to:wall,delta:Math.max(0,wall-from),mode:data.session.mode,reason:'本机墙钟明显快于可信服务器时间，疑似系统时间被调快',kind:'clock'};
+      data.session.pendingReview={from:from,to:wall,delta:Math.max(0,wall-from),mode:data.session.mode,reason:serverOffset>0?'本机墙钟明显快于可信服务器时间，疑似系统时间被调快':'本机墙钟明显慢于可信服务器时间，系统时间可能异常',kind:'clock'};
       data.session.lastAt=wall;jumpWarn='检测到系统时间快于服务器，已暂停计时，请核对。';save();
     }else if(preDrift>CLOCK_DRIFT_LIMIT){
       var from=Number(data.session.lastAt)||wall;
