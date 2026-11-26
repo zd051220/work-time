@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {parseSemVer,parseRuntimeVersion,compareSemVer,getReleaseBump,calculateNextVersion,validateVersionConfig}=require('./versioning.cjs');
 
-test('parses SemVer prerelease and build metadata',()=>{const v=parseSemVer('2.4.0-rc.12+build.7');assert.equal(v.major,2);assert.deepEqual(v.prerelease,['rc','12']);assert.deepEqual(v.build,['build','7']);});
+test('parses SemVer prerelease and build metadata',()=>{const v=parseSemVer('2.4.0-rc.12+build.7');assert.equal(v.major,2n);assert.deepEqual(v.prerelease,['rc','12']);assert.deepEqual(v.build,['build','7']);});
 test('rejects invalid SemVer and numeric leading zeroes',()=>{for(const v of ['01.2.3','1.02.3','1.2.03','1.2','1.2.3-01','1.2.3-','v1.2.3'])assert.throws(()=>parseSemVer(v));});
 test('maps legacy 5.5 to 5.5.0 without a tag side effect',()=>{const v=parseRuntimeVersion('5.5');assert.equal(v.legacy,true);assert.equal(v.sourceVersion,'5.5');assert.equal(compareSemVer('5.5','5.5.0'),0);});
 test('follows SemVer prerelease precedence',()=>{const a=['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0'];for(let i=0;i<a.length-1;i++)assert.equal(compareSemVer(a[i],a[i+1]),-1);});
