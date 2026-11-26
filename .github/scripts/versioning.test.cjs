@@ -40,3 +40,12 @@ test('shared comparison preserves arbitrary precision for core and prerelease nu
   assert.equal(compareSemVer('999999999999999999999.0.0','1000000000000000000000.0.0'),-1);
   assert.equal(compareSemVer('1.0.0-999999999999999999999','1.0.0-1000000000000000000000'),-1);
 });
+
+test('versioning CLI keeps the existing next command output',()=>{
+  const {execFileSync}=require('node:child_process');
+  const script=require.resolve('./versioning.cjs');
+  const patch=execFileSync(process.execPath,[script,'next','5.5','release:patch'],{encoding:'utf8'}).trim();
+  const none=execFileSync(process.execPath,[script,'next','5.5','bugfix'],{encoding:'utf8'}).trim();
+  assert.equal(patch,'5.5.1');
+  assert.equal(none,'不发布版本（缺少版本标签或标记为 release:none）');
+});
