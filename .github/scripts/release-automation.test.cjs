@@ -5,6 +5,12 @@ const os = require('node:os');
 const path = require('node:path');
 const {makeReleaseSection,insertReleaseSection,prepare} = require('./release-automation.cjs');
 
+const releaseWorkflow = fs.readFileSync(path.join(__dirname,'../workflows/automatic-formal-release.yml'),'utf8');
+// Keep the verified release-notes path connected from the validation step output to artifact upload.
+assert.match(releaseWorkflow,/NOTES="\\$RUNNER_TEMP\\/release-notes\\.md"/);
+assert.match(releaseWorkflow,/echo "notes=\\$NOTES" >> "\\$GITHUB_OUTPUT"/);
+assert.match(releaseWorkflow,/path:\\s*\\$\\{\\{\\s*steps\\.release\\.outputs\\.notes\\s*\\}\\}/);
+
 const section = makeReleaseSection({
   version:'5.6.0',date:'2026-11-27',title:'feat: add farming',
   number:42,repository:'zd051220/work-time',body:'Add crops and seasons.'
