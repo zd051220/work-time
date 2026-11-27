@@ -788,10 +788,6 @@ function applyCloudSession(row){
     var remote=upgradeSession(row.payload);
     if(!local||remote.started>local.started||(remote.sid===local.sid&&Number(remote.lastAt)>=Number(local.lastAt))){
       if(remote.dev!==DEV){
-        var gap=Date.now()-(Number(remote.lastAt)||Date.now());
-        if(gap<0){
-          remote.lastAt=Date.now();
-        }
       }
       data.session=remote;save();draw();return true;
     }
