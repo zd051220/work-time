@@ -108,6 +108,87 @@ async function runEngine(name, type, origin) {
       await context.close();
     });
 
+    if (name === 'Chromium') {
+      await test('后台 10 小时只按 Date.now 静默补计', async () => {
+        const context = await makeContext(browser, origin);
+        const page = await context.newPage();
+        await page.addInitScript(() => {
+          const realNow = Date.now.bind(Date);
+          window.__clockOffset = 0;
+          window.__testVisibility = { hidden: false };
+          Date.now = () => realNow() + window.__clockOffset;
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
+          window.__setTestVisibility = hidden => {
+            window.__testVisibility.hidden = !!hidden;
+            document.dispatchEvent(new Event('visibilitychange'));
+          };
+          window.__advanceClock = ms => { window.__clockOffset += ms; };
+        });
+        await page.goto(origin + '/v5.5.html');
+        await page.locator('#startBtn').click();
+        await page.evaluate(() => window.__setTestVisibility(true));
+        await page.evaluate(() => window.__advanceClock(10 * 60 * 60 * 1000));
+        await page.evaluate(() => window.__setTestVisibility(false));
+        await page.waitForFunction(() => {
+          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
+          return saved && saved.session && saved.session.workMs >= 10 * 60 * 60 * 1000;
+        }, null, { timeout: 10000 });
+        if (await page.locator('#clockReviewBanner').count()) throw new Error('不应存在异常横幅');
+        if (!(await page.locator('#stopBtn').isEnabled())) throw new Error('后台恢复后下班按钮不可用');
+        await context.close();
+      });
+
+      await test('首页账本修改结束时间会重新计算工资', async () => {
+        const context = await makeContext(browser, origin);
+        const page = await context.newPage();
+        await page.addInitScript(() => {
+          const d = new Date(), p = n => String(n).padStart(2,'0');
+          const date = d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+          localStorage.setItem('catGold_v5', JSON.stringify({version:5,records:[{
+            id:'edit-test-home',date,start:'08:00',end:'17:00',work:'09:00:00',paid:'00:00:00',
+            unpaid:'00:00:00',duration:'09:00:00',wage:800,hours:8,pay:900,started:0
+          }],session:null,del:[]}));
+        });
+        await page.goto(origin + '/v5.5.html');
+        await page.locator('[data-t="tab-ledger"]').click();
+        const edit = page.locator('.edit[data-id="edit-test-home"]');
+        await edit.waitFor({state:'visible'});
+        page.once('dialog', dialog => dialog.accept('16:00'));
+        await edit.click();
+        await page.waitForFunction(() => {
+          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
+          const r = saved && saved.records && saved.records.find(x => x.id === 'edit-test-home');
+          return r && r.end === '16:00' && r.work === '08:00:00' && r.pay === 800;
+        });
+        await context.close();
+      });
+
+      await test('完整账本也能修改结束时间并保存', async () => {
+        const context = await makeContext(browser, origin);
+        const page = await context.newPage();
+        await page.addInitScript(() => {
+          const d = new Date(), p = n => String(n).padStart(2,'0');
+          const date = d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+          localStorage.setItem('catGold_v5', JSON.stringify({version:5,records:[{
+            id:'edit-test-ledger',date,start:'08:00',end:'17:00',work:'09:00:00',paid:'00:00:00',
+            unpaid:'00:00:00',duration:'09:00:00',wage:800,hours:8,pay:900,started:0
+          }],session:null,del:[]}));
+        });
+        await page.goto(origin + '/ledger-v5.5.html');
+        const edit = page.locator('.edit[data-id="edit-test-ledger"]');
+        await edit.waitFor({state:'visible'});
+        page.once('dialog', dialog => dialog.accept('16:00'));
+        await edit.click();
+        await page.waitForFunction(() => {
+          const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
+          const r = saved && saved.records && saved.records.find(x => x.id === 'edit-test-ledger');
+          return r && r.end === '16:00' && r.work === '08:00:00' && r.pay === 800;
+        });
+        await context.close();
+      });
+    }
+
     await test('SemVer 新版本提示、稍后关闭和立即更新跳转', async () => {
       const context = await makeContext(browser, origin);
       const page = await context.newPage();
