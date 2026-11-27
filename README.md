@@ -35,7 +35,6 @@
 | `ledger-v5.5.html` | 与主页共享本地数据和登录态的正式账本 |
 | `beta-v5.5.html` | 旧入口兼容跳转，统一进入当前正式主页 |
 | `cat-workshop.html` | 猫咪游戏页面，需从提供 RPC bridge 的正式主页进入 |
-| `v5.1.html`–`v5.4.1.html` | 历史版本，后续归档整理 |
 | `supabase/migrations/` | 数据库迁移历史 |
 | `.github/scripts/` | 自动化检查脚本 |
 | `.github/workflows/` | CI 与手动发布流程 |
