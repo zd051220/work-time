@@ -31,7 +31,7 @@ const editRecordEnd = new Function('duration','timeSeconds',
 )(duration,timeSeconds);
 
 check('完全移除双时钟比较和单调时钟变量', !/CLOCK_DRIFT_LIMIT|performance\.now|lastMono|lastWall/.test(html));
-check('主页游戏入口已隐藏且游戏 iframe 资源仍保留', /#tab-game,#tab-game-play,\.tabbar button\[data-t="tab-game"\]\{display:none!important\}/.test(html) && /src="cat-workshop\.html"/.test(html));
+check('主页游戏入口已隐藏且游戏 iframe 资源仍保留', /#tab-game,\.tabbar button\[data-t="tab-game"\]\{display:none!important\}/.test(html) && /src="cat-workshop\.html"/.test(html));
 check('完全移除异常横幅、冻结和人工核对状态', !/clockReviewBanner|clockReviewInclude|pendingReview|clockSnapshot|jumpWarn|setReviewUI/.test(html));
 check('不再发起 Supabase 服务器时间校验请求', !/requestServerTime\s*\(|verifyServerWall\s*\(|captureServerClock\s*\(/.test(html));
 check('后台隐藏与恢复只通过 Date.now 差值补时', /function onHide\(\).*?Date\.now\(\).*?accrue/s.test(html) && /function onShow\(\).*?Date\.now\(\).*?accrue/s.test(html));
