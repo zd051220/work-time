@@ -141,6 +141,55 @@ body.game-playing .tabbar{display:none!important}
 .noauto input{width:16px;height:16px;accent-color:#e8ad3e;margin:0}
 .sheet .close{width:100%;margin-top:10px;border:0;border-radius:14px;padding:13px;font-size:12px;font-weight:900;
   background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
+
+/* 计时主页：克制的浅色层次与更清晰的计时主次 */
+body{background:#f5f5f7;color:#1d1d1f;padding-left:16px;padding-right:16px}
+#tab-home .top{padding:20px 2px 16px}
+#tab-home .brand{font-size:19px;font-weight:750;letter-spacing:-.35px;color:#1d1d1f}
+#tab-home .sub{color:#6e6e73;font-size:11px}
+#tab-home .datepill{background:#fff;border-color:#e8e8ed;color:#6e6e73}
+#tab-home .notice{border-color:#e8e8ed;background:#fff;color:#6e6e73;box-shadow:0 2px 10px #1d1d1f08}
+#tab-home .notice .ico{background:#f5f5f7;box-shadow:none}
+#tab-home .hero{border:1px solid #ececf0;border-radius:24px;background:#fff;box-shadow:0 4px 18px #1d1d1f08;padding:16px}
+#tab-home .hero:before,#tab-home .hero:after{display:none}
+#tab-home .cat{width:58px;height:58px;border-radius:19px;border:0;background:#f5f5f7;box-shadow:none;font-size:34px}
+#tab-home .bubble{font-size:14px;font-weight:700;color:#1d1d1f}
+#tab-home .bubble small{color:#86868b;font-size:11px;font-weight:450}
+#sec-home.card,#sec-setup.card{border:1px solid #ececf0;border-radius:24px;background:#fff;padding:20px;box-shadow:0 4px 18px #1d1d1f08}
+#sec-home .eyebrow{font-size:12px;color:#6e6e73;font-weight:600;letter-spacing:.1px}
+#sec-home .money{font-size:clamp(38px,11vw,48px);font-weight:720;line-height:1.08;letter-spacing:-2px;color:#1d1d1f;margin:9px 0 7px;font-variant-numeric:tabular-nums}
+#sec-home .rate{font-size:10px;line-height:1.7;color:#6e6e73}
+#sec-home .rate b{color:#6e6e73;font-weight:600}
+#sec-home .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:20px}
+#sec-home .stat{min-height:68px;padding:11px 12px;border:1px solid #f0f0f3;border-radius:16px;background:#fafafc}
+#sec-home .stat:has(#workTime){grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;min-height:76px;padding:13px 16px;background:#f5f5f7;border-color:transparent}
+#sec-home .stat b{font-size:16px;font-weight:650;letter-spacing:-.35px;color:#1d1d1f;font-variant-numeric:tabular-nums}
+#sec-home .stat:has(#workTime) b{font-size:clamp(25px,7vw,30px);font-weight:700;letter-spacing:-1px}
+#sec-home .stat span{font-size:10px;color:#6e6e73}
+#sec-home .stat:has(#workTime) span{font-size:11px;font-weight:600;color:#6e6e73}
+.cat-stage{width:100px;height:100px;margin:18px auto 3px;display:grid;place-items:center;border:1px dashed #d8d8df;border-radius:30px;background:#fafafc;color:#6e6e73;font-size:10px;letter-spacing:.2px}
+#sec-home .progress{height:6px;background:#ededf0;margin-top:18px}
+#sec-home .fill{background:#8e8e93}
+#sec-home .progressmeta{color:#86868b}
+#sec-setup .head h2{font-size:14px;font-weight:700;color:#1d1d1f}
+#sec-setup .tag{background:#f5f5f7;border-color:#ececf0;color:#6e6e73}
+#sec-setup .field input{border-color:#e5e5ea;border-radius:14px;background:#fafafc;color:#1d1d1f}
+#sec-setup .field input:focus{border-color:#8e8e93;box-shadow:0 0 0 3px #8e8e931c}
+#sec-setup .note{color:#86868b}
+#sec-setup .btn{min-height:48px;border-radius:16px;font-size:13px;font-weight:650;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+#sec-setup .btn:active:not(:disabled){transform:scale(.98);filter:brightness(.97)}
+#sec-setup .start{background:#1d1d1f;color:#fff;box-shadow:0 5px 14px #1d1d1f20}
+#sec-setup .stop{background:#f5f5f7;color:#d04b45;border:1px solid #ececf0;box-shadow:0 3px 10px #1d1d1f08}
+#sec-setup .paid{background:#f1f7f2;color:#4a7656;border:1px solid #e4eee6}
+#sec-setup .unpaid{background:#f5f3fa;color:#71658c;border:1px solid #ebe7f3}
+#sec-setup .btn:disabled{box-shadow:none}
+#sec-setup .now{color:#86868b}
+.tabbar{gap:6px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#ffffffed;border-top-color:#e8e8ed;box-shadow:0 -4px 18px #1d1d1f08}
+.tabbar button{color:#86868b;border-radius:14px;gap:3px}
+.tabbar button svg{width:18px;height:18px;stroke-width:1.7}
+.tabbar button span{font-size:9px;font-weight:600}
+.tabbar button.on{background:#f5f5f7;color:#1d1d1f;box-shadow:none}
+@media (prefers-reduced-motion:reduce){#sec-setup .btn{transition:none}}
 </style></head>
 <body><main class="app">
 <div class="tab-page active" id="tab-home">
@@ -150,6 +199,7 @@ body.game-playing .tabbar{display:none!important}
 <section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
+<div class="cat-stage" aria-label="猫咪动图展示区域">猫咪动图</div>
 <div class="progress"><div class="fill" id="fill"></div></div><div class="progressmeta"><span>计薪时长进度</span><span id="pct">0%</span></div>
 <div class="rate" style="margin-top:10px">计薪时长：<b id="paidTotal">00:00:00</b>　·　总经过：<b id="totalTime">00:00:00</b></div>
 <div class="rate" id="dayNote" style="margin-top:6px;color:#b5781f;display:none"></div>
@@ -281,7 +331,7 @@ body.game-playing .tabbar{display:none!important}
 </div>
 <nav class="tabbar" id="tabbar" aria-label="页面导航">
 <button data-t="tab-home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11.2 12 4.5l8 6.7V19a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span></button>
-<button data-t="tab-ledger"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 4v3M15.5 4v3"/><path d="M8 14h3M8 17h6"/></svg><span>账本</span></button>
+<button data-t="tab-ledger"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 4v3M15.5 4v3"/><path d="M8 14h3M8 17h6"/></svg><span>进入账本</span></button>
 <button data-t="tab-game"><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 3.8 5.2l-1 3.2a2 2 0 0 1-3.2 1l-2.1-1.6h-5l-2.1 1.6a2 2 0 0 1-3.2-1l-1-3.2A4 4 0 0 1 7 8z"/><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/></svg><span>游戏</span></button>
 <button data-t="tab-me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.7-3.3 3-5 6.5-5s5.8 1.7 6.5 5"/></svg><span>我的</span></button>
 </nav>
