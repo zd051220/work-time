@@ -40,7 +40,7 @@ test('timer state resolver maps every supported state and safe fallbacks', () =>
   assert.equal(resolve({ mode: 'paid' }, 100, 0, 0), 'paid');
   assert.equal(resolve({ mode: 'unpaid' }, 100, 0, 0), 'unpaid');
   assert.equal(resolve(null, 100, 0, 200), 'off');
-  assert.equal(resolve({ mode: 'work', pendingReview: {} }, 100, 0, 0), 'idle');
+  assert.equal(resolve({ mode: 'work' }, 100, 0, 0), 'work');
   assert.equal(resolve({ mode: 'work' }, 100, 200, 0), 'petted');
   assert.equal(resolve({ mode: 'unexpected' }, 100, 0, 0), 'idle');
 });

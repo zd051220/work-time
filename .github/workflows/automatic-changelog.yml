@@ -52,7 +52,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Generate Chinese changelog
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -118,7 +118,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Generate isolated test CHANGELOG
         run: node e2e-source/.github/scripts/changelog-e2e-test.cjs
       - name: Validate and stage fixture artifact
