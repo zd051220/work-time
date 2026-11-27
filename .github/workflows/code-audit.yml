@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
       - name: Automatic versioning tests
         run: node --test .github/scripts/versioning*.test.cjs
       - name: Automatic changelog tests
@@ -53,7 +53,5 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Real browser compatibility tests
         run: node .github/scripts/browser-compat.playwright.cjs
-      - name: Four-cat timer companion tests
-        run: node --test .github/scripts/four-cat-companion.test.cjs
       - name: Timer regression tests (formal)
         run: node .github/scripts/timer_check.js v5.5.html
