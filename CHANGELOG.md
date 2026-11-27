@@ -13,7 +13,8 @@
 - 扩大 CI 触发范围，使 Markdown 文档和全部 GitHub Actions 工作流变更也触发审计。
 
 <!-- BEGIN AUTO-GENERATED PR CHANGELOG -->
-（暂无带有效版本标签的已合并 PR）
+### 工程优化
+- test: verify guarded automatic release candidate trigger — 测试目的 验证普通 PR 合并到 main 后，唯一 release:patch 标签能否触发自动版本候选分支与候选 PR 创建。 ([#28](https://github.com/zd051220/work-time/pull/28))
 <!-- END AUTO-GENERATED PR CHANGELOG -->
 
 ## [5.5.0] - 过渡基线，历史版本号为 5.5
