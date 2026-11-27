@@ -9,9 +9,6 @@ const targets = files.length ? files : [
   'v5.5.html',
   'ledger-v5.5.html',
   'beta-v5.5.html',
-  'preview-v5.4.1-sync.html',
-  'ledger54.html',
-  'preview-ledger54-5.4.1-sync.html',
   'cat-workshop.html'
 ];
 let failures = 0;
