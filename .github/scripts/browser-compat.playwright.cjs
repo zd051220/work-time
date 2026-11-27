@@ -258,8 +258,14 @@ async function runEngine(name, type, origin) {
       const page = await context.newPage();
       await page.route('**/version.json*', route => route.abort());
       await page.goto(origin + '/v5.5.html');
-      await page.locator('[data-t="tab-game"]').click();
-      await page.locator('#gameStartBtn').click();
+      if (await page.locator('[data-t="tab-game"]').isVisible()) {
+        throw new Error('游戏入口导航仍然可见');
+      }
+      if (await page.locator('#tab-game').isVisible()) {
+        throw new Error('游戏入口卡片仍然可见');
+      }
+      // 入口隐藏不等于删除游戏页：通过内部导航调用验证保留的 iframe bridge。
+      await page.evaluate(() => window.setTab('tab-game-play'));
       const iframe = page.locator('#game-play-frame');
       await iframe.waitFor({ state: 'visible' });
       const frame = await iframe.contentFrame();
