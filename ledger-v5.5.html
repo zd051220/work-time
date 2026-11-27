@@ -205,8 +205,8 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
       arr.slice((recordsPage-1)*RECORDS_PER_PAGE,recordsPage*RECORDS_PER_PAGE).forEach(function(r){
         html+='<div class="rec"><div class="rinfo"><div class="rdate">'+esc(r.date)+' · '+esc(r.start)+'—'+esc(r.end)+'</div>'+
           '<div class="rmeta">工作 '+esc(r.work)+' · 带薪 '+esc(r.paid)+' · 不带薪 '+esc(r.unpaid)+'</div></div>'+
-          '<div class="rside"><div class="rpay">'+money(r.pay)+'</div>
-          <button class="edit" data-id="'+esc(r.id||'')+'" aria-label="修改结束时间">改时间</button><button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
+          '<div class="rside"><div class="rpay">'+money(r.pay)+'</div>'+
+          '<button class="edit" data-id="'+esc(r.id||'')+'" aria-label="修改结束时间">改时间</button><button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
       });
       box.innerHTML=html;
       if(pages>1){pager.style.display='flex';pager.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12px;color:#8e7047';pager.innerHTML='<button type="button" data-page="prev" '+(recordsPage===1?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===1?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">上一页</button><span style="font-weight:800;min-width:68px;text-align:center">第 '+recordsPage+' / '+pages+' 页</span><button type="button" data-page="next" '+(recordsPage===pages?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===pages?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">下一页</button>'}
