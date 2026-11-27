@@ -109,105 +109,82 @@ async function runEngine(name, type, origin) {
     });
 
     if (name === 'Chromium') {
-      await test('后台 5 小时双时钟一致：静默补计且不弹核对', async () => {
+      await test('后台 10 小时只按 Date.now 静默补计', async () => {
         const context = await makeContext(browser, origin);
         const page = await context.newPage();
         await page.addInitScript(() => {
-          const realNow = Date.now.bind(Date), realPerf = performance.now.bind(performance);
-          window.__testClock = { wall: 0, mono: 0 };
+          const realNow = Date.now.bind(Date);
+          window.__clockOffset = 0;
           window.__testVisibility = { hidden: false };
+          Date.now = () => realNow() + window.__clockOffset;
           Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
           Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
           window.__setTestVisibility = hidden => {
             window.__testVisibility.hidden = !!hidden;
             document.dispatchEvent(new Event('visibilitychange'));
           };
-          Date.now = () => realNow() + window.__testClock.wall;
-          Object.defineProperty(performance, 'now', { configurable: true, value: () => realPerf() + window.__testClock.mono });
+          window.__advanceClock = ms => { window.__clockOffset += ms; };
         });
         await page.goto(origin + '/v5.5.html');
         await page.locator('#startBtn').click();
         await page.evaluate(() => window.__setTestVisibility(true));
-        const fiveHours = 5 * 60 * 60 * 1000;
-        await page.evaluate(ms => { window.__testClock.wall += ms; window.__testClock.mono += ms; }, fiveHours);
+        await page.evaluate(() => window.__advanceClock(10 * 60 * 60 * 1000));
         await page.evaluate(() => window.__setTestVisibility(false));
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && saved.session.workMs >= 5 * 60 * 60 * 1000;
+          return saved && saved.session && saved.session.workMs >= 10 * 60 * 60 * 1000;
         }, null, { timeout: 10000 });
-        if (await page.locator('#clockReviewBanner').isVisible()) throw new Error('双时钟一致的正常锁屏不应提示异常');
-        if (!(await page.locator('#stopBtn').isEnabled())) throw new Error('正常恢复后下班按钮不可用');
+        if (await page.locator('#clockReviewBanner').count()) throw new Error('不应存在异常横幅');
+        if (!(await page.locator('#stopBtn').isEnabled())) throw new Error('后台恢复后下班按钮不可用');
         await context.close();
       });
 
-      await test('后台时间偏差：只显示横幅、计时照常增加、下班按钮可用', async () => {
+      await test('首页账本修改结束时间会重新计算工资', async () => {
         const context = await makeContext(browser, origin);
         const page = await context.newPage();
         await page.addInitScript(() => {
-          const realNow = Date.now.bind(Date), realPerf = performance.now.bind(performance);
-          window.__testClock = { wall: 0, mono: 0 };
-          window.__testVisibility = { hidden: false };
-          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
-          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
-          window.__setTestVisibility = hidden => {
-            window.__testVisibility.hidden = !!hidden;
-            document.dispatchEvent(new Event('visibilitychange'));
-          };
-          Date.now = () => realNow() + window.__testClock.wall;
-          Object.defineProperty(performance, 'now', { configurable: true, value: () => realPerf() + window.__testClock.mono });
+          const d = new Date(), p = n => String(n).padStart(2,'0');
+          const date = d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+          localStorage.setItem('catGold_v5', JSON.stringify({version:5,records:[{
+            id:'edit-test-home',date,start:'08:00',end:'17:00',work:'09:00:00',paid:'00:00:00',
+            unpaid:'00:00:00',duration:'09:00:00',wage:800,hours:8,pay:900,started:0
+          }],session:null,del:[]}));
         });
         await page.goto(origin + '/v5.5.html');
-        await page.locator('#startBtn').click();
-        const before = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session.workMs);
-        await page.evaluate(() => window.__setTestVisibility(true));
-        const fiveHours = 5 * 60 * 60 * 1000, sixHours = 6 * 60 * 60 * 1000;
-        await page.evaluate(v => { window.__testClock.wall += v.six; window.__testClock.mono += v.five; }, { five: fiveHours, six: sixHours });
-        await page.evaluate(() => window.__setTestVisibility(false));
-        await page.locator('#clockReviewBanner').waitFor({ state: 'visible', timeout: 10000 });
+        await page.locator('[data-t="tab-ledger"]').click();
+        const edit = page.locator('.edit[data-id="edit-test-home"]');
+        await edit.waitFor({state:'visible'});
+        page.once('dialog', dialog => dialog.accept('16:00'));
+        await edit.click();
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && saved.session.workMs >= 6 * 60 * 60 * 1000;
-        }, null, { timeout: 10000 });
-        const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('catGold_v5') || 'null').session);
-        if (saved.pendingReview) throw new Error('异常提示不应创建强制核对状态');
-        if (!(await page.locator('#stopBtn').isEnabled())) throw new Error('异常提示期间下班按钮被锁定');
-        if (saved.workMs < before + sixHours - 1000) throw new Error('后台经过时间没有正常计入');
-        await page.locator('#clockReviewInclude').click();
-        await page.waitForFunction(() => !document.getElementById('clockReviewBanner').classList.contains('show'));
-        const visibleBefore = await page.locator('#workTime').textContent();
-        await page.waitForTimeout(1500);
-        const visibleAfter = await page.locator('#workTime').textContent();
-        if (visibleAfter === visibleBefore) throw new Error('确认提示后计时没有继续增长');
+          const r = saved && saved.records && saved.records.find(x => x.id === 'edit-test-home');
+          return r && r.end === '16:00' && r.work === '08:00:00' && r.pay === 800;
+        });
         await context.close();
       });
 
-      await test('系统挂起导致单调钟暂停：仍按墙钟恢复且不误报', async () => {
+      await test('完整账本也能修改结束时间并保存', async () => {
         const context = await makeContext(browser, origin);
         const page = await context.newPage();
         await page.addInitScript(() => {
-          const realNow = Date.now.bind(Date), realPerf = performance.now.bind(performance);
-          window.__testClock = { wall: 0, mono: 0 };
-          window.__testVisibility = { hidden: false };
-          Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__testVisibility.hidden });
-          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__testVisibility.hidden ? 'hidden' : 'visible' });
-          window.__setTestVisibility = hidden => {
-            window.__testVisibility.hidden = !!hidden;
-            document.dispatchEvent(new Event('visibilitychange'));
-          };
-          Date.now = () => realNow() + window.__testClock.wall;
-          Object.defineProperty(performance, 'now', { configurable: true, value: () => realPerf() + window.__testClock.mono });
+          const d = new Date(), p = n => String(n).padStart(2,'0');
+          const date = d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+          localStorage.setItem('catGold_v5', JSON.stringify({version:5,records:[{
+            id:'edit-test-ledger',date,start:'08:00',end:'17:00',work:'09:00:00',paid:'00:00:00',
+            unpaid:'00:00:00',duration:'09:00:00',wage:800,hours:8,pay:900,started:0
+          }],session:null,del:[]}));
         });
-        await page.goto(origin + '/v5.5.html');
-        await page.locator('#startBtn').click();
-        await page.evaluate(() => window.__setTestVisibility(true));
-        const fiveHours = 5 * 60 * 60 * 1000;
-        await page.evaluate(ms => { window.__testClock.wall += ms; }, fiveHours);
-        await page.evaluate(() => window.__setTestVisibility(false));
+        await page.goto(origin + '/ledger-v5.5.html');
+        const edit = page.locator('.edit[data-id="edit-test-ledger"]');
+        await edit.waitFor({state:'visible'});
+        page.once('dialog', dialog => dialog.accept('16:00'));
+        await edit.click();
         await page.waitForFunction(() => {
           const saved = JSON.parse(localStorage.getItem('catGold_v5') || 'null');
-          return saved && saved.session && saved.session.workMs >= 5 * 60 * 60 * 1000;
-        }, null, { timeout: 10000 });
-        if (await page.locator('#clockReviewBanner').isVisible()) throw new Error('单调钟暂停的正常锁屏不应误报');
+          const r = saved && saved.records && saved.records.find(x => x.id === 'edit-test-ledger');
+          return r && r.end === '16:00' && r.work === '08:00:00' && r.pay === 800;
+        });
         await context.close();
       });
     }
