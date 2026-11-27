@@ -27,7 +27,7 @@ const makeAccrue = session => {
 const duration = new Function(durationSource + ';return duration;')();
 const timeSeconds = new Function(editSource + ';return timeSeconds;')();
 const editRecordEnd = new Function('duration','timeSeconds',
-  extract(html,'function editRecordEnd(r,end){','\nfunction rate(){') + ';return editRecordEnd;'
+  extract(html,'function editRecordEnd(r,end){','function rate(){') + ';return editRecordEnd;'
 )(duration,timeSeconds);
 
 check('完全移除双时钟比较和单调时钟变量', !/CLOCK_DRIFT_LIMIT|performance\.now|lastMono|lastWall/.test(html));
