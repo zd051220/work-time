@@ -264,8 +264,8 @@ async function runEngine(name, type, origin) {
       if (await page.locator('#tab-game').isVisible()) {
         throw new Error('游戏入口卡片仍然可见');
       }
-      // 入口隐藏不等于删除游戏页：通过内部导航调用验证保留的 iframe bridge。
-      await page.evaluate(() => window.setTab('tab-game-play'));
+      // 入口隐藏不等于删除游戏页：直接触发保留的游戏按钮事件，验证 iframe bridge 仍可工作。
+      await page.locator('#gameStartBtn').dispatchEvent('click');
       const iframe = page.locator('#game-play-frame');
       await iframe.waitFor({ state: 'visible' });
       const frame = await iframe.contentFrame();
