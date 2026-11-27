@@ -12,11 +12,12 @@
 :root{--ink:#49382c;--muted:#9b8877;--gold:#e7a936;--cream:#fffaf1;--line:#efe2cf;--pink:#f4c5c1;--green:#789b70;--shadow:0 12px 32px #8b64200e}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#fff0ce,#fffaf2 43%,#f7f0e8);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;padding:env(safe-area-inset-top) 14px calc(92px + env(safe-area-inset-bottom))}
 .app{max-width:490px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:16px 2px 12px}.brand{font-size:21px;font-weight:950}.sub{font-size:11px;color:var(--muted);margin-top:4px}.datepill,.tag{font-size:10px;color:#98733a;background:#fff5dc;border:1px solid #f2e4c4;padding:7px 10px;border-radius:30px}
-.hero{position:relative;overflow:hidden;border:1px solid #f3dfb6;border-radius:24px;padding:18px 18px 17px;background:linear-gradient(115deg,#fff1cf 0%,#ffe3a0 58%,#ffedc5 100%);box-shadow:0 8px 22px #9a6d2010}.hero:before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:#fff9e77a;right:-64px;top:-86px}.hero:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;border:1px solid #ffffff70;right:22px;bottom:-66px}.heroRow{display:flex;align-items:center;gap:14px;position:relative;z-index:1;min-width:0}.cat{width:140px;height:140px;flex:0 0 140px;display:grid;place-items:center;position:relative;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 7px 5px #8e632322)}.cat:focus-visible{outline:3px solid #d99b35;outline-offset:3px;border-radius:20px}.cat:before{content:"";position:absolute;left:50%;bottom:9px;width:72%;height:15px;margin-left:-36%;border-radius:50%;background:radial-gradient(ellipse at center,#8e632338 0%,#8e632312 58%,transparent 74%)}.cat-art{display:none;width:152px;height:152px;object-fit:contain;overflow:visible;transform-origin:50% 84%;pointer-events:none;position:relative;z-index:1}.cat-variant-0 .cat-art-0,.cat-variant-1 .cat-art-1,.cat-variant-2 .cat-art-2,.cat-variant-3 .cat-art-3{display:block}.cat.cat-work .cat-art{animation:mw-cat-haul .62s ease-in-out infinite}.cat.cat-paid .cat-art{animation:mw-cat-rest 2.2s ease-in-out infinite}.cat.cat-unpaid .cat-art{animation:mw-cat-sleep 3.2s ease-in-out infinite}.cat.cat-off .cat-art{animation:mw-cat-cheer .72s ease-in-out 5}.cat.cat-petted .cat-art{animation:mw-cat-pet .42s ease-in-out 3}.cat.cat-idle .cat-art{animation:mw-cat-idle 2.8s ease-in-out infinite}@keyframes mw-cat-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}@keyframes mw-cat-haul{0%,100%{transform:translateY(1px) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}@keyframes mw-cat-rest{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(3px) rotate(1deg)}}@keyframes mw-cat-sleep{0%,100%{transform:translateY(3px) scale(.97)}50%{transform:translateY(5px) scale(.95)}}@keyframes mw-cat-cheer{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-12px) rotate(-5deg)}70%{transform:translateY(-5px) rotate(5deg)}}@keyframes mw-cat-pet{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.09) rotate(5deg)}}@media(max-width:480px){.cat{width:122px;height:122px;flex-basis:122px}.cat-art{width:134px;height:134px}.cat:before{bottom:7px;height:12px}}@media(max-width:380px){.cat{width:104px;height:104px;flex-basis:104px}.cat-art{width:112px;height:112px}.cat:before{bottom:6px;height:11px}}@media(prefers-reduced-motion:reduce){.cat-art{animation:none!important;transition:none!important}}.bubble{font-size:15.5px;font-weight:850;line-height:1.55;min-width:0;letter-spacing:.2px}.bubble small{display:block;font-size:11.5px;color:#92734b;font-weight:550;margin-top:6px;line-height:1.6}
+.hero{position:relative;overflow:hidden;border:1px solid #f3dfb6;border-radius:24px;padding:18px 18px 17px;background:linear-gradient(115deg,#fff1cf 0%,#ffe3a0 58%,#ffedc5 100%);box-shadow:0 8px 22px #9a6d2010}.hero:before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:#fff9e77a;right:-64px;top:-86px}.hero:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;border:1px solid #ffffff70;right:22px;bottom:-66px}.heroRow{display:flex;align-items:center;gap:14px;position:relative;z-index:1;min-width:0}.cat{width:74px;height:74px;border-radius:23px;background:linear-gradient(145deg,#fffdf6,#fff2d4);border:1px solid #f4e3bf;display:grid;place-items:center;font-size:46px;box-shadow:0 5px 14px #9a6d201c;flex:none}.bubble{font-size:15.5px;font-weight:850;line-height:1.55;min-width:0;letter-spacing:.2px}.bubble small{display:block;font-size:11.5px;color:#92734b;font-weight:550;margin-top:6px;line-height:1.6}
 .card{background:#fffdf9ed;border:1px solid #fff;border-radius:22px;padding:16px;margin-top:12px;box-shadow:var(--shadow)}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.head h2{font-size:14px;margin:0;font-weight:900}.eyebrow{font-size:11px;color:var(--muted);font-weight:650}.money{font-size:43px;line-height:1.12;font-weight:950;color:#bd7b18;letter-spacing:-1.5px;margin:8px 0 5px;font-variant-numeric:tabular-nums}.rate{font-size:11px;color:#9b8466}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:15px}.stat{background:#fff7e8;border-radius:14px;padding:10px 7px}.stat b{display:block;font-size:16px;font-variant-numeric:tabular-nums}.stat span{display:block;font-size:10px;color:var(--muted);margin-top:4px}.progress{height:9px;background:#f2e9dc;border-radius:20px;overflow:hidden;margin-top:15px}.fill{height:100%;width:0;background:linear-gradient(90deg,#f8d477,#e5a52e);border-radius:20px}.progressmeta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:7px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{min-width:0;width:100%}.field label{display:block;font-size:10px;color:var(--muted);margin:0 0 6px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.field input{display:block;width:100%;max-width:100%;min-width:0;min-height:48px;box-sizing:border-box;-webkit-appearance:none;appearance:none;padding:12px 10px;border:1px solid var(--line);border-radius:12px;background:#fffaf2;color:var(--ink);font-size:16px;outline:none}.field input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums}.field input[type="time"]::-webkit-date-and-time-value{text-align:center;width:100%}.field input:focus{border-color:#e6b751;box-shadow:0 0 0 3px #fae9bf}.field input:disabled{background:#f4efe7;color:#a49483;border-color:#e8dfd3}.field input:read-only{background:#f7f2ea;color:#8b7a67}.note{font-size:10px;line-height:1.6;color:#a28e7a;margin-top:10px}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.btn{border:0;border-radius:14px;padding:13px 8px;font-size:12px;font-weight:850;cursor:pointer}.start{background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35}.stop{background:#fff0eb;color:#9c6254;border:1px solid #f3ddd5}.paid{background:#e9f3e5;color:#52734b;border:1px solid #d5e6d0}.unpaid{background:#f1edff;color:#7465a4;border:1px solid #e2dcf7}.btn:disabled{opacity:.42;box-shadow:none;cursor:not-allowed}.now{text-align:center;font-size:10px;color:#a99580;margin-top:10px}.breakstatus{padding:10px 12px;border-radius:13px;background:#f7f1ff;color:#7465a4;font-size:11px;line-height:1.5;margin-top:12px;display:none}.breakstatus.show{display:block}.warn{padding:10px 12px;border-radius:13px;background:#fff3e6;color:#96601f;font-size:11px;line-height:1.5;margin-top:12px;display:none}.warn.show{display:block}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.btn{border:0;border-radius:14px;padding:13px 8px;font-size:12px;font-weight:850;cursor:pointer}.start{background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35}.stop{background:#fff0eb;color:#9c6254;border:1px solid #f3ddd5}.paid{background:#e9f3e5;color:#52734b;border:1px solid #d5e6d0}.unpaid{background:#f1edff;color:#7465a4;border:1px solid #e2dcf7}.btn:disabled{opacity:.42;box-shadow:none;cursor:not-allowed}.now{text-align:center;font-size:10px;color:#a99580;margin-top:10px}.breakstatus{padding:10px 12px;border-radius:13px;background:#f7f1ff;color:#7465a4;font-size:11px;line-height:1.5;margin-top:12px;display:none}.breakstatus.show{display:block}
 .miniGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini{background:#fff7e8;border-radius:13px;padding:10px 8px}.mini span{display:block;font-size:10px;color:var(--muted)}.mini b{display:block;font-size:15px;margin-top:5px;font-variant-numeric:tabular-nums}.monthbar{display:flex;align-items:center;gap:7px}.monthbar button{border:0;background:#fff4db;color:#9c7535;border-radius:9px;width:28px;height:27px;font-size:16px}.monthbar strong{font-size:11px;min-width:67px;text-align:center}.sum{background:#fff7e8;border-radius:14px;padding:11px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}.sum span{font-size:11px;color:var(--muted)}.sum b{font-size:20px;color:#b8791a}.record{display:flex;align-items:center;justify-content:space-between;padding:10px 1px;border-bottom:1px dashed var(--line);gap:8px}.record:last-child{border:0}.rdate{font-size:12px;font-weight:850}.rmeta{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}.rpay{font-size:14px;font-weight:900;color:#b8791a;white-space:nowrap}.empty{text-align:center;padding:17px 5px;color:#b4a38e;font-size:11px}.tools{display:flex;gap:8px;flex-wrap:wrap}.tool{border:1px solid var(--line);background:#fff9ef;color:#8e7047;border-radius:11px;padding:10px 12px;font-size:11px;font-weight:750}.foot{text-align:center;color:#b5a38d;font-size:10px;padding:17px 0 5px}.toast{position:fixed;left:50%;bottom:calc(94px + env(safe-area-inset-bottom));transform:translate(-50%,15px);opacity:0;transition:.2s;background:#594632;color:white;padding:10px 16px;border-radius:22px;font-size:11px;pointer-events:none;max-width:88vw;text-align:center;z-index:75;box-shadow:0 6px 18px #3b2a1a30}.toast.show{opacity:1;transform:translate(-50%,0)}
+
 
 
 /* ===== 记录删除按钮 ===== */
@@ -37,7 +38,7 @@ section.card{scroll-margin-top:14px}
 .my-subpage-head b{font-size:14px}
 
 .rside{display:flex;align-items:center;gap:9px;flex:none}
-.del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit;cursor:pointer}.editEnd{border:1px solid #e8d8b8;background:#fffaf0;color:#8e7047;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit;cursor:pointer}
+.edit{border:1px solid #e9dfc9;background:#fff9ed;color:#8e7047;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit;cursor:pointer}.del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit;cursor:pointer}
 .del:active{background:#ffe8df;transform:scale(.96)}
 /* ===== 底部导航栏 ===== */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:4px;
@@ -140,17 +141,16 @@ body.game-playing .tabbar{display:none!important}
 .noauto input{width:16px;height:16px;accent-color:#e8ad3e;margin:0}
 .sheet .close{width:100%;margin-top:10px;border:0;border-radius:14px;padding:13px;font-size:12px;font-weight:900;
   background:linear-gradient(#f8d47d,#e8ad3e);color:#694714;box-shadow:0 3px 0 #d49b35;font-family:inherit}
+
+/* 暂停猫咪游戏入口：仅隐藏界面，保留游戏页面、逻辑与资源 */
+#tab-game,.tabbar button[data-t="tab-game"]{display:none!important}
 </style></head>
 <body><main class="app">
 <div class="tab-page active" id="tab-home">
 <header class="top"><div><div class="brand">🐾 小猫搬金条 <span style="font-size:11px;color:#b58b4a">v5.5 正式版</span></div><div class="sub">上班认真搬金条，摸鱼也要记清楚</div></div><div class="datepill" id="today">今天 · --</div></header>
 <div class="notice" id="noticeBtn" role="button" tabindex="0"><span class="ico">🔔</span><span class="txt"><b>v5.5 正式版更新</b>：查看本次版本更新内容与功能说明</span><span class="arrow">›</span></div>
 <div class="update-banner" id="updateBanner" role="status" aria-live="polite"><div class="update-copy"><b id="updateTitle">发现新版本</b><span id="updateNote">有新版本可以更新了</span></div><button class="update-btn" id="updateNow" type="button">立即更新</button><button class="update-dismiss" id="updateLater" type="button" aria-label="稍后更新">×</button></div>
-<section class="hero"><div class="heroRow"><div class="cat cat-idle cat-variant-0" id="cat" role="button" tabindex="0" aria-label="摸摸小猫" title="点一下摸摸小猫">
-<img class="cat-art cat-art-0" data-role="soft-bell" data-state="idle" src="assets/cats/states/soft-bell/idle@512.png" alt="" draggable="false" loading="eager">
-<img class="cat-art cat-art-1" data-role="sport-headband" data-state="idle" src="assets/cats/states/sport-headband/idle@512.png" alt="" draggable="false" loading="eager">
-<img class="cat-art cat-art-2" data-role="sleepy-nightcap" data-state="idle" src="assets/cats/states/sleepy-nightcap/idle@512.png" alt="" draggable="false" loading="eager">
-<img class="cat-art cat-art-3" data-role="leader-crown" data-state="idle" src="assets/cats/states/leader-crown/idle@512.png" alt="" draggable="false" loading="eager"></div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
+<section class="hero"><div class="heroRow"><div class="cat" id="cat">🐈</div><div class="bubble" id="catLine">喵！今天也要努力攒金条！<small>工作和摸鱼时间，小猫都帮你记好。</small></div></div></section>
 <section class="card" id="sec-home"><div class="eyebrow" id="status">今日实时收入 · 等待开工</div><div class="money" id="earned">¥0.0000</div><div class="rate">每秒 <b id="secRate">¥0.006944</b>　·　每分钟 <b id="minRate">¥0.4167</b></div>
 <div class="stats"><div class="stat"><b id="workTime">00:00:00</b><span>实际工作</span></div><div class="stat"><b id="paidTime">00:00:00</b><span>带薪摸鱼</span></div><div class="stat"><b id="unpaidTime">00:00:00</b><span>不带薪摸鱼</span></div></div>
 <div class="progress"><div class="fill" id="fill"></div></div><div class="progressmeta"><span>计薪时长进度</span><span id="pct">0%</span></div>
@@ -349,6 +349,8 @@ function hhmm(ts){var d=new Date(ts);return pad2(d.getHours())+':'+pad2(d.getMin
 function validClock(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||''))}
 function money(n,d){return '¥'+(Number(n)||0).toFixed(d==null?2:d)}
 function duration(ms){var s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return [h,m,x].map(function(v){return String(v).padStart(2,'0')}).join(':')}
+function timeSeconds(v){var p=String(v||'').split(':');return p.length===3?(Number(p[0])*3600+Number(p[1])*60+Number(p[2])):0}
+function editRecordEnd(r,end){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(end||'')))return false;var a=String(r.start||'').split(':'),b=String(end).split(':'),old=String(r.end||'').split(':');if(a.length!==2||old.length!==2)return false;var startMin=Number(a[0])*60+Number(a[1]),newMin=Number(b[0])*60+Number(b[1]),oldMin=Number(old[0])*60+Number(old[1]);if(newMin<startMin)return false;var work=Math.max(0,timeSeconds(r.work)+(newMin-oldMin)*60),paid=timeSeconds(r.paid),unpaid=timeSeconds(r.unpaid),wage=Number(r.wage)||0,hours=Math.max(.1,Number(r.hours)||8);r.end=end;r.work=duration(work*1000);r.duration=duration((work+paid+unpaid)*1000);r.pay=(work+paid)/3600*wage/hours;return true}
 function toast(t){var el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show')},2600)}
 function escapeHTML(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function validRecord(r){return r&&typeof r==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||''))}
@@ -400,44 +402,33 @@ function save(){
   if(data.session)sesPush();
 }
 function todayTotals(){var s=data.session;if(!s)return {work:0,paid:0,unpaid:0};var b=s.days&&s.days[day()];return b?{work:b.work,paid:b.paid,unpaid:b.unpaid}:{work:0,paid:0,unpaid:0}}
-function accrue(now,reason){var s=data.session;if(!s)return;now=now||Date.now();var from=Number(s.lastAt)||now,delta=now-from;
-  if(delta<0){s.lastAt=now;return}
-  var t=from;
-  while(t<now){
-    var next=new Date(t);next.setHours(24,0,0,0);var segEnd=Math.min(now,next.getTime());
-    if(segEnd<=t)segEnd=now;
-    addSeg(s,day(t),s.mode,segEnd-t);
-    t=segEnd;
-  }
+function accrue(now){
+  var s=data.session;if(!s)return;
+  now=Number(now)||Date.now();var from=Number(s.lastAt)||now;
+  var t=from;while(t<now){var nx=new Date(t);nx.setHours(24,0,0,0);var e=Math.min(now,nx.getTime());if(e<=t)e=now;addSeg(s,day(t),s.mode,e-t);t=e}
   s.lastAt=now;
 }
 function rate(){var s=data.session;if(s){var w=Number(s.wage),h=Number(s.hours);if(!Number.isFinite(w)||w<0||w>10000||!Number.isFinite(h)||h<=0||h>24)return 0;return w/h/3600}var wage=Number($('wage').value),hours=Number($('hours').value)||8;if(!Number.isFinite(wage)||wage<0||wage>10000)return 0;return wage/Math.max(.1,hours)/3600}
-var mwCatVariant=Math.floor(Math.random()*4),mwCatPetUntil=0,mwCatOffUntil=0;
-var mwCatRoles=['soft-bell','sport-headband','sleepy-nightcap','leader-crown'],mwCatStates=['idle','work','paid','unpaid','off','interaction'],mwCatArtPreloaded={};
-function mwCatArtPath(role,state){return 'assets/cats/states/'+role+'/'+state+'@512.png';}
-function mwResolveCatArtState(mode){return mode==='petted'?'interaction':(mwCatStates.indexOf(mode)>=0?mode:'idle');}
-function mwApplyCatArt(mode){var state=mwResolveCatArtState(mode),role=mwCatRoles[mwCatVariant],img=document.querySelector('.cat-variant-'+mwCatVariant+' .cat-art-'+mwCatVariant);if(!img)return state;var path=mwCatArtPath(role,state);if(img.getAttribute('src')!==path){img.dataset.state=state;img.src=path;}else{img.dataset.state=state;}if(!mwCatArtPreloaded[role]&&typeof Image!=='undefined'){mwCatArtPreloaded[role]=1;mwCatStates.forEach(function(s){var warm=new Image();warm.src=mwCatArtPath(role,s);});}return state;}
-function mwResolveCatMode(session,now,petUntil,offUntil){if(now<petUntil)return 'petted';if(!session)return now<offUntil?'off':'idle';if(session.mode==='work')return 'work';if(session.mode==='paid')return 'paid';if(session.mode==='unpaid')return 'unpaid';return 'idle';}
 function draw(){var s=data.session,t=todayTotals(),r=rate(),payMs=t.work+t.paid,allMs=payMs+t.unpaid,pay=payMs/1000*r,goal=(s?s.hours:Math.max(.1,Number($('hours').value)||8))*3600000;
-  $('today').textContent='今天 · '+day().slice(5).replace('-','/');$('now').textContent='现在时间 '+new Date().toLocaleTimeString('zh-CN',{hour12:false});$('status').textContent=!s?'今日实时收入 · 等待开工':(s.wageInvalid?'⚠️ 历史日工资异常，已暂停计薪；请结束本次记录后核对':(s.mode==='work'?'🟢 正在工作 · 金条持续增加':s.mode==='paid'?'☕ 带薪摸鱼中 · 工资继续增加':'🌿 不带薪摸鱼中 · 暂停计薪'));
+  $('today').textContent='今天 · '+day().slice(5).replace('-','/');$('now').textContent='现在时间 '+new Date().toLocaleTimeString('zh-CN',{hour12:false});$('status').textContent=!s?'今日实时收入 · 等待开工':(s.wageInvalid?'⚠️ 历史日工资异常，已暂停计薪；请结束本次记录后核对':((s.mode==='work'?'🟢 正在工作 · 金条持续增加':s.mode==='paid'?'☕ 带薪摸鱼中 · 工资继续增加':'🌿 不带薪摸鱼中 · 暂停计薪')));
   $('earned').textContent='¥'+pay.toFixed(4);$('secRate').textContent=money(r,6);$('minRate').textContent=money(r*60,4);$('workTime').textContent=duration(t.work);$('paidTime').textContent=duration(t.paid);$('unpaidTime').textContent=duration(t.unpaid);$('paidTotal').textContent=duration(payMs);$('totalTime').textContent=duration(allMs);var pct=goal>0?payMs/goal*100:0;$('fill').style.width=Math.min(100,Math.max(0,pct))+'%';$('pct').textContent=pct.toFixed(1)+'%'+(pct>100?' · 已超标准工时':'');$('hourRate').textContent=money(r*3600);$('todayPay').textContent=money(pay);$('breakTotal').textContent=duration(t.paid+t.unpaid);
   var days=s&&s.days?Object.keys(s.days).length:0;
   var dn=$('dayNote');
   if(s&&days>1){dn.style.display='';dn.textContent='本次已跨 '+days+' 天，上面只算今天；下班时会按天拆成 '+days+' 条记录。'}else{dn.style.display='none';dn.textContent=''}
-  var cat=$('cat'),catMode=mwResolveCatMode(s,Date.now(),mwCatPetUntil,mwCatOffUntil);cat.className='cat cat-'+catMode+' cat-variant-'+mwCatVariant;mwApplyCatArt(catMode);var catCopy=catMode==='work'?['搬金条时间！我来啦。','小爪子抱紧金条，认真开工！']:catMode==='paid'?['休息一下也很重要。','我抱着金条晒晒太阳，工资还在涨。']:catMode==='unpaid'?['呼……让我趴一会儿。','金条先当枕头，工资暂时暂停啦。']:catMode==='off'?['下班啦！今天辛苦了！','任务完成，抱着金条开心庆祝！']:catMode==='petted'?['呼噜呼噜！好舒服呀。','摸摸头，再给你一个小拥抱。']:['喵！准备好一起搬金条了吗？','点击开始上班，我就进入工作状态。'];if(Date.now()>=mwCatPetUntil){$('catLine').innerHTML=catCopy[0]+'<small>'+catCopy[1]+'</small>';}
-  $('startBtn').disabled=!isWriter||!!s;$('stopBtn').disabled=!isWriter||!s;/* mwFix53h：带薪/不带薪之间允许直接互切（原来必须先进“继续工作”再切，休息切换要多一步） */$('paidBtn').disabled=!isWriter||!s||s.mode==='paid';$('unpaidBtn').disabled=!isWriter||!s||s.mode==='unpaid';$('resumeBtn').disabled=!isWriter||!s||s.mode==='work';$('wage').disabled=!!s;$('hours').disabled=!!s;$('lockTag').textContent=s?'本次已锁定':'开工前设置';  $('breakStatus').classList.toggle('show',!!s&&s.mode!=='work');$('breakStatus').textContent=s&&s.mode!=='work'?(s.mode==='paid'?'当前状态：带薪摸鱼，计薪仍在继续。':'当前状态：不带薪摸鱼，工资暂时停止累计。'):'';drawRecords();mwTxt={};}var recordsPage=1,RECORDS_PER_PAGE=8;
-function drawRecords(){var arr=data.records.filter(function(r){return r.date.indexOf(monthView)===0});arr.sort(function(a,b){return a.date===b.date?(a.start<b.start?-1:1):(a.date<b.date?1:-1)});var pages=Math.max(1,Math.ceil(arr.length/RECORDS_PER_PAGE));recordsPage=Math.min(Math.max(1,recordsPage),pages);var sig=monthView+'|p'+recordsPage+'|'+arr.map(function(r){return r.id+':'+r.pay}).join(',');if(sig===recSig)return;recSig=sig;$('month').textContent=monthView.replace('-','年')+'月';$('monthTotal').textContent=money(arr.reduce(function(v,r){return v+(Number(r.pay)||0)},0));var box=$('records'),pager=$('recordsPager');if(!arr.length){box.innerHTML='<div class="empty">这个月还没有搬金记录～</div>';pager.style.display='none';return}var html='';arr.slice((recordsPage-1)*RECORDS_PER_PAGE,recordsPage*RECORDS_PER_PAGE).forEach(function(r){html+='<div class="record"><div><div class="rdate">'+escapeHTML(r.date)+' · '+escapeHTML(r.start)+'—'+escapeHTML(r.end)+'</div><div class="rmeta">工作 '+escapeHTML(r.work)+' · 带薪 '+escapeHTML(r.paid)+' · 不带薪 '+escapeHTML(r.unpaid)+'</div></div><div class="rside"><div class="rpay">'+money(r.pay)+'</div><button class="editEnd" data-id="'+escapeHTML(r.id)+'" aria-label="修改结束时间">改</button><button class="del" data-id="'+escapeHTML(r.id)+'" aria-label="删除这条记录">删</button></div></div>'});box.innerHTML=html;if(pages>1){pager.style.display='flex';pager.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12px;color:#8e7047';pager.innerHTML='<button type="button" data-page="prev" '+(recordsPage===1?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===1?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">上一页</button><span style="font-weight:800;min-width:68px;text-align:center">第 '+recordsPage+' / '+pages+' 页</span><button type="button" data-page="next" '+(recordsPage===pages?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===pages?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">下一页</button>'}else{pager.style.display='none';pager.innerHTML=''}}
+  $('startBtn').disabled=!isWriter||!!s;$('stopBtn').disabled=!isWriter||!s;/* mwFix53h：带薪/不带薪之间允许直接互切（原来必须先进“继续工作”再切，休息切换要多一步） */$('paidBtn').disabled=!isWriter||!s||s.mode==='paid';$('unpaidBtn').disabled=!isWriter||!s||s.mode==='unpaid';$('resumeBtn').disabled=!isWriter||!s||s.mode==='work';$('wage').disabled=!!s;$('hours').disabled=!!s;$('lockTag').textContent=s?'本次已锁定':'开工前设置';$('cat').textContent=!s?'🐈':s.mode==='work'?'🐈‍⬛':s.mode==='paid'?'😺':'😴';$('catLine').innerHTML=!s?'喵！准备好开工了吗？<small>开始工作后，想摸鱼随时点按钮。</small>':s.mode==='work'?'搬呀搬呀！金条正在增加！<small>认真工作的小猫最棒啦。</small>':s.mode==='paid'?'正在享受带薪休息～<small>休息期间工资照常累计。</small>':'小猫正在休息充电～<small>不带薪摸鱼期间暂时停止计薪。</small>';
+  $('breakStatus').classList.toggle('show',!!s&&s.mode!=='work');$('breakStatus').textContent=s&&s.mode!=='work'?(s.mode==='paid'?'当前状态：带薪摸鱼，计薪仍在继续。':'当前状态：不带薪摸鱼，工资暂时停止累计。'):'';drawRecords();mwTxt={};}
+var recordsPage=1,RECORDS_PER_PAGE=8;
+function drawRecords(){var arr=data.records.filter(function(r){return r.date.indexOf(monthView)===0});arr.sort(function(a,b){return a.date===b.date?(a.start<b.start?-1:1):(a.date<b.date?1:-1)});var pages=Math.max(1,Math.ceil(arr.length/RECORDS_PER_PAGE));recordsPage=Math.min(Math.max(1,recordsPage),pages);var sig=monthView+'|p'+recordsPage+'|'+arr.map(function(r){return r.id+':'+r.pay+':'+r.end}).join(',');if(sig===recSig)return;recSig=sig;$('month').textContent=monthView.replace('-','年')+'月';$('monthTotal').textContent=money(arr.reduce(function(v,r){return v+(Number(r.pay)||0)},0));var box=$('records'),pager=$('recordsPager');if(!arr.length){box.innerHTML='<div class="empty">这个月还没有搬金记录～</div>';pager.style.display='none';return}var html='';arr.slice((recordsPage-1)*RECORDS_PER_PAGE,recordsPage*RECORDS_PER_PAGE).forEach(function(r){html+='<div class="record"><div><div class="rdate">'+escapeHTML(r.date)+' · '+escapeHTML(r.start)+'—'+escapeHTML(r.end)+'</div><div class="rmeta">工作 '+escapeHTML(r.work)+' · 带薪 '+escapeHTML(r.paid)+' · 不带薪 '+escapeHTML(r.unpaid)+'</div></div><div class="rside"><div class="rpay">'+money(r.pay)+'</div><button class="edit" data-id="'+escapeHTML(r.id)+'" aria-label="修改结束时间">改时间</button><button class="del" data-id="'+escapeHTML(r.id)+'" aria-label="删除这条记录">删</button></div></div>'});box.innerHTML=html;if(pages>1){pager.style.display='flex';pager.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12px;color:#8e7047';pager.innerHTML='<button type="button" data-page="prev" '+(recordsPage===1?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===1?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">上一页</button><span style="font-weight:800;min-width:68px;text-align:center">第 '+recordsPage+' / '+pages+' 页</span><button type="button" data-page="next" '+(recordsPage===pages?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===pages?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">下一页</button>'}else{pager.style.display='none';pager.innerHTML=''}}
 $('recordsPager').addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('button[data-page]'):null;if(!b||b.disabled)return;recordsPage+=b.getAttribute('data-page')==='next'?1:-1;recSig='';drawRecords()});
 
 function changeMode(mode){var s=data.session;if(!s)return;accrue(Date.now(),'action');s.mode=mode;s.dev=DEV;s.lastAt=Date.now();save();draw();toast(mode==='work'?'继续工作，开搬金条！':mode==='paid'?'开始带薪摸鱼，工资继续算！':'开始不带薪摸鱼，计薪已暂停。')}
-$('cat').addEventListener('click',function(){mwCatPetUntil=Date.now()+1400;this.classList.add('cat-petted');$('catLine').textContent='呼噜呼噜！被你摸到啦～';setTimeout(draw,1400)});$('cat').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}});
 $('startBtn').onclick=function(){if(data.session)return;var w=Number($('wage').value),h=Number($('hours').value);if(!(w>0&&w<=10000&&h>0&&h<=24&&Number.isFinite(w)&&Number.isFinite(h))){toast('日工资须大于 0 且不超过 10,000 元，标准工作时长须大于 0 且不超过 24 小时');return}var now=Date.now();$('endTime').value='';$('startTime').value=hhmm(now);
   data.session={sid:'ws-'+String(now),date:day(now),started:now,lastAt:now,start:hhmm(now),wage:w,hours:h,plannedEndTime:hhmm(now+h*3600000),mode:'work',workMs:0,paidMs:0,unpaidMs:0,engineVersion:5,dev:DEV};
   data.session.days={};data.session.days[day(now)]={work:0,paid:0,unpaid:0};
   if(mwEndedSession&&now>mwEndedSession.started){mwEndedSession=null;try{localStorage.removeItem(KEY+'_ended')}catch(e){}}save();draw();toast('开工啦！小猫开始搬金条～')};
 $('paidBtn').onclick=function(){changeMode('paid')};$('unpaidBtn').onclick=function(){changeMode('unpaid')};$('resumeBtn').onclick=function(){changeMode('work')};
 $('stopBtn').onclick=function(){var s=data.session;if(!s)return;accrue(Date.now(),'action');
-  mwCatOffUntil=Date.now()+9000;var now=Date.now(),r=s.wage/s.hours/3600,lastDate=day(now);
+  var now=Date.now(),r=s.wage/s.hours/3600,lastDate=day(now);
   var keys=Object.keys(s.days||{}).sort();if(!keys.length)keys=[s.date];
   var made=[];
   keys.forEach(function(d,idx){
@@ -486,8 +477,8 @@ $('file').onchange=function(e){var f=e.target.files[0];if(!f)return;var reader=n
     }
   }catch(err){toast(err&&err.message&&/版本/.test(err.message)?err.message:'备份文件格式不正确')}
 };reader.readAsText(f);e.target.value=''};
-function onHide(){visible=false;if(isWriter&&data.session){accrue(Date.now(),'hide');save()}}
-function onShow(){visible=true;if(isWriter&&data.session){accrue(Date.now(),'resume');save()}draw()}
+function onHide(){visible=false;if(isWriter&&data.session){accrue(Date.now());save()}}
+function onShow(){visible=true;if(isWriter&&data.session){accrue(Date.now());save()}draw()}
 /* ===== 5.3 单写者：同一台设备只让一个页面计时 ===== */
 var MW_LOCK='mw_writer_v53', MW_CH='mw_sync_v53', isWriter=true, mwBc=null;
 /* mwFix53b：本机实测 Web Locks 在“刷新后旧文档不释放锁”的场景会永久占死（锁查询显示 held、两个页面都拿不到、关页面也不解）。
@@ -580,35 +571,17 @@ document.addEventListener('visibilitychange',function(){document.hidden?onHide()
 var mwPullTick=0;
 setInterval(function(){if(document.hidden){if(visible)onHide();return}if(!visible)onShow();if(!isWriter){if(Date.now()-mwPullTick>3000){mwPullTick=Date.now();mwPullDisk();drawSoft()}return}if(data.session)accrue(Date.now(),'tick');drawSoft()},1000);setInterval(function(){if(data.session)save()},SAVE_EVERY);
 /* 活跃设备每 2 秒上传一次计时快照；不依赖 15 秒一次的本地保存 */
+setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},30000);
 setInterval(function(){if(!document.hidden&&isWriter&&data.session)sesPush(true)},5000);
 /* 所有已登录设备每 2 秒读取权威状态；旧设备收到 ended 后立即停止本地计时 */
 setInterval(function(){if(!document.hidden&&accSess&&accSess()&&!window.mwDeleting)sesRestore().catch(function(){})},5000);
-if(data.session){data.session=upgradeSession(data.session);accrue(Date.now(),'recovery');save()}
+if(data.session){data.session=upgradeSession(data.session);accrue(Date.now());save()}
 draw();
 
-
-function parseHM(v){var m=/^([01]\d|2[0-3]):[0-5]\d$/.exec(String(v||''));return m?(+m[1])*3600000+(+m[2])*60000:null}
-function durMs(s){var p=String(s||'00:00:00').split(':');return (+p[0])*3600000+(+p[1])*60000+(+p[2]||0)*1000}
-function editEndTime(rec,newEnd,saveFn,pushFn,refreshFn){
-  var st=parseHM(rec.start),en=parseHM(newEnd);
-  if(en===null){toast('结束时间格式应为 HH:MM');return false}
-  if(en<=st)en+=86400000;
-  var span=en-st;
-  if(span<60000){toast('结束时间必须晚于开始时间至少 1 分钟');return false}
-  var w=durMs(rec.work),p=durMs(rec.paid),u=durMs(rec.unpaid),oldTotal=w+p+u;
-  if(!oldTotal){toast('该条记录时长为空，无法修改');return false}
-  var ratio=span/oldTotal;
-  rec.end=String(newEnd);
-  rec.work=duration(Math.round(w*ratio));rec.paid=duration(Math.round(p*ratio));rec.unpaid=duration(Math.round(u*ratio));
-  rec.duration=duration(span);
-  rec.pay=+(((w+p)*ratio/3600000)*(Number(rec.wage)||0)/(Number(rec.hours)||8)).toFixed(4);
-  if(saveFn)saveFn();if(refreshFn)refreshFn();if(pushFn)pushFn(rec);
-  return true;
-}
 /* ===== 删除单条记录 ===== */
 $('records').addEventListener('click', function(e){
-  var eb=e.target&&e.target.closest?e.target.closest('.editEnd'):null;
-  if(eb){var er=data.records.filter(function(r){return r.id===eb.getAttribute('data-id')})[0];if(er){var nv=prompt('修改这条记录的结束时间（HH:MM）。多算的时长与金额会按比例扣回。',er.end);if(nv!==null&&editEndTime(er,nv,function(){mwDirty=true;save()},function(r){if(accSess&&accSess())accPushOne(r)},function(){recSig='';draw()}))toast('结束时间与金额已更新')}return}
+  var edit=e.target&&e.target.closest?e.target.closest('.edit'):null;
+  if(edit){var editId=edit.getAttribute('data-id'),editRec=data.records.filter(function(r){return r.id===editId})[0];if(!editRec)return;var nextEnd=prompt('请输入新的结束时间（24小时制 HH:MM）',editRec.end);if(nextEnd===null)return;nextEnd=String(nextEnd).trim();if(!editRecordEnd(editRec,nextEnd)){toast('时间格式应为 HH:MM，且不能早于上班时间');return}save();recSig='';draw();toast('结束时间已修改，工资已重新计算');if(accSess&&accSess())accPushOne(editRec).then(function(res){if(!res.ok)toast('本地已修改，云端同步失败；稍后点立即同步')});return}
   var btn=e.target&&e.target.closest?e.target.closest('.del'):null;
   if(!btn) return;
   var id=btn.getAttribute('data-id');
@@ -770,7 +743,7 @@ function accReq(path,opt){
       mwAssertAccountContext();            /* token 刷新期间也可能已换账号 */
       if(!tk)throw {noauth:1};
       return fetch(SB+path,{method:opt.method||'GET',headers:accHdr(tk,opt.headers),body:opt.body})
-        .then(function(r){mwAssertAccountContext();return r});   /* 响应回来先验身份，再交给业务 */
+        .then(function(r){mwAssertAccountContext();return r});
     });
 }
 function accCall(path,opt){
@@ -818,7 +791,6 @@ function applyCloudSession(row){
     var remote=upgradeSession(row.payload);
     if(!local||remote.started>local.started||(remote.sid===local.sid&&Number(remote.lastAt)>=Number(local.lastAt))){
       if(remote.dev!==DEV){
-        var gap=Date.now()-(Number(remote.lastAt)||Date.now());
       }
       data.session=remote;save();draw();return true;
     }
@@ -1243,6 +1215,7 @@ var grantDate=new Date();$('adminRecordDate').value=grantDate.getFullYear()+'-'+
 })();
 
 loadFeed(false);loadStats();
+
 
 })();
 

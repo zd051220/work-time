@@ -46,7 +46,7 @@ body{margin:0;background:linear-gradient(160deg,#fff1d2,#fffaf2 45%,#f8f1e8);col
 .rmeta{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
 .rside{display:flex;align-items:center;gap:9px;flex:none}
 .rpay{font-size:14px;font-weight:900;color:#b8791a;white-space:nowrap;font-variant-numeric:tabular-nums}
-.del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit}.editEnd{border:1px solid #e8d8b8;background:#fffaf0;color:#8e7047;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit}
+.edit{border:1px solid #e9dfc9;background:#fff9ed;color:#8e7047;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit}.del{border:1px solid #f0dcd0;background:#fff7f2;color:#b1796a;border-radius:9px;font-size:10px;font-weight:800;padding:6px 9px;font-family:inherit}
 .del:active{background:#ffe8df}
 .empty{text-align:center;padding:26px 8px;color:#b4a38e;font-size:12px;line-height:1.9}
 .empty a{color:#b5781f}
@@ -182,26 +182,9 @@ try{mwCh=new BroadcastChannel('mw_acct_541');mwCh.onmessage=function(ev){var u=(
     var p=s.split(':');if(p.length!==3)return 0;
     return (+p[0])*3600+(+p[1])*60+(+p[2]);
   }
+  function durationText(sec){sec=Math.max(0,Math.floor(sec));var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return [h,m,s].map(function(v){return String(v).padStart(2,'0')}).join(':')}
+  function editRecordEnd(r,end){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(end||'')))return false;var a=String(r.start||'').split(':'),b=String(end).split(':'),old=String(r.end||'').split(':');if(a.length!==2||old.length!==2)return false;var startMin=Number(a[0])*60+Number(a[1]),newMin=Number(b[0])*60+Number(b[1]),oldMin=Number(old[0])*60+Number(old[1]);if(newMin<startMin)return false;var work=Math.max(0,durSec(r.work)+(newMin-oldMin)*60),paid=durSec(r.paid),unpaid=durSec(r.unpaid),wage=Number(r.wage)||0,hours=Math.max(.1,Number(r.hours)||8);r.end=end;r.work=durationText(work);r.duration=durationText(work+paid+unpaid);r.pay=(work+paid)/3600*wage/hours;return true}
 
-
-function parseHM(v){var m=/^([01]\d|2[0-3]):[0-5]\d$/.exec(String(v||''));return m?(+m[1])*3600000+(+m[2])*60000:null}
-function durMs(s){var p=String(s||'00:00:00').split(':');return (+p[0])*3600000+(+p[1])*60000+(+p[2]||0)*1000}
-function editEndTime(rec,newEnd,saveFn,pushFn,refreshFn){
-  var st=parseHM(rec.start),en=parseHM(newEnd);
-  if(en===null){toast('结束时间格式应为 HH:MM');return false}
-  if(en<=st)en+=86400000;
-  var span=en-st;
-  if(span<60000){toast('结束时间必须晚于开始时间至少 1 分钟');return false}
-  var w=durMs(rec.work),p=durMs(rec.paid),u=durMs(rec.unpaid),oldTotal=w+p+u;
-  if(!oldTotal){toast('该条记录时长为空，无法修改');return false}
-  var ratio=span/oldTotal;
-  rec.end=String(newEnd);
-  rec.work=duration(Math.round(w*ratio));rec.paid=duration(Math.round(p*ratio));rec.unpaid=duration(Math.round(u*ratio));
-  rec.duration=duration(span);
-  rec.pay=+(((w+p)*ratio/3600000)*(Number(rec.wage)||0)/(Number(rec.hours)||8)).toFixed(4);
-  if(saveFn)saveFn();if(refreshFn)refreshFn();if(pushFn)pushFn(rec);
-  return true;
-}
   function render(){
     data=load();
     var arr=monthRecords(monthView),pages=Math.max(1,Math.ceil(arr.length/RECORDS_PER_PAGE));
@@ -223,7 +206,7 @@ function editEndTime(rec,newEnd,saveFn,pushFn,refreshFn){
         html+='<div class="rec"><div class="rinfo"><div class="rdate">'+esc(r.date)+' · '+esc(r.start)+'—'+esc(r.end)+'</div>'+
           '<div class="rmeta">工作 '+esc(r.work)+' · 带薪 '+esc(r.paid)+' · 不带薪 '+esc(r.unpaid)+'</div></div>'+
           '<div class="rside"><div class="rpay">'+money(r.pay)+'</div>'+
-          '<button class="editEnd" data-id="'+esc(r.id||'')+'" aria-label="修改结束时间">改</button><button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
+          '<button class="edit" data-id="'+esc(r.id||'')+'" aria-label="修改结束时间">改时间</button><button class="del" data-id="'+esc(r.id||'')+'" aria-label="删除">删</button></div></div>';
       });
       box.innerHTML=html;
       if(pages>1){pager.style.display='flex';pager.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12px;color:#8e7047';pager.innerHTML='<button type="button" data-page="prev" '+(recordsPage===1?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===1?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">上一页</button><span style="font-weight:800;min-width:68px;text-align:center">第 '+recordsPage+' / '+pages+' 页</span><button type="button" data-page="next" '+(recordsPage===pages?'disabled':'')+' style="border:1px solid #eadcc8;border-radius:10px;background:'+(recordsPage===pages?'#f5f0e8':'#fff9ef')+';padding:8px 13px;color:#8e7047;font-weight:800">下一页</button>'}
@@ -273,8 +256,8 @@ function editEndTime(rec,newEnd,saveFn,pushFn,refreshFn){
   }
 
   $('records').addEventListener('click',function(e){
-    var eb=e.target&&e.target.closest?e.target.closest('.editEnd'):null;
-    if(eb){var er=(data.records||[]).filter(function(r){return r.id===eb.getAttribute('data-id')})[0];if(er){var nv=prompt('修改这条记录的结束时间（HH:MM）。多算的时长与金额会按比例扣回。',er.end);if(nv!==null&&editEndTime(er,nv,save,function(){cloudPushAll()},render))toast('结束时间与金额已更新并同步')}return}
+    var edit=e.target&&e.target.closest?e.target.closest('.edit'):null;
+    if(edit){var editId=edit.getAttribute('data-id'),editRec=(data.records||[]).filter(function(r){return r.id===editId})[0];if(!editRec)return;var nextEnd=prompt('请输入新的结束时间（24小时制 HH:MM）',editRec.end);if(nextEnd===null)return;nextEnd=String(nextEnd).trim();if(!editRecordEnd(editRec,nextEnd)){toast('时间格式应为 HH:MM，且不能早于上班时间');return}save();render();toast('结束时间已修改，工资已重新计算');if(accSess())cloudPushAll();return}
     var b=e.target&&e.target.closest?e.target.closest('.del'):null;
     if(!b)return;
     var id=b.getAttribute('data-id');

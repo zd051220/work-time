@@ -9,8 +9,7 @@ const targets = files.length ? files : [
   'v5.5.html',
   'ledger-v5.5.html',
   'beta-v5.5.html',
-  'cat-workshop.html',
-  'cat-companion-preview.html'
+  'cat-workshop.html'
 ];
 let failures = 0;
 function fail(file, message) {
